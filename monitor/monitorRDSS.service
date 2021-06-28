@@ -1,0 +1,15 @@
+[Unit]
+Description=RDSS python API Service
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=root
+WorkingDirectory=/opt/rdss/monitor
+ExecStart=/usr/bin/env python3 monitor.py 
+
+[Install]
+WantedBy=multi-user.target
