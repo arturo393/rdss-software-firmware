@@ -1,3 +1,4 @@
+/* eslint-disable comma-dangle */
 var express = require('express');
 const cors = require('cors');
 var app = express();
@@ -11,7 +12,12 @@ io.on('connection', (client) => {
 });
 
 app.get('/', (req, res) => {
-  io.sockets.emit('change_name', req.query.name);
+  io.sockets.emit('set_name_event', {
+    event: 'set_name_event',
+    leave: false,
+    handle: 'SET_NAME_EVENT',
+    name: req.query.name,
+  });
   res.end();
 });
 

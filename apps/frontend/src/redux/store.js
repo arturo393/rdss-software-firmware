@@ -2,10 +2,10 @@ import { createStore, applyMiddleware, compose } from "redux"
 import thunk from "redux-thunk"
 import { createWrapper } from "next-redux-wrapper"
 import rootReducer from "./reducers/rootReducer"
-// import socketMiddleware from "../util/socketMiddleware"
+import socketMiddleware from "./middleware/socketMiddleware"
+import { logger, crashReporter } from "./middleware/utilsMiddleware"
 
-// const middleware = [thunk, socketMiddleware()]
-const middleware = [thunk]
+const middleware = [thunk, logger, crashReporter, socketMiddleware()]
 
 const composeEnhancers =
   typeof window === "object" && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__

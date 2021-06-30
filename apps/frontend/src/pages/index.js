@@ -1,28 +1,20 @@
 import { useState, useEffect } from "react"
 import { connect } from "react-redux"
-import { setName } from "../redux/actions/main"
+import { setName, setNameEvent } from "../redux/actions/main"
 import styles from "../styles/Home.module.css"
-
-import io from "socket.io-client"
+import axios from "axios"
 
 import Title from "../components/Title"
-
 function Home(props) {
-  const { name, setName } = props
+  console.log(props)
+  const { name, setName, setNameEvent } = props
+  const { message, setMessage } = useState()
 
   useEffect(() => {
-    console.log("Client init")
-    const socket = io("http://localhost:4200", {
-      transports: ["websocket", "polling"],
-    })
-    socket.on("change_name", (data) => {
-      setName(data)
-    })
+    console.log("INIT PAGE")
+    setNameEvent()
+    setName(props.devices[0].name)
   }, [])
-
-  useEffect(() => {
-    console.log("NAME CHANGED TO: " + name)
-  }, [name])
 
   return (
     <div className={styles.container}>
@@ -41,13 +33,16 @@ const mapStateToProps = (state) => {
 }
 const mapDispatchToProps = {
   setName,
+  setNameEvent,
 }
 
-export async function getInitialProps() {
-  console.log("GetInitialProps")
-  const reqDevices = await fetch(`http://localhost:3000/api/devices`)
-  const resDevices = await reqDevices.json()
-  const devices = await Object.entries(resDevices)
+export async function getServerSideProps() {
+  console.log("GetProps")
+  const devices = await axios
+    .get("http://localhost:3000/api/devices")
+    .then((res) => {
+      return res.data
+    })
   return {
     props: {
       devices,

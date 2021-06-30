@@ -37,6 +37,7 @@ services:
       - ./monitor/src:/opt/rdss/monitor
     depends_on:
       - database
+      - backend
   database:
     image: mongo
     volumes:
