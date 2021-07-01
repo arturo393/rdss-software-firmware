@@ -1,5 +1,6 @@
 import { connect } from "react-redux"
 import styles from "../styles/Home.module.css"
+
 function MyComponent(props) {
   const { name } = props
   return (
