@@ -6,12 +6,9 @@ import axios from "axios"
 
 import Title from "../components/Title"
 function Home(props) {
-  console.log(props)
   const { name, setName, setNameEvent } = props
-  const { message, setMessage } = useState()
 
   useEffect(() => {
-    console.log("INIT PAGE")
     setNameEvent()
     setName(props.devices[0].name)
   }, [])
@@ -37,7 +34,6 @@ const mapDispatchToProps = {
 }
 
 export async function getServerSideProps() {
-  console.log("GetProps")
   const devices = await axios
     .get("http://localhost:3000/api/devices")
     .then((res) => {

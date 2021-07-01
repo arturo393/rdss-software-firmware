@@ -7,7 +7,7 @@ export const setName = (name) => (dispatch) => {
   })
 }
 
-export const setNameEvent = (name) => (dispatch) => {
+export const setNameEvent = () => (dispatch) => {
   dispatch({
     event: "set_name_event",
     handle: (data) =>
