@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "axios": "^0.21.1",
+    "bootstrap": "^5.0.0-beta3",
     "mongodb": "^3.5.9",
     "next": "latest",
     "next-redux-wrapper": "^7.0.2",

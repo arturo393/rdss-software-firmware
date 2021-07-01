@@ -19,10 +19,8 @@ function Home(props) {
       <main>
         Página principal: Valor leído desde la base de datos:
         <h1 className={styles.title}>{name}</h1>
-        <h2>Hola Chiques</h2>
-        <div>
-          <TablaNombres />
-        </div>
+        <h2>RDSSv2</h2>
+        <TablaNombres />
       </main>
       <footer>
         <MyComponent />
