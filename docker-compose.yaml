@@ -12,7 +12,7 @@ services:
     restart: always
     depends_on:
       - database
-      - backend
+      # - backend
     command: npm run dev
   # backend:
   #   build:
