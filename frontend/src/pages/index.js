@@ -37,7 +37,7 @@ const mapDispatchToProps = {
 
 export async function getServerSideProps() {
   const devices = await axios
-    .get("http://localhost:3000/api/devices")
+    .get("http://localhost:3000/api/devices/devices")
     .then((res) => {
       return res.data
     })
