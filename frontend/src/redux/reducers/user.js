@@ -1,26 +1,25 @@
 import * as t from "../types"
 
-const main = (
+const user = (
   state = {
-    name: "none",
-    company: "empty"
+    email: "none",
   },
   action
 ) => {
   switch (action.type) {
-    case t.SET_NAME:
+    case t.SET_NAME_USER:
       return {
         ...state,
-        name: action.payload,
+        email: action.payload,
       }
-    case t.SET_COMPANY:
+    case t.SET_USER:
       return {
         ...state,
-        company: action.payload
+        user: action.payload,
       }
     default:
       return { ...state }
   }
 }
 
-export default main
+export default user

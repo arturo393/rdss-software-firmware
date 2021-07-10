@@ -17,3 +17,10 @@ export const setNameEvent = () => (dispatch) => {
       }),
   })
 }
+
+export const setCompany = (company) => (dispatch) => {
+  dispatch({
+    type: t.SET_COMPANY,
+    payload: company,
+  })
+}
