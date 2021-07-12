@@ -55,17 +55,6 @@ def getActiveDevices():
     return devices
 
 
-def getAlertParams():
-    logging.debug("Getting alerts params...")
-    try:
-        collection_name = database["config"]
-        config = list(collection_name.find(
-            {}, {"_id": 0}).limit(1))
-    except Exception as e:
-        logging.exception(e)
-    return config
-
-
 def updateDeviceStatus(device, status):
     database.devices.update_one(
         {"id": device}, {"$set": {"status.connected": status}})
@@ -125,23 +114,6 @@ def getChecksum(cmd):
     return checksum
 
 
-def evaluateAlerts(Voltage, Current, Gupl, Gdwl, Power):
-    alerts = ""
-    params = getAlertParams()
-    if (Voltage < params.minVoltage) or (Voltage > params.maxVoltage):
-        alerts += "{'Voltage': true}"
-    if (Current < params.minCurrent) or (Current > params.maxCurrent):
-        alerts += "{'Current': true}"
-    if (Gupl < params.minGupl) or (Gupl > params.maxGupl):
-        alerts += "{'Gupl': true}"
-    if (Gdwl < params.minGdwl) or (Gdwl > params.maxGdwl):
-        alerts += "{'Gdwl': true}"
-    if (Power < params.minPower) or (Power > params.maxPower):
-        alerts += "{'Power': true}"
-
-    return alerts
-
-
 def sendCmd(ser, cmd, createdevice):
     """
     -Description: This functionsend a cmd, wait one minute if we have data write to the databse, if not write time out
@@ -150,8 +122,6 @@ def sendCmd(ser, cmd, createdevice):
     """
 
     haveData = False
-    deviceData = ""
-
     cmd = hex(cmd)
     if(len(cmd) == 3):
         cmd_string = '05' + '0' + cmd[2:3] + '110000'
@@ -258,7 +228,8 @@ def sendCmd(ser, cmd, createdevice):
             pass
         else:
             SampleTime = datetime.datetime.now()
-            return(hexResponse[2], SampleTime, tranformData[0], tranformData[3], solutionAgcDwl, solutionAgcUpl, tranformData[7])
+            insertDeviceData(
+                hexResponse[2], SampleTime, tranformData[0], tranformData[3], solutionAgcDwl, solutionAgcUpl, tranformData[7])
 
         ser.flushInput()
         ser.flushOutput()
@@ -270,9 +241,14 @@ def sendCmd(ser, cmd, createdevice):
     return haveData
 
 
+def calculateAlerts():
+    pass
+
+
 def sendStatus(rtData):
-    socket.emit('rt_data_event', {"event": 'rt_data_event', "leave": False,
-                                  "handle": 'SET_RT_DATA', "data": rtData})
+    # "DEVICES: PROVISIONED: " +str(total)+", ACTIVE:"+str(actived)
+    socket.emit('set_name_event', {"event": 'set_name_event', "leave": False,
+                                   "handle": 'SET_NAME_EVENT', "name": rtData})
 
 
 def t1():
@@ -301,11 +277,8 @@ def t1():
             if (response):
                 deviceActiv += 1
                 updateDeviceStatus(device, True)
-                insertDeviceData(response)
-                alertsJson = evaluateAlerts(response)
             else:
                 logging.debug("No response from device")
-                alertsJson = "{'alerts':{'connection': true}}"
                 updateDeviceStatus(device, False)
 
     else:

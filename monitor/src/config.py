@@ -1,15 +1,27 @@
 #!/usr/bin/env python3
-
+BASE_PATH = "/opt/rdss/monitor/"
 FORMAT = 'utf-8'
 POLLING_SLEEP = 2
-LOGGING_FILE = "apiRDSS.log"
-MAX_VOLTAGE = 100
+LOGGING_FILE = "monitor.log"
+MAX_DEVICES = 255
+MAX_VOLTAGE = 80
+MIN_PTX = -50
+MAX_PTX = 10
+RANGE_MIN_PTX = 30
+RANGE_MAX_PTX = 255
 
-mssql = {
-    "host": "localhost",
-    "user": "sa",
-    "passwd": "Admin.123",
-    "db": "RDSSdb",
+log = {
+    "format": "%(asctime)s [RDSS/%(processName)s] %(levelname)s %(message)s",
+    "filename": "monitor.out"
+}
+
+db = {
+    "host": "database",
+    "user": "admin",
+    "passwd": "Admin123",
+    "dbname": "rdss",
+    "port": "27017"
+
 }
 
 serial = {

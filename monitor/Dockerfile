@@ -1,5 +1,15 @@
 FROM python
 
-WORKDIR /opt/rdss/monitor
+COPY ./src/entrypoint.sh entrypoint.sh
 
-CMD "python monitor.py"
+RUN chmod a+x entrypoint.sh
+
+WORKDIR /opt/rdss/monitor
+RUN apt -y update && apt -y upgrade
+RUN apt -y install curl socat
+
+COPY ./src/requirements.txt .
+RUN pip install -r requirements.txt
+
+
+CMD /bin/sh /entrypoint.sh
