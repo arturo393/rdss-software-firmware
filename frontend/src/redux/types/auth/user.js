@@ -1,0 +1,2 @@
+export const SET_COMPANY = "SET_COMPANY"
+export const SET_COMPANY_EVENT = "SET_COMPANY_EVENT"
