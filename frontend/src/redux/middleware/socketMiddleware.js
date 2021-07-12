@@ -2,7 +2,9 @@ import io from "socket.io-client"
 
 export default function socketMiddleware() {
   const socket = io("http://localhost:4200", {
-    transports: ["websocket", "polling"],
+    // transports: ["polling"],
+    // transports: ["websocket"],
+    // transports: ["websock  et", "polling"],
   })
 
   return (store) => (next) => (action) => {

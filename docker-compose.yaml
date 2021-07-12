@@ -12,32 +12,19 @@ services:
     restart: always
     depends_on:
       - database
-      # - backend
     command: npm run dev
-  # backend:
-  #   build:
-  #     context: ./apps/backend
-  #     dockerfile: Dockerfile
-  #   image: rdss/backend
-  #   volumes:
-  #     - ./apps/backend/src:/opt/rdss/backend
-  #   ports:
-  #     - 4200:4200
-  #   restart: always
-  #   depends_on:
-  #     - database
-  #   command: npm start
   monitor:
     build:
       context: ./monitor
       dockerfile: Dockerfile
     image: rdss/monitor
+    ports:
+      - 4200:4200
     restart: always
     volumes:
       - ./monitor/src:/opt/rdss/monitor
     depends_on:
       - database
-      # - backend
   database:
     image: mongo
     volumes:
