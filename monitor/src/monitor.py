@@ -32,6 +32,9 @@ client = None
 
 
 def dbConnect():
+    """
+    Connects to DB
+    """
     global database
     global client
     logging.debug("Conneting to database...")
@@ -44,8 +47,11 @@ def dbConnect():
         logging.exception(e)
 
 
-def getActiveDevices():
-    logging.debug("Getting active devices...")
+def getProvisionedDevices():
+    """
+    Gets provisioned devices from DB
+    Provisioned devices has status.provisioned attribute setting to true
+    """
     try:
         collection_name = database["devices"]
         devices = list(collection_name.find(
@@ -55,42 +61,51 @@ def getActiveDevices():
     return devices
 
 
-def getAlertParams():
-    logging.debug("Getting alerts params...")
+def getConfigParams():
+    """
+    Gets configured config params
+    """
     try:
         collection_name = database["config"]
-        config = list(collection_name.find(
-            {}, {"_id": 0}).limit(1))
+        config = collection_name.find(
+            {}, {"_id": 0}).limit(1)
     except Exception as e:
         logging.exception(e)
     return config
 
 
-def updateDeviceStatus(device, status):
+def updateDeviceConnectionStatus(device, status):
+    """
+    Updates device status.connected attribute
+    """
     database.devices.update_one(
         {"id": device}, {"$set": {"status.connected": status}})
 
 
-def insertDeviceData(device, SampleTime, Voltage, Current, Gupl, Gdwl, Power):
-    SampleTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%d %H:%M:%S')
+def insertDevicesDataIntoDB(rtData):
+    """
+    Saves collected devices data into DB collection
+    """
+    logging.debug("==============INSERT DEVICES DATA")
 
-    if(Voltage > cfg.MAX_VOLTAGE):
-        Voltage = cfg.MAX_VOLTAGE
-
-    logging.debug("Data written to DB: {} {}: {}, {}, {}, {}, {}".format(
-        device, timeNow, Voltage, Current, Gupl, Gdwl, Power))
-
-    try:
-        database.devices.update(
-            {"id": device}, {"$addToSet": {"data": {"SampleTime": SampleTime, "Voltage": Voltage, "Current": Current, "Gupl": Gupl, "Gdwl": Gdwl, "Power": Power}}})
-    except Exception as e:
-        logging.exception(e)
+    for device in rtData:
+        d = json.loads(device)
+        logging.debug("Data written to DB: {}".format(d))
+        # Patches
+        if(d["rtData"]["voltage"] > cfg.MAX_VOLTAGE):
+            d["rtData"]["voltage"] = cfg.MAX_VOLTAGE
+        d["rtData"]["sampleTime"] = d["sampleTime"]
+        try:
+            database.devices.update(
+                {"id": d["id"]}, {"$addToSet": {"rtData": d["rtData"]}})
+        except Exception as e:
+            logging.exception(e)
+    return
 
 
 def openSerialPort(port=""):
     global ser
-    logging.debug("Open port %s" % port)
+    logging.debug("Open Serial port %s" % port)
     try:
         ser = serial.Serial(
             port=cfg.serial["port"],
@@ -125,20 +140,23 @@ def getChecksum(cmd):
     return checksum
 
 
-def evaluateAlerts(Voltage, Current, Gupl, Gdwl, Power):
-    alerts = ""
-    params = getAlertParams()
-    if (Voltage < params.minVoltage) or (Voltage > params.maxVoltage):
-        alerts += "{'Voltage': true}"
-    if (Current < params.minCurrent) or (Current > params.maxCurrent):
-        alerts += "{'Current': true}"
-    if (Gupl < params.minGupl) or (Gupl > params.maxGupl):
-        alerts += "{'Gupl': true}"
-    if (Gdwl < params.minGdwl) or (Gdwl > params.maxGdwl):
-        alerts += "{'Gdwl': true}"
-    if (Power < params.minPower) or (Power > params.maxPower):
-        alerts += "{'Power': true}"
+def evaluateAlerts(response):
+    """
+    Check if the data collected is within the parameters configured in the DB
+    """
+    alerts = {}
+    params = getConfigParams()[0]
 
+    if (response["voltage"] < params["minVoltage"]) or (response["voltage"] > params["maxVoltage"]):
+        alerts["voltage"] = True
+    if (response["current"] < params["minCurrent"]) or (response["current"] > params["maxCurrent"]):
+        alerts["current"] = True
+    if (response["gupl"] < params["minUplink"]) or (response["gupl"] > params["maxUplink"]):
+        alerts["gupl"] = True
+    if (response["gdwl"] < params["minDownlink"]) or (response["gdwl"] > params["maxDownlink"]):
+        alerts["gdwl"] = True
+    if (response["power"] < params["minPower"]) or (response["power"] > params["maxPower"]):
+        alerts["power"] = True
     return alerts
 
 
@@ -150,7 +168,15 @@ def sendCmd(ser, cmd, createdevice):
     """
 
     haveData = False
-    deviceData = ""
+    deviceData = {}
+
+    # return({
+    #     "voltage": 21,
+    #     "current": 333,
+    #     "gupl": 50,
+    #     "gdwl": 22,
+    #     "power": 21
+    # })
 
     cmd = hex(cmd)
     if(len(cmd) == 3):
@@ -196,7 +222,9 @@ def sendCmd(ser, cmd, createdevice):
         # ------------------------
 
         haveData = True
+
         data = list()
+
         for i in range(0, 21):
             if(6 <= i < 18):
                 data.append(hexResponse[i])
@@ -254,74 +282,111 @@ def sendCmd(ser, cmd, createdevice):
             solutionAgcDwl = float(solutionAgcDwl[:6])
 
         # -----------------------------------------------------
-        if(createdevice == True):
-            pass
-        else:
-            SampleTime = datetime.datetime.now()
-            return(hexResponse[2], SampleTime, tranformData[0], tranformData[3], solutionAgcDwl, solutionAgcUpl, tranformData[7])
+        # if(createdevice == True):
+        #     pass
+        # else:
+        #     SampleTime = datetime.datetime.now()
 
         ser.flushInput()
         ser.flushOutput()
-        return haveData
+
+        deviceData = {
+            "voltage": tranformData[0],
+            "current": tranformData[3],
+            "gupl": solutionAgcUpl,
+            "gdwl": solutionAgcDwl,
+            "power": tranformData[7]
+        }
+
+        return(json.dumps(deviceData))
+        # return haveData
 
     except Exception as e:
         logging.error(e)
 
-    return haveData
+    return deviceData
 
 
-def sendStatus(rtData):
-    socket.emit('rt_data_event', {"event": 'rt_data_event', "leave": False,
-                                  "handle": 'SET_RT_DATA', "data": rtData})
+def sendStatusToFrontEnd(rtData):
+    """
+    Sends via SocketIO the real-time provisioned devices status
+    This updates frontend interface
+    """
+    socket.emit('set_rtdata_event', {"event": 'set_rtdata_event', "leave": False,
+                                     "handle": 'SET_RTDATA', "data": rtData})
 
 
-def t1():
+def defaultJSONconverter(o):
+    """
+    Converter function that stringifies our datetime object.
+    """
+    if isinstance(o, datetime.datetime):
+        return o.__str__()
+
+
+def showBanner(provisionedDevicesArr, timeNow):
+    """
+    Just shows a message to console
+    """
+    logging.debug("-------------------------------------------------------")
+    logging.debug("Starting Polling - TimeStamp: %s ", timeNow)
+    logging.debug("Devices Count:"+str(len(provisionedDevicesArr)))
+
+
+def run_monitor():
+    """
+    run_monitor(): Main process
+    1. Gets provisioned devices from DB
+    2. For each device gets status from serial port
+    3. Calculate if status variables are alerted
+    4. Send real-time status to frontend
+    5. Save real-time status to DB
+    """
     rtData = []
-
-    activeDevicesArr = getActiveDevices()
-
+    provisionedDevicesArr = getProvisionedDevices()
+    connectedDevices = 0
     SampleTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%d %H:%M:%S')
-    logging.debug(
-        "-------------------------------------------------------------------------------------------")
-    logging.debug("Starting Polling - TimeStamp: %s ", timeNow)
+    showBanner(provisionedDevicesArr, timeNow)
 
-    activeDevicesArr = getActiveDevices()
-    logging.debug("Devices Count:"+str(len(activeDevicesArr)))
-
-    deviceActiv = 0
-
-    if (len(activeDevicesArr) > 0):
-        for x in activeDevicesArr:
+    if (len(provisionedDevicesArr) > 0):
+        for x in provisionedDevicesArr:
             device = int(x["id"])
+            deviceData = {}
             logging.debug("ID: %s", device)
 
             response = sendCmd(ser, device, False)
-
+            deviceData["id"] = device
+            deviceData["sampleTime"] = timeNow
             if (response):
-                deviceActiv += 1
-                updateDeviceStatus(device, True)
-                insertDeviceData(response)
-                alertsJson = evaluateAlerts(response)
+                connectedDevices += 1
+                deviceData["connected"] = True
+                deviceData["rtData"] = response
+                deviceData["alerts"] = evaluateAlerts(response)
+                updateDeviceConnectionStatus(device, True)
             else:
                 logging.debug("No response from device")
-                alertsJson = "{'alerts':{'connection': true}}"
-                updateDeviceStatus(device, False)
+                deviceData["connected"] = False
+                updateDeviceConnectionStatus(device, False)
 
+            rtData.append(json.dumps(deviceData, default=defaultJSONconverter))
+            # END FOR X
+        logging.debug("Connected devices: %s", connectedDevices)
+        insertDevicesDataIntoDB(rtData)
+        sendStatusToFrontEnd(rtData)
     else:
         logging.debug("No provisioned devices found in the DB")
 
-    # # --------------------------------------------------
-    logging.debug("Connected devices: %s", deviceActiv)
-    sendStatus(rtData)
-
 
 def listen():
+    """
+    Listens frontend connection to emit socketio events
+    """
     openSerialPort()
     while True:
         if database is None:
             dbConnect()
-        t1()
+        run_monitor()
         eventlet.sleep(cfg.POLLING_SLEEP)
 
 

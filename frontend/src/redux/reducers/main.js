@@ -3,7 +3,8 @@ import * as t from "../types"
 const main = (
   state = {
     name: "none",
-    company: "empty"
+    company: "empty",
+    rtdata: {},
   },
   action
 ) => {
@@ -16,7 +17,12 @@ const main = (
     case t.SET_COMPANY:
       return {
         ...state,
-        company: action.payload
+        company: action.payload,
+      }
+    case t.SET_RTDATA:
+      return {
+        ...state,
+        rtdata: action.payload,
       }
     default:
       return { ...state }

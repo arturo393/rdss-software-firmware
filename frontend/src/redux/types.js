@@ -4,4 +4,4 @@ export const SET_COMPANY = "SET_COMPANY"
 export const SET_NAME_ROL = "SET_NAME_ROL"
 export const SET_NAME_USER = "SET_NAME_USER"
 export const SET_CONFIG = "SET_CONFIG"
-
+export const SET_RTDATA = "SET_RTDATA"
