@@ -86,21 +86,19 @@ def insertDevicesDataIntoDB(rtData):
     """
     Saves collected devices data into DB collection
     """
-    logging.debug("==============INSERT DEVICES DATA")
-
     for device in rtData:
         d = json.loads(device)
-        logging.debug("Data written to DB: {}".format(d))
-        # Patches
-        if(d["rtData"]["voltage"] > cfg.MAX_VOLTAGE):
-            d["rtData"]["voltage"] = cfg.MAX_VOLTAGE
-        d["rtData"]["sampleTime"] = d["sampleTime"]
-        try:
-            database.devices.update(
-                {"id": d["id"]}, {"$addToSet": {"rtData": d["rtData"]}})
-        except Exception as e:
-            logging.exception(e)
-    return
+        if "rtData" in d:
+            logging.debug("Data written to DB: {}".format(d))
+            # Patches
+            if(d["rtData"]["voltage"] > cfg.MAX_VOLTAGE):
+                d["rtData"]["voltage"] = cfg.MAX_VOLTAGE
+            d["rtData"]["sampleTime"] = d["sampleTime"]
+            try:
+                database.devices.update(
+                    {"id": d["id"]}, {"$addToSet": {"rtData": d["rtData"]}})
+            except Exception as e:
+                logging.exception(e)
 
 
 def openSerialPort(port=""):
@@ -170,13 +168,13 @@ def sendCmd(ser, cmd, createdevice):
     haveData = False
     deviceData = {}
 
-    # return({
-    #     "voltage": 21,
-    #     "current": 333,
-    #     "gupl": 50,
-    #     "gdwl": 22,
-    #     "power": 21
-    # })
+    return({
+        "voltage": 21,
+        "current": 333,
+        "gupl": 50,
+        "gdwl": 22,
+        "power": 21
+    })
 
     cmd = hex(cmd)
     if(len(cmd) == 3):
