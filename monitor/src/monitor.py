@@ -95,6 +95,9 @@ def insertDevicesDataIntoDB(rtData):
                 d["rtData"]["voltage"] = cfg.MAX_VOLTAGE
             d["rtData"]["sampleTime"] = d["sampleTime"]
             try:
+                if "alerts" in d:
+                    database.devices.update_one(
+                        {"id": d["id"]}, {"$set": {"alerts": d["alerts"]}})
                 database.devices.update(
                     {"id": d["id"]}, {"$addToSet": {"rtData": d["rtData"]}})
             except Exception as e:
@@ -167,14 +170,6 @@ def sendCmd(ser, cmd, createdevice):
 
     haveData = False
     deviceData = {}
-
-    return({
-        "voltage": 21,
-        "current": 333,
-        "gupl": 50,
-        "gdwl": 22,
-        "power": 21
-    })
 
     cmd = hex(cmd)
     if(len(cmd) == 3):
