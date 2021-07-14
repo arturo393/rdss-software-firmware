@@ -1,13 +1,13 @@
 import { useEffect } from "react"
 import { connect } from "react-redux"
-import { setName, setNameEvent } from "../redux/actions/main"
+import { setName, setNameEvent, setRTDataEvent } from "../redux/actions/main"
 import { setCompany } from "../redux/actions/user"
 
 import styles from "../styles/Home.module.css"
 import axios from "axios"
 
 function Home(props) {
-  const { name, setName, setNameEvent, company, setCompany } = props
+  const { name, setName, setNameEvent, setRTDataEvent, company, setCompany } = props
 
   useEffect(() => {
     setNameEvent()
@@ -45,6 +45,7 @@ const mapStateToProps = (state) => {
   return {
     name: state.main.name,
     company: state.main.company,
+    rtData: state.rtdata,
   }
 }
 
