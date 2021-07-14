@@ -55,7 +55,7 @@ def getProvisionedDevices():
     try:
         collection_name = database["devices"]
         devices = list(collection_name.find(
-            {"status.provisioned": True}, {"id": 1, "_id": 0}).limit(cfg.MAX_DEVICES))
+            {"status.provisioned": True}, {"id": 1, "type": 1, "_id": 0}).limit(cfg.MAX_DEVICES))
     except Exception as e:
         logging.exception(e)
     return devices
@@ -93,7 +93,6 @@ def insertDevicesDataIntoDB(rtData):
             # Patches
             if(d["rtData"]["voltage"] > cfg.MAX_VOLTAGE):
                 d["rtData"]["voltage"] = cfg.MAX_VOLTAGE
-            d["rtData"]["sampleTime"] = d["sampleTime"]
             try:
                 if "alerts" in d:
                     database.devices.update_one(
@@ -170,6 +169,14 @@ def sendCmd(ser, cmd, createdevice):
 
     haveData = False
     deviceData = {}
+
+    # return({
+    #     "voltage": 12,
+    #     "current": 50,
+    #     "gupl": 23,
+    #     "gdwl": 70,
+    #     "power": 100
+    # })
 
     cmd = hex(cmd)
     if(len(cmd) == 3):
@@ -350,11 +357,13 @@ def run_monitor():
 
             response = sendCmd(ser, device, False)
             deviceData["id"] = device
-            deviceData["sampleTime"] = timeNow
+            deviceData["type"] = x["type"]
+
             if (response):
                 connectedDevices += 1
                 deviceData["connected"] = True
                 deviceData["rtData"] = response
+                deviceData["rtData"]["sampleTime"] = timeNow
                 deviceData["alerts"] = evaluateAlerts(response)
                 updateDeviceConnectionStatus(device, True)
             else:
@@ -367,6 +376,7 @@ def run_monitor():
         logging.debug("Connected devices: %s", connectedDevices)
         insertDevicesDataIntoDB(rtData)
         sendStatusToFrontEnd(rtData)
+        # socket.emit('set_rtdata_event', {"event": 'set_rtdata_event', "leave": False,"handle": 'SET_RTDATA', "data": rtData})
     else:
         logging.debug("No provisioned devices found in the DB")
 

@@ -4,7 +4,7 @@ const main = (
   state = {
     name: "none",
     company: "empty",
-    rtdata: {},
+    rtdata: [], // Arreglo de objectos [{},{},{},{},{},...]
   },
   action
 ) => {

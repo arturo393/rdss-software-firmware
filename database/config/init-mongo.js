@@ -22,20 +22,14 @@ db.roles.insert({
   ],
 });
 
-db.devices.insert({
-  id: 1,
-  name: 'vlad1',
-  status: { provisioned: false, connected: false, x: 100, y: '100' },
-  type: 'vlad',
-  data: [{ fecha: { $timestamp: {} }, voltaje: 12, otro: 0.123 }],
-});
-db.devices.insert({
-  id: 2,
-  name: 'vlad2',
-  status: { provisioned: false, connected: false, x: 100, y: '100' },
-  type: 'vlad',
-  data: [{ fecha: { $timestamp: {} }, voltaje: 12, otro: 0.123 }],
-});
+//loop
+for (i = 1; i <= 255; i++) {
+  db.devices.insert({
+    id: i,
+    status: { provisioned: false, connected: false, x: 100, y: 100 },
+    type: 'vlad',
+  });
+}
 
 db.config.insert({
   minVoltage: 20,
