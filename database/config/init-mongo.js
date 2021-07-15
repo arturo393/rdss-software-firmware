@@ -1,4 +1,4 @@
-db.getSiblingDB('rdss');
+db.dropUser('admin');
 
 db.createUser({
   user: 'admin',

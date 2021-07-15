@@ -3,6 +3,8 @@ BASE_PATH = "/opt/rdss/monitor/"
 FORMAT = 'utf-8'
 POLLING_SLEEP = 2
 LOGGING_FILE = "monitor.log"
+
+# Variables parches para gráficos
 MAX_DEVICES = 255
 MAX_VOLTAGE = 80
 MIN_PTX = -50

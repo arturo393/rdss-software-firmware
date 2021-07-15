@@ -3,6 +3,8 @@ import { connect } from "react-redux"
 import { setName, setNameEvent, setRTDataEvent } from "../redux/actions/main"
 import { setCompany } from "../redux/actions/user"
 
+import Image from "next/image"
+
 import styles from "../styles/Home.module.css"
 import axios from "axios"
 
@@ -22,16 +24,20 @@ function Home(props) {
         <div className="container-fluid">
           <div className="row">
             <div className="col-md-6">
-              <h3>ACA VA EL COMPONENTE MAPÂ</h3>
+              <h3>
+                <Image src="/mapa.png" alt="mapa" width={527} height={236} />
+              </h3>
             </div>
             <div className="col-md-6">
-              <div className="row">
+              <div className="row" style={{ bgcolor: "red" }}>
                 <div className="col-md-12">
                   <h3>ACA VA EL RESUMEN DEL STATUS.</h3>
                 </div>
               </div>
               <div className="row">
-                <div className="col-md-12">ACA VAN LOS COMPONENTES DINÁMICOS</div>
+                <div className="col-md-12">
+                  <Image src="/status.png" alt="mapa" width={817} height={132} />
+                </div>
               </div>
             </div>
           </div>

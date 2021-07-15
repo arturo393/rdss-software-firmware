@@ -1,5 +1,5 @@
 [Unit]
-Description=RDSS python Monitor Service
+Description=RDSS WebApp  Service
 After=network.target
 StartLimitIntervalSec=0
 
@@ -8,8 +8,8 @@ Type=simple
 Restart=always
 RestartSec=1
 User=root
-WorkingDirectory=/opt/rdss/monitor
-ExecStart=/usr/bin/env python3 monitor.py 
+WorkingDirectory=/opt/rdss/frontend
+ExecStart=/usr/bin/env npm run dev
 
 [Install]
 WantedBy=multi-user.target
