@@ -1,0 +1,23 @@
+# Install MiniPC Software 
+---
+- name: Install NodeJS
+  hosts: all
+  become: true
+  tasks:
+  - name: "Add nodejs apt key"
+    apt_key:
+      url: https://deb.nodesource.com/gpgkey/nodesource.gpg.key
+      state: present
+  - name: "Install nodejs"
+    apt:
+      update_cache: yes
+      pkg:
+      - nodejs
+      - npm
+      state: present
+  # - name: "Install NPM-distributed command-line tools"
+  #   npm:
+  #     global: yes
+  #     name: "{{ item }}"
+  #   with_items:
+  #     - npx
