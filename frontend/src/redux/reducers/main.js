@@ -4,7 +4,7 @@ const main = (
   state = {
     name: "none",
     company: "empty",
-    rtdata: []
+    monitorData: [],
   },
   action
 ) => {
@@ -17,12 +17,13 @@ const main = (
     case t.SET_COMPANY:
       return {
         ...state,
-        company: action.payload
+        company: action.payload,
       }
-    case t.SET_RTDATA:
+
+    case t.SET_MONITOR_DATA_EVENT:
       return {
         ...state,
-        rtdata: action.payload,
+        monitorData: action.payload.data,
       }
     default:
       return { ...state }

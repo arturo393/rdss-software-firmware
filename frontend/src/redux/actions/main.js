@@ -1,12 +1,13 @@
 import * as t from "../types"
 
-export const setRTDataEvent = () => (dispatch) => {
+export const setMonitorDataEvent = () => (dispatch) => {
   dispatch({
     event: "set_rtdata_event",
-    handle: (data) =>
+    handle: (data) => {
       dispatch({
-        type: t.SET_RTDATA,
-        payload: data.rtdata,
-      }),
+        type: t.SET_MONITOR_DATA_EVENT,
+        payload: data,
+      })
+    },
   })
 }

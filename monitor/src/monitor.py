@@ -313,7 +313,7 @@ def sendStatusToFrontEnd(rtData):
     This updates frontend interface
     """
     socket.emit('set_rtdata_event', {"event": 'set_rtdata_event', "leave": False,
-                                     "handle": 'SET_RTDATA', "data": rtData})
+                                     "handle": 'SET_RTDATA_EVENT', "data": rtData})
 
 
 def defaultJSONconverter(o):

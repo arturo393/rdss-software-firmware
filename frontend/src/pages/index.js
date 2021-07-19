@@ -1,48 +1,44 @@
 import Image from "next/image"
 import axios from "axios"
-import { setRTDataEvent } from "../redux/actions/main"
+import { setMonitorDataEvent } from "../redux/actions/main"
 import { connect } from "react-redux"
 import { useEffect } from "react"
 
-import Diagram from './manage/diagram'
-
+import Diagram from "./manage/diagram"
 
 const Home = (props) => {
-
-  const { setRTDataEvent } = props
+  const { setMonitorDataEvent } = props
 
   useEffect(() => {
-    setRTDataEvent(props.socket)
+    setMonitorDataEvent()
   }, [])
 
   console.log("props: ", props)
+
   return (
-      <main>
-        <div className="container-fluid">
-          <div className="row">
-            <div className="col-md-6">
-              <h3>
-                {/* <Diagram props={image}/> */}
-              </h3>
-            </div>
-            <div className="col-md-6">
-              <div className="row" style={{ bgcolor: "red" }}>
-                <div className="col-md-12">
-                  <h3>ACA VA EL RESUMEN DEL STATUS.</h3>
-                </div>
+    <main>
+      <div className="container-fluid">
+        <div className="row">
+          <div className="col-md-6">
+            <h3>{/* <Diagram props={image}/> */}</h3>
+          </div>
+          <div className="col-md-6">
+            <div className="row" style={{ bgcolor: "red" }}>
+              <div className="col-md-12">
+                <h3>ACA VA EL RESUMEN DEL STATUS.</h3>
               </div>
-              <div className="row">
-                <div className="col-md-12">
-                  <Image src="/status.png" alt="mapa" width={817} height={132} />
-                </div>
+            </div>
+            <div className="row">
+              <div className="col-md-12">
+                <Image src="/status.png" alt="mapa" width={817} height={132} />
               </div>
             </div>
           </div>
         </div>
-      </main>
+      </div>
+    </main>
   )
 }
-
 
 export async function getServerSideProps() {
   const config = await axios
@@ -57,8 +53,6 @@ export async function getServerSideProps() {
       return res.data
     })
 
-  
-
   return {
     props: { config, devices },
   }
@@ -66,12 +60,12 @@ export async function getServerSideProps() {
 
 const mapStateToProps = (state) => {
   return {
-    rtData: state.main.rtdata,
+    monitorData: state.main.monitorData,
   }
 }
 
 const mapDispatchToProps = {
-  setRTDataEvent
+  setMonitorDataEvent,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Home)
