@@ -13,6 +13,10 @@
     shell: npm install
     args:
       chdir: /opt/rdss/frontend
+  - name: "Build webapp"
+    shell: npx next build
+    args:
+      chdir: /opt/rdss/frontend
   #########################################
   # FIX ME PLZ!!!!!
   #########################################

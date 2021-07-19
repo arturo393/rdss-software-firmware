@@ -13,6 +13,7 @@ services:
     restart: always
     depends_on:
       - database
+      - monitor
     command: npm run dev
   monitor:
     build:
