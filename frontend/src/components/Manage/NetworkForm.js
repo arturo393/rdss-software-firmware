@@ -14,7 +14,6 @@ const NetworkForm = (props) => {
     useEffect(() => {
         axios.post('http://localhost:3000/api/manage/config')
             .then((result) => {
-                console.log("config: ", result)
                 setState({config: result.data[0]})
             }, (error) => {
                 console.log(error);
@@ -24,13 +23,39 @@ const NetworkForm = (props) => {
     }, [])
 
     const handleChange = (e) => {
-        
+        setState(prevState => ({
+            config: { 
+                ...prevState.config, [e.target.id]: e.target.value
+            }
+        }))
     }
 
-    console.log("state: ", state)
+    const onSubmit = (e) => {
+        e.preventDefault();
+        const config =  { 
+            minVoltage: state.config.minVoltage,
+            maxVoltage: state.config.maxVoltage,
+            minCurrent: state.config.minCurrent,
+            maxCurrent: state.config.maxCurrent,
+            minUplink: state.config.minUplink,
+            maxUplink: state.config.maxUplink,
+            minDownlink: state.config.minDownlink,
+            maxDownlink: state.config.maxDownlink,
+            minDownlinkOut: state.config.minDownlinkOut, 
+            maxDownlinkOut: state.config.maxDownlinkOut
+        };
+    
+        axios.post('http://localhost:3000/api/manage/editConfig', config)
+          .then((result) => {
+            alert("Networks Parameters updated successfully")
+          }, (error) => {
+            console.log(error);
+          }
+        );
+    }
 
     return (
-        <Form>
+        <Form onSubmit={onSubmit}>
             <Form.Row className="d-flex">
                 <Form.Group as={Col} md="4" controlId="minVoltage">
                     <Form.Label>Min Voltage [Volts]</Form.Label>

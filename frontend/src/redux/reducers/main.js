@@ -4,7 +4,7 @@ const main = (
   state = {
     name: "none",
     company: "empty",
-    rtdata: [], // Arreglo de objectos [{},{},{},{},{},...]
+    rtdata: []
   },
   action
 ) => {
@@ -17,7 +17,7 @@ const main = (
     case t.SET_COMPANY:
       return {
         ...state,
-        company: action.payload,
+        company: action.payload
       }
     case t.SET_RTDATA:
       return {

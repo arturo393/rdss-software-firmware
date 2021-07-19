@@ -13,12 +13,12 @@ class Header extends Component {
                 <Navbar.Toggle aria-controls="responsive-navbar-nav" />
                 <Navbar.Collapse id="responsive-navbar-nav">
                     <Nav className="mr-auto">
-                        <NextLink href="#features"><a className="nav-link">Schema</a></NextLink>
-                        <NextLink href="#pricing"><a className="nav-link">RT-Data</a></NextLink>
+                        <NextLink href="/schema/schema"><a className="nav-link">Schema</a></NextLink>
+                        <NextLink href="/rtdata/rtdata"><a className="nav-link">RT-Data</a></NextLink>
                         <NavDropdown title="Manage" id="collasible-nav-dropdown">
                             <NextLink href="/manage/roles/roles"><a className="dropdown-item">Roles</a></NextLink>
                             <NextLink href="/manage/users/users"><a className="dropdown-item">Users</a></NextLink>
-                            <NextLink href="#action/3.3"><a className="dropdown-item">Diagram Edit</a></NextLink>
+                            <NextLink href="/manage/diagram"><a className="dropdown-item">Diagram Edit</a></NextLink>
                             <NextLink href="/manage/networkParameters"><a className="dropdown-item">Network Parameters</a></NextLink>
                         </NavDropdown>
                     </Nav>

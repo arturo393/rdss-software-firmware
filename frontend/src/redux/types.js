@@ -5,3 +5,6 @@ export const SET_NAME_ROL = "SET_NAME_ROL"
 export const SET_NAME_USER = "SET_NAME_USER"
 export const SET_CONFIG = "SET_CONFIG"
 export const SET_RTDATA = "SET_RTDATA"
+export const SET_DIAGRAM_PATH = "SET_DIAGRAM_PATH"
+export const SET_DEVICES = "SET_DEVICES"
+

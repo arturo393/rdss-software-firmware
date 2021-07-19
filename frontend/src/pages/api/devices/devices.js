@@ -7,7 +7,6 @@ export default async function (req, res) {
     .collection("devices")
     .find({})
     .sort({ metacritic: -1 })
-    .limit(20)
     .toArray()
 
   res.json(devices)

@@ -24,6 +24,8 @@ const NetworkUpload = () => {
         }
 
         const photo = { photo: state.base64 };
+
+        console.log(state)
     
         axios.post('http://localhost:3000/api/manage/editConfigPhoto', photo)
           .then((result) => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Button, Card, Form, Container } from 'react-bootstrap';
 import NextLink from 'next/link';
-import {alert, confirm} from 'react-bootstrap-confirmation';
+import {alert} from 'react-bootstrap-confirmation';
 import axios from "axios"
 
 

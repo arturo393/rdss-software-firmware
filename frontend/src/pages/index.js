@@ -1,31 +1,28 @@
-import { useEffect } from "react"
-import { connect } from "react-redux"
-import { setName, setNameEvent, setRTDataEvent } from "../redux/actions/main"
-import { setCompany } from "../redux/actions/user"
-
 import Image from "next/image"
-
-import styles from "../styles/Home.module.css"
 import axios from "axios"
+import { setRTDataEvent } from "../redux/actions/main"
+import { connect } from "react-redux"
+import { useEffect } from "react"
 
-function Home(props) {
-  const { name, setName, setNameEvent, setRTDataEvent, company, setCompany } = props
+import Diagram from './manage/diagram'
+
+
+const Home = (props) => {
+
+  const { setRTDataEvent } = props
 
   useEffect(() => {
-    setNameEvent()
-    //setCompanyEvent()
-    setCompany(props.users[0].company)
-    setName(props.devices[0].name)
+    setRTDataEvent(props.socket)
   }, [])
 
+  console.log("props: ", props)
   return (
-    <div className={styles.container}>
       <main>
         <div className="container-fluid">
           <div className="row">
             <div className="col-md-6">
               <h3>
-                <Image src="/mapa.png" alt="mapa" width={527} height={236} />
+                {/* <Diagram props={image}/> */}
               </h3>
             </div>
             <div className="col-md-6">
@@ -43,27 +40,13 @@ function Home(props) {
           </div>
         </div>
       </main>
-    </div>
   )
 }
 
-const mapStateToProps = (state) => {
-  return {
-    name: state.main.name,
-    company: state.main.company,
-    rtData: state.rtdata,
-  }
-}
-
-const mapDispatchToProps = {
-  setName,
-  setNameEvent,
-  setCompany,
-}
 
 export async function getServerSideProps() {
-  const users = await axios
-    .get("http://localhost:3000/api/auth/user")
+  const config = await axios
+    .get("http://localhost:3000/api/manage/config")
     .then((res) => {
       return res.data
     })
@@ -74,12 +57,21 @@ export async function getServerSideProps() {
       return res.data
     })
 
+  
+
   return {
-    props: {
-      users,
-      devices,
-    },
+    props: { config, devices },
   }
+}
+
+const mapStateToProps = (state) => {
+  return {
+    rtData: state.main.rtdata,
+  }
+}
+
+const mapDispatchToProps = {
+  setRTDataEvent
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Home)

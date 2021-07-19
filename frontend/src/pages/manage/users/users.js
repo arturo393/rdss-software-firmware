@@ -13,7 +13,7 @@ const Users = (props) => {
 
     useEffect(() => {
         setEmail(props.users)
-      }, [])
+    }, [])
 
     const handleHome = () => {
         Router.push('/')
@@ -56,7 +56,7 @@ const mapStateToProps = (state) => {
 
 const mapDispatchToProps = {
     setEmail
-  }
+}
 
 export async function getServerSideProps() {
     const users = await axios
