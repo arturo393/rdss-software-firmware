@@ -29,6 +29,7 @@ socket = SocketIO(app, cors_allowed_origins='*')
 
 database = None
 client = None
+ser = None
 
 
 def dbConnect():
@@ -385,10 +386,12 @@ def listen():
     """
     Listens frontend connection to emit socketio events
     """
-    openSerialPort()
     while True:
         if database is None:
             dbConnect()
+        if ser is None:
+            openSerialPort()
+
         run_monitor()
         eventlet.sleep(cfg.POLLING_SLEEP)
 

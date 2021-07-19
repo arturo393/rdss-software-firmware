@@ -33,11 +33,12 @@ service monitorRDSS start
 # Frontend 
 echo "Installing Frontend..."
 cd /tmp/rdss/frontend
-mv src /opt/rdss/frontend
+# mv src /opt/rdss/frontend
 apt -y install nodejs
 apt -y install npm
 npm install
-npm run-script build
+npm install --save-dev eslint eslint-config-next
+npx next build /opt/rdss/frontend
 npm -g install serve
 serve /opt/rdss/frontend/out
 

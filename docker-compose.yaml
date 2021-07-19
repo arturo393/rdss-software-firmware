@@ -9,6 +9,7 @@ services:
       - ./frontend/src:/opt/rdss/frontend
     ports:
       - 3000:3000
+      - 5555:5000
     restart: always
     depends_on:
       - database
