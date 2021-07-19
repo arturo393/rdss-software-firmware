@@ -1,24 +1,36 @@
 {
-  "name": "rdss",
-  "version": "0.2.0",
+  "name": "rdss_v2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next",
     "build": "next build",
     "start": "next start"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
     "axios": "^0.21.1",
     "bootstrap": "^5.0.0-beta3",
+    "konva": "^8.1.1",
     "mongodb": "^3.5.9",
-    "next": "latest",
+    "next": "^11.0.1",
     "next-redux-wrapper": "^7.0.2",
+    "next.js": "^1.0.3",
     "react": "^17.0.2",
+    "react-alert": "^7.0.3",
+    "react-bootstrap": "^1.6.1",
+    "react-bootstrap-confirmation": "^1.0.4",
     "react-dom": "^17.0.2",
+    "react-konva": "^17.0.2-4",
+    "react-reconciler": "^0.26.2",
     "react-redux": "^7.2.4",
     "redux": "^4.1.0",
     "redux-thunk": "^2.3.0",
     "socket.io": "^4.1.2",
-    "socket.io-client": "^4.1.2"
-  },
-  "license": "MIT"
+    "socket.io-client": "^4.1.2",
+    "use-image": "^1.0.7"
+  }
 }
