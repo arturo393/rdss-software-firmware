@@ -4,6 +4,9 @@ import SiteLayout from "../components/common/SiteLayout"
 import axios from "axios"
 
 const Home = (props) => {
+  //Acá va a lógica de despliegue de componentes en forma dinámica, por ejemplo:
+  // tomar el botón pulsado en el menú
+  // si boton.valor == x mostrar componente Y
 
   return (
     <main>
