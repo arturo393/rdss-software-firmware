@@ -10,9 +10,8 @@ const NetworkUpload = () => {
         base64: ''
     });
 
-    const onSubmit = (e) => {
-        e.preventDefault();
-        const file = e.target[0].files[0]
+    const onChange = (e) => {
+        const file = e.target.files[0]
 
         let reader = new FileReader();
         reader.readAsDataURL(file);
@@ -22,10 +21,11 @@ const NetworkUpload = () => {
                 base64: reader.result
             });
         }
+    }
 
+    const onSubmit = (e) => {
+        e.preventDefault();
         const photo = { photo: state.base64 };
-
-        console.log(state)
     
         axios.post('http://localhost:3000/api/manage/editConfigPhoto', photo)
           .then((result) => {
@@ -42,7 +42,7 @@ const NetworkUpload = () => {
                 <Form.Label column sm="2">
                     Photo
                 </Form.Label>
-                <Form.File id="image" name="image" />
+                <Form.File id="image" name="image" onChange={onChange}/>
             </Form.Group>
             <br></br>
             <NextLink href="/">

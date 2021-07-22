@@ -1,5 +1,6 @@
 import React from 'react';
 import { Navbar, Nav } from 'react-bootstrap'
+import ImgUrl from '../../images/Url.png'
 
 const Footer = ({url}) => {
     return (
@@ -12,7 +13,7 @@ const Footer = ({url}) => {
                         <Nav.Link href="mailto:info@sigma-telecom.com"><label>info@sigma-telecom.com</label></Nav.Link>
                     </div>
                 </div>
-                <Navbar.Brand href="/"><img src={url.src} alt="" width="100px"/></Navbar.Brand>
+                <Navbar.Brand href="/"><img src={ImgUrl.src} alt="" width="100px"/></Navbar.Brand>
                 <div className="col-md-2">
                     <div className="row justify-footer">
                         <label>Find Us</label>

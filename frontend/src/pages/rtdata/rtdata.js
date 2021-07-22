@@ -38,4 +38,16 @@ const Rtdata = (props) => {
     )
 }
 
+export async function getServerSideProps() {
+    const devices = await axios
+      .get("http://localhost:3000/api/devices/devices")
+      .then((res) => {
+        return res.data
+      })
+  
+    return {
+      props: { devices },
+    }
+}
+
 export default Rtdata

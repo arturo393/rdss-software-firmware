@@ -6,20 +6,47 @@ import '../styles/common/Header.css'
 
 import Header from "../components/common/Header"
 import Footer from "../components/common/Footer"
-import Logo from "../images/logoSigma.png"
-import Url from "../images/Url.png"
+import SiteLayout from "../components/common/SiteLayout"
+
+import { setMonitorDataEvent } from "../redux/actions/main"
+import { connect } from "react-redux"
+import axios from "axios"
 
 import { wrapper } from "../redux/store"
 
-const MyApp = ({ Component, pageProps }) => (
-  <>
+const MyApp = ({ Component, pageProps }) => {
+  console.log("pageProps: ", pageProps)
+  return (
+    <div>
     <Head>
       <meta name="viewport" content="width=device-width, initial-scale=1" />
     </Head>
-    <Header logo={Logo}/>
-    <Component {...pageProps} />
-    <Footer url={Url}/>
-  </>
-)
+    <Header />
+    <SiteLayout config={pageProps.config} devices={pageProps.devices}>
+      <Component {...pageProps} />
+    </SiteLayout>
+    <Footer />
+    </div>
+  )
+}
+
+export async function getServerSideProps() {
+  const config = await axios
+      .get("http://localhost:3000/api/manage/config")
+      .then((res) => {
+          return res.data
+      })
+
+  const devices = await axios
+      .get("http://localhost:3000/api/devices/devices")
+      .then((res) => {
+          return res.data
+      })
+
+  return {
+      props: { config, devices },
+  }
+}
+
 
 export default wrapper.withRedux(MyApp)

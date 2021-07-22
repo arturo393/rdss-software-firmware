@@ -1,7 +1,7 @@
 export const logger = (store) => (next) => (action) => {
-  console.log("UTILS:dispatching", action)
+  //console.log("UTILS:dispatching", action)
   let result = next(action)
-  console.log("UTILS:next state", store.getState())
+  //console.log("UTILS:next state", store.getState())
   return result
 }
 
