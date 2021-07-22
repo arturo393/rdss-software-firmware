@@ -379,6 +379,7 @@ def run_monitor():
         sendStatusToFrontEnd(rtData)
         # socket.emit('set_rtdata_event', {"event": 'set_rtdata_event', "leave": False,"handle": 'SET_RTDATA', "data": rtData})
     else:
+        sendStatusToFrontEnd([])
         logging.debug("No provisioned devices found in the DB")
 
 

@@ -13,19 +13,10 @@
     shell: npm install
     args:
       chdir: /opt/rdss/frontend
-  - name: "Build webapp"
-    shell: npx next build
+  - name: "Build frontend dist"
+    shell: npm run build
     args:
       chdir: /opt/rdss/frontend
-  #########################################
-  # FIX ME PLZ!!!!!
-  #########################################
-  # - name: "Fix frontend eslint"
-  #   file:
-  #     path: /opt/rdss/frontend/.eslintrc
-  #     state: absent
-  # - name: "Build frontend dist"
-  #   shell: npm run build
   - name: "Installing frontend system service"
     copy:
       remote_src: true
