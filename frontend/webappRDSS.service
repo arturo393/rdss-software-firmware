@@ -1,5 +1,5 @@
 [Unit]
-Description=RDSS WebApp  Service
+Description=RDSS WebApp Service
 After=network.target
 StartLimitIntervalSec=0
 
@@ -9,7 +9,7 @@ Restart=always
 RestartSec=1
 User=root
 WorkingDirectory=/opt/rdss/frontend
-ExecStart=/usr/bin/env npm run dev
+ExecStart=/usr/bin/env npx next start -p 80
 
 [Install]
 WantedBy=multi-user.target
