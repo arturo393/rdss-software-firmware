@@ -87,6 +87,29 @@ const SiteLayout = (props, { children }) => {
       </div>
     )
   }
+    if (loc == "/manage/roles/roles") {
+    return (
+      <div className="container-fluid">
+        <div className="row">
+          <div className="col-md-6">
+            <Schema config={props.config} devices={props.devices} />
+          </div>
+          <div className="col-md-6">
+            <div className="row">
+              <div className="col-md-12">
+                <Status />
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-md-12">
+                <Register />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
   if (loc == "/manage/networkParameters") {
     return (
       <div className="container-fluid">
@@ -111,6 +134,34 @@ const SiteLayout = (props, { children }) => {
     )
   }
 
+  if (loc == "/") {
+    return (
+      <div className="container-fluid">
+        <div className="row">
+          <div className="col-md-6">
+            <Schema config={props.config} devices={props.devices} />
+          </div>
+          <div className="col-md-6">
+            <div className="row">
+              <div className="col-md-12">
+                <Status />
+
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-md-12">
+                <Alerts />
+
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-md-12">{children}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
   return (
     <>
       {/* <Header /> */}
@@ -123,6 +174,7 @@ const SiteLayout = (props, { children }) => {
             <div className="row">
               <div className="col-md-12">
                 <Status />
+
               </div>
             </div>
             <div className="row">
