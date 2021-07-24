@@ -20,7 +20,6 @@ const Home = (props) => {
         <div className="row">
           <div className="col-md-6">
             <Schema />
-            {/* <Schema config={props.config} devices={props.devices} /> */}
           </div>
           <div className="col-md-6">
             <div className="row">
@@ -29,7 +28,7 @@ const Home = (props) => {
               </div>
             </div>
             <div className="row">
-              <div className="col-md-12">
+              <div className="col-md-12 lightBgColor hundredHeight">
                 <DynamicComponent activeComponent="alerts" />
               </div>
             </div>

@@ -54,12 +54,12 @@ const Header = (props) => {
           </Nav>
         </Navbar.Collapse>
         <Nav className="mr-auto">
-          <NextLink href="/auth/login">
-            <a className="nav-link">Login</a>
-          </NextLink>
-          <NextLink href="/auth/register">
-            <a className="nav-link">Register</a>
-          </NextLink>
+          <a className="nav-link" onClick={() => setActiveComponent("login")}>
+            Login
+          </a>
+          <a className="nav-link" onClick={() => setActiveComponent("register")}>
+            Register
+          </a>
         </Nav>
       </Navbar>
     </>

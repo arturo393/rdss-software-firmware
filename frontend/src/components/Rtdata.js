@@ -3,6 +3,15 @@ import { Container, Card, Form, Button, Col } from "react-bootstrap"
 import axios from "axios"
 
 const Rtdata = (props) => {
+  const [devices, setDevices] = useState([])
+
+  useEffect(() => {
+    axios.get("http://localhost:3000/api/devices/devices").then((res) => {
+      const devices = res.data
+      setDevices(devices)
+    })
+  }, [])
+
   return (
     <Container>
       <Card>
@@ -13,7 +22,15 @@ const Rtdata = (props) => {
               <Form.Group as={Col} md="4">
                 <Form.Label>Vlad</Form.Label>
                 <Form.Control as="select">
-                  <option value={0}>Select an option...</option>
+                  <option value={0}>=== Select a device ===</option>
+                  {devices.map((device) => {
+                    return (
+                      <option value={device.id}>
+                        {device.type}
+                        {device.id}
+                      </option>
+                    )
+                  })}
                 </Form.Control>
                 <br></br>
                 <Button variant="primary" type="button">
@@ -33,18 +50,6 @@ const Rtdata = (props) => {
       </Card>
     </Container>
   )
-}
-
-export async function getServerSideProps() {
-  const devices = await axios
-    .get("http://localhost:3000/api/devices/devices")
-    .then((res) => {
-      return res.data
-    })
-
-  return {
-    props: { devices },
-  }
 }
 
 export default Rtdata
