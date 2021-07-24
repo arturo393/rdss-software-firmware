@@ -21,14 +21,14 @@ const Group = dynamic(() => import("react-konva").then((module) => module.Group)
   ssr: false,
 })
 import useImage from "use-image"
-import { setMonitorDataEvent } from "../../redux/actions/main"
+import { setMonitorDataEvent } from "../redux/actions/main"
 import { connect } from "react-redux"
-import Test from "../../images/test.jpg"
+import Test from "../images/test.jpg"
 
-import Alerts from "../../components/schema/Alerts"
+// import Alerts from "./Alerts"
 
 //json para simular un conectado
-import monitor from "../../public/monitor.json"
+import monitor from "../public/monitor.json"
 
 const Schema = (props) => {
   const [stateConfig] = useState({

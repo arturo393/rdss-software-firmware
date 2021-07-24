@@ -5,6 +5,7 @@ const main = (
     name: "none",
     company: "empty",
     monitorData: [],
+    activeComponent: "",
   },
   action
 ) => {
@@ -24,6 +25,11 @@ const main = (
       return {
         ...state,
         monitorData: action.payload.data,
+      }
+    case t.SET_ACTIVE_COMPONENT:
+      return {
+        ...state,
+        activeComponent: action.payload,
       }
     default:
       return { ...state }

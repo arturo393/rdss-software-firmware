@@ -3,7 +3,12 @@ import { Navbar, Nav, NavDropdown } from "react-bootstrap"
 import NextLink from "next/link"
 import LogoSigma from "../../images/logoSigma.png"
 
-const Header = ({ children }) => {
+import { connect } from "react-redux"
+import { setActiveComponent } from "../../redux/actions/main"
+
+const Header = (props) => {
+  const { setActiveComponent } = props
+
   return (
     <>
       <Navbar
@@ -11,24 +16,27 @@ const Header = ({ children }) => {
         expand="lg"
         className="custom-navbar"
         variant="dark"
-        fixed="top"
+        // fixed="top"
       >
-        <div className="offset-2">
-          <NextLink href="/">
-            <a className="navbar-brand">
-              <img src={LogoSigma.src} alt="" height="45px" width="170px" />
-            </a>
-          </NextLink>
+        <div className="offset-0">
+          <a className="navbar-brand">
+            <img
+              src={LogoSigma.src}
+              alt="Sigma Telecom"
+              height="37px"
+              width="160px"
+            />
+          </a>
         </div>
         <Navbar.Toggle aria-controls="responsive-navbar-nav" />
         <Navbar.Collapse id="responsive-navbar-nav">
           <Nav className="mr-auto">
-            <NextLink href="/schema/schema">
-              <a className="nav-link">Schema</a>
-            </NextLink>
-            <NextLink href="/rtdata/rtdata">
-              <a className="nav-link">RT-Data</a>
-            </NextLink>
+            <a className="nav-link" onClick={() => setActiveComponent("alerts")}>
+              Alerts
+            </a>
+            <a className="nav-link" onClick={() => setActiveComponent("rtdata")}>
+              RT-Data
+            </a>
             <NavDropdown title="Manage" id="collasible-nav-dropdown">
               <NextLink href="/manage/roles/roles">
                 <a className="dropdown-item">Roles</a>
@@ -54,9 +62,15 @@ const Header = ({ children }) => {
           </NextLink>
         </Nav>
       </Navbar>
-      <div>{children}</div>
     </>
   )
 }
 
-export default Header
+const mapStateToProps = (state) => {
+  return {}
+}
+const mapDispatchToProps = {
+  setActiveComponent,
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(Header)
