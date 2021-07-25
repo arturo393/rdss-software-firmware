@@ -3,6 +3,8 @@ import { useState, useEffect } from "react"
 
 import Alerts from "./Alerts"
 import Rtdata from "./Rtdata"
+import NetworkParameters from "./NetworkParameters"
+
 import Login from "./auth/Login"
 import Register from "./auth/Register"
 
@@ -12,6 +14,7 @@ const DynamicComponent = (props) => {
   const components = {
     alerts: Alerts,
     rtdata: Rtdata,
+    networkParameters: NetworkParameters,
     login: Login,
     register: Register,
   }

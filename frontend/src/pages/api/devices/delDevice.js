@@ -10,7 +10,7 @@ export default async function (req, res, next) {
             $set: 
                 {
                     'status.provisioned': false,
-                    'status.connected': true,
+                    'status.connected': false,
                     'status.x': 100,
                     'status.y': 100
                 }

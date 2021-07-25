@@ -90,7 +90,7 @@ const Diagram = (props) => {
     }
     else{
       setSquare( prevSquare => ({
-        squares: [...prevSquare.squares, { x: 100, y: 100, fill: "green", name: "Vlad - " + stateVlad.id, id: stateVlad.id }]
+        squares: [...prevSquare.squares, { x: 100, y: 100, fill: "red", name: "Vlad - " + stateVlad.id, id: stateVlad.id }]
       }));
 
       const device = {id: parseInt(stateVlad.id)}
@@ -112,10 +112,12 @@ const Diagram = (props) => {
       alert("Vlad - " + stateVlad.id + " is not on the map.")
     }
     else{
-      const device = stateSquare.squares?.filter(i=> i.id !== parseInt(stateVlad.id))
-      setSquare(prevSquare => ({ 
-        squares: device
-      }))
+
+      let squares = [...stateSquare.squares]
+      let square = squares.find(square => square.id == stateVlad.id)
+      squares.pop(square)
+      setSquare({ squares })
+
       const del = {id: parseInt(stateVlad.id)}
       axios.post('http://localhost:3000/api/devices/delDevice', del)
           .then((result) => {

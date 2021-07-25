@@ -39,7 +39,7 @@ const Header = (props) => {
             </a>
             <NavDropdown title="Manage" id="collasible-nav-dropdown">
               <NextLink href="/manage/roles/roles">
-                <a className="dropdown-item">Roles</a>
+                <a className="dropdown-item" >Roles</a>
               </NextLink>
               <NextLink href="/manage/users/users">
                 <a className="dropdown-item">Users</a>
@@ -47,9 +47,7 @@ const Header = (props) => {
               <NextLink href="/manage/diagram">
                 <a className="dropdown-item">Diagram Edit</a>
               </NextLink>
-              <NextLink href="/manage/networkParameters">
-                <a className="dropdown-item">Network Parameters</a>
-              </NextLink>
+                <a className="dropdown-item" onClick={() => setActiveComponent("networkParameters")}>Network Parameters</a>
             </NavDropdown>
           </Nav>
         </Navbar.Collapse>

@@ -4,7 +4,6 @@ import axios from "axios"
 import dynamic from "next/dynamic"
 import useImage from "use-image"
 import { connect } from "react-redux"
-import Test from "../images/test.jpg"
 
 const Schema = (props) => {
 
@@ -32,9 +31,10 @@ const Schema = (props) => {
 
   const { monitorData } = props
   
-  const [stateConfig] = useState({
-    config: [{ image: Test.src }],
+  const [config, setConfig] = useState({
+    config: { }
   })
+  const [image] = useImage(config.image)
 
   const [state, setState] = useState({
     scale: 1,
@@ -47,7 +47,7 @@ const Schema = (props) => {
     squares: [],
   })
 
-  const [image] = useImage(stateConfig.config[0].image)
+
 
   useEffect(() => {
 
@@ -91,11 +91,14 @@ const Schema = (props) => {
   }, [devices])
 
   useEffect(() => {
+    axios.get("http://localhost:3000/api/manage/config").then((res) => {
+      const config = res.data[0]
+      setConfig(config)
+    })
     axios.get("http://localhost:3000/api/devices/devices").then((res) => {
       const devices = res.data
       setDevices(devices)
     })
-
   }, [])
 
   const handleWheel = (e) => {
