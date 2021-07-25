@@ -1,36 +1,37 @@
-import React, { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { Container, Card } from "react-bootstrap"
 import axios from "axios"
 import dynamic from "next/dynamic"
-const Stage = dynamic(() => import("react-konva").then((module) => module.Stage), {
-  ssr: false,
-})
-const Layer = dynamic(() => import("react-konva").then((module) => module.Layer), {
-  ssr: false,
-})
-const Image = dynamic(() => import("react-konva").then((module) => module.Image), {
-  ssr: false,
-})
-const Rect = dynamic(() => import("react-konva").then((module) => module.Rect), {
-  ssr: false,
-})
-const Text = dynamic(() => import("react-konva").then((module) => module.Text), {
-  ssr: false,
-})
-const Group = dynamic(() => import("react-konva").then((module) => module.Group), {
-  ssr: false,
-})
 import useImage from "use-image"
-import { setMonitorDataEvent } from "../redux/actions/main"
 import { connect } from "react-redux"
 import Test from "../images/test.jpg"
 
-// import Alerts from "./Alerts"
-
-//json para simular un conectado
-import monitor from "../public/monitor.json"
-
 const Schema = (props) => {
+
+  const Stage = dynamic(() => import("react-konva").then((module) => module.Stage), {
+    ssr: false,
+  })
+  const Layer = dynamic(() => import("react-konva").then((module) => module.Layer), {
+    ssr: false,
+  })
+  const Image = dynamic(() => import("react-konva").then((module) => module.Image), {
+    ssr: false,
+  })
+  const Rect = dynamic(() => import("react-konva").then((module) => module.Rect), {
+    ssr: false,
+  })
+  const Text = dynamic(() => import("react-konva").then((module) => module.Text), {
+    ssr: false,
+  })
+  const Group = dynamic(() => import("react-konva").then((module) => module.Group), {
+    ssr: false,
+  })
+
+
+  const [devices, setDevices] = useState([])
+
+  const { monitorData } = props
+  
   const [stateConfig] = useState({
     config: [{ image: Test.src }],
   })
@@ -41,14 +42,36 @@ const Schema = (props) => {
     y: 0,
     devices: props.devices,
   })
+
   const [stateSquare, setSquare] = useState({
     squares: [],
   })
-  const { setMonitorDataEvent } = props
 
   const [image] = useImage(stateConfig.config[0].image)
+
   useEffect(() => {
-    state.devices?.map((device) => {
+
+    monitorData?.map((monitor) => {
+    const data = JSON.parse(monitor)
+
+    let fill = data.connected ? "green" : "red"
+    if(data.connected || data.alerts != undefined){
+      fill = 'yellow'
+    }
+
+    let squares = [...stateSquare.squares]
+    let square = squares.find(square => square.id == data.id)
+    squares.pop(square)
+    square.fill = fill
+    squares.push(square)
+    setSquare({ squares })
+
+    })
+  }, [monitorData])
+
+
+  useEffect(() => {
+    devices?.map((device) => {
       if (device.status.provisioned) {
         const fill = device.status.connected ? "green" : "red"
         setSquare((prevSquare) => ({
@@ -65,30 +88,15 @@ const Schema = (props) => {
         }))
       }
     })
-  }, [])
+  }, [devices])
 
   useEffect(() => {
-    setMonitorDataEvent()
-    props.monitorData?.map((monitor) => {
-      const data = JSON.parse(monitor)
-      if (
-        stateSquare.squares.some((s) => s.id == parseInt(data.id)) &&
-        data.alerts != undefined
-      ) {
-        let squares = [...stateSquare.squares]
-        let index = squares.findIndex((el) => el.id == data.id)
-        squares[index].fill = "yellow"
-        setSquare({ squares })
-      } else {
-        let squares = [...stateSquare.squares]
-        let index = squares.findIndex((el) => el.id == data.id)
-        if (index > 0) {
-          squares[index].fill = data.connect ? "green" : "red"
-          setSquare({ squares })
-        }
-      }
+    axios.get("http://localhost:3000/api/devices/devices").then((res) => {
+      const devices = res.data
+      setDevices(devices)
     })
-  }, [props.monitorData])
+
+  }, [])
 
   const handleWheel = (e) => {
     e.evt.preventDefault()
@@ -152,33 +160,12 @@ const Schema = (props) => {
     </Container>
   )
 }
-
-export async function getServerSideProps() {
-  const config = await axios
-    .get("http://localhost:3000/api/manage/config")
-    .then((res) => {
-      return res.data
-    })
-
-  const devices = await axios
-    .get("http://localhost:3000/api/devices/devices")
-    .then((res) => {
-      return res.data
-    })
-
-  return {
-    props: { config, devices },
-  }
-}
-
 const mapStateToProps = (state) => {
   return {
     monitorData: state.main.monitorData,
   }
 }
 
-const mapDispatchToProps = {
-  setMonitorDataEvent,
-}
+export default connect(mapStateToProps)(Schema)
 
-export default connect(mapStateToProps, mapDispatchToProps)(Schema)
+
