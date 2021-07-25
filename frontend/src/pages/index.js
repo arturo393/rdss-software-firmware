@@ -23,9 +23,7 @@ const Home = (props) => {
           </div>
           <div className="col-md-6">
             <div className="row">
-              <div className="col-md-12">
-                <Status />
-              </div>
+              <Status />
             </div>
             <div className="row">
               <div className="col-md-12 lightBgColor hundredHeight">

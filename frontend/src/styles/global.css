@@ -6,7 +6,7 @@
 .panel {
   box-shadow: 0 2px 4px 0 rgba(150, 150, 150, 0.5);
 }
-.darkBgColor {
+.sigmaDarkBg {
   background-color: #636463;
 }
 
@@ -14,27 +14,18 @@
   background-color: #efefef;
 }
 
-.hundredHeight {
-  height: 100vh;
+.sigmaBlue {
+  background-color: #006486;
 }
 
-.status {
-  text-align: center;
-  padding: 10px;
+.sigmaRed {
+  background-color: #eb590a;
 }
 
-.titleStatus {
-  background: #ffffff;
-  box-shadow: 0 2px 4px 0 rgba(150, 150, 150, 0.5);
-  border-radius: 31px;
-  font-family: Roboto-Bold;
-  font-size: 14px;
-  color: #636463;
-  letter-spacing: 0;
+.rounded-ltlb-pill {
+  border-radius: 31px 0 0 31px;
 }
 
-.normalStatus {
-  background: #006486;
-  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.5);
-  border-radius: 0 31px 31px 31px;
+.rounded-rtrb-pill {
+  border-radius: 0 31px 31px 0;
 }

@@ -366,6 +366,7 @@ def run_monitor():
                 deviceData["rtData"] = response
                 deviceData["rtData"]["sampleTime"] = timeNow
                 deviceData["alerts"] = evaluateAlerts(response)
+
                 updateDeviceConnectionStatus(device, True)
             else:
                 logging.debug("No response from device")
