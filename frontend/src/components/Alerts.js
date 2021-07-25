@@ -71,10 +71,10 @@ const Alerts = (props) => {
         }))
       }
     })
-    console.log("estado alertas: ", state)
+    // console.log("estado alertas: ", state)
   }, [props.monitorData])
 
-  console.log("props Pelotitas: ", props)
+  // console.log("props Pelotitas: ", props)
 
   return (
     <div className="containers">

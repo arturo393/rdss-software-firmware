@@ -13,10 +13,22 @@ export const setMonitorDataEvent = () => (dispatch) => {
 }
 
 export const setActiveComponent = (name) => (dispatch) => {
-  console.log("NAME:" + name)
-  console.log(dispatch)
   dispatch({
     type: t.SET_ACTIVE_COMPONENT,
     payload: name,
+  })
+}
+
+export const setConfig = (config) => (dispatch) => {
+  dispatch({
+    type: t.SET_CONFIG,
+    payload: config,
+  })
+}
+
+export const setDevices = (devices) => (dispatch) => {
+  dispatch({
+    type: t.SET_DEVICES,
+    payload: devices,
   })
 }

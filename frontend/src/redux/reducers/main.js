@@ -6,6 +6,8 @@ const main = (
     company: "empty",
     monitorData: [],
     activeComponent: "",
+    config: {},
+    devices: [],
   },
   action
 ) => {
@@ -30,6 +32,16 @@ const main = (
       return {
         ...state,
         activeComponent: action.payload,
+      }
+    case t.SET_CONFIG:
+      return {
+        ...state,
+        config: action.payload,
+      }
+    case t.SET_DEVICES:
+      return {
+        ...state,
+        devices: action.payload,
       }
     default:
       return { ...state }

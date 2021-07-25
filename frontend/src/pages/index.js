@@ -1,18 +1,21 @@
 import axios from "axios"
 
+import { useEffect } from "react"
+
 import Schema from "../components/Schema"
 import Status from "../components/common/Status"
 
 import { connect } from "react-redux"
+import { setConfig, setDevices } from "../redux/actions/main"
 import DynamicComponent from "../components/DynamicComponent"
 
 const Home = (props) => {
-  // Cargar información desde DB (ServerSideProps)
-  //Acá va a lógica de despliegue de componentes en forma dinámica, por ejemplo:
-  // tomar el botón pulsado en el menú
-  // si boton.valor == x mostrar componente Y
+  const { dbConfig, dbDevices, setConfig, setDevices } = props
 
-  const { activeComponent } = props
+  useEffect(() => {
+    setConfig(dbConfig)
+    setDevices(dbDevices)
+  }, [])
 
   return (
     <main>
@@ -37,28 +40,29 @@ const Home = (props) => {
   )
 }
 
-// export async function getServerSideProps() {
-//   const config = await axios
-//     .get("http://localhost:3000/api/manage/config")
-//     .then((res) => {
-//       return res.data
-//     })
+export async function getServerSideProps() {
+  const dbConfig = await axios
+    .get("http://localhost:3000/api/manage/config")
+    .then((res) => {
+      return res.data[0]
+    })
+  const dbDevices = await axios
+    .get("http://localhost:3000/api/devices/devices")
+    .then((res) => {
+      return res.data
+    })
 
-//   const devices = await axios
-//     .get("http://localhost:3000/api/devices/devices")
-//     .then((res) => {
-//       return res.data
-//     })
+  return {
+    props: { dbConfig, dbDevices },
+  }
+}
 
-//   return {
-//     props: { config, devices },
-//   }
-// }
-
-const mapDispatchToProps = {}
+const mapDispatchToProps = { setConfig, setDevices }
 
 const mapStateToProps = (state) => {
-  return { activeComponent: state.main.activeComponent }
+  return {
+    // config: state.main.config,
+  }
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Home)
