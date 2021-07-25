@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react"
 import axios from "axios"
 
+import DeviceGraphs from "./DeviceGraphs"
+
 const Rtdata = (props) => {
   const [devices, setDevices] = useState([])
+  const [device, setDevice] = useState(0)
 
   useEffect(() => {
     axios.get("http://localhost:3000/api/devices/devices").then((res) => {
@@ -10,6 +13,16 @@ const Rtdata = (props) => {
       setDevices(devices)
     })
   }, [])
+
+  const setSelectedDevice = (e) => {
+    e.preventDefault()
+    const deviceSelector = document.getElementById("device")
+    setDevice(deviceSelector.selectedIndex)
+  }
+
+  useEffect(() => {
+    console.log("OBTENIENDO LOS DATOS DEL DEVICE" + device)
+  }, [devices])
 
   return (
     <div className="containers">
@@ -33,9 +46,11 @@ const Rtdata = (props) => {
                 )
               })}
             </select>
-            <button className="btn btn-primary">Search</button>
+            <button onClick={setSelectedDevice} className="btn btn-primary">
+              Search
+            </button>
           </div>
-          <div>Acá van los gráficos</div>
+          <DeviceGraphs device={device} />
         </div>
       </div>
     </div>
