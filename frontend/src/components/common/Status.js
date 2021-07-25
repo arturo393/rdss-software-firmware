@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import { setMonitorDataEvent } from "../../redux/actions/main"
 import { connect } from "react-redux"
 
 const Status = (props) => {
@@ -12,7 +11,6 @@ const Status = (props) => {
   })
 
   useEffect(() => {
-    setMonitorDataEvent()
     var connected = 0
     var alerted = 0
 

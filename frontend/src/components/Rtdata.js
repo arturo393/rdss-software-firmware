@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react"
-import { Container, Card, Form, Button, Col } from "react-bootstrap"
 import axios from "axios"
 
 const Rtdata = (props) => {
@@ -13,42 +12,33 @@ const Rtdata = (props) => {
   }, [])
 
   return (
-    <Container>
-      <Card>
-        <Card.Header>Vlad Control</Card.Header>
-        <Card.Body>
-          <blockquote className="blockquote mb-0">
-            <Form.Row className="d-flex">
-              <Form.Group as={Col} md="4">
-                <Form.Label>Vlad</Form.Label>
-                <Form.Control as="select">
-                  <option value={0}>=== Select a device ===</option>
-                  {devices.map((device) => {
-                    return (
-                      <option value={device.id}>
-                        {device.type}
-                        {device.id}
-                      </option>
-                    )
-                  })}
-                </Form.Control>
-                <br></br>
-                <Button variant="primary" type="button">
-                  Search
-                </Button>
-              </Form.Group>
-            </Form.Row>
-          </blockquote>
-        </Card.Body>
-      </Card>
-      <br></br>
-      <Card>
-        <Card.Header>Data</Card.Header>
-        <Card.Body>
-          <blockquote className="blockquote mb-0"></blockquote>
-        </Card.Body>
-      </Card>
-    </Container>
+    <div className="containers">
+      <div className="text-center mt-2 mb-2">
+        <h5>RT-Data</h5>
+      </div>
+      <div class="card h-100">
+        <div className="card-body text-center">
+          <div class="input-group mb-3">
+            <span class="input-group-text" id="device-label">
+              Device
+            </span>
+            <select className="form-select" id="device">
+              <option value={0}>=== Select a device ===</option>
+              {devices.map((device) => {
+                return (
+                  <option value={device.id}>
+                    {device.type}
+                    {device.id}
+                  </option>
+                )
+              })}
+            </select>
+            <button className="btn btn-primary">Search</button>
+          </div>
+          <div>Acá van los gráficos</div>
+        </div>
+      </div>
+    </div>
   )
 }
 

@@ -2,10 +2,9 @@ import React, { useEffect, useState } from "react"
 import { Container, Card, Table } from "react-bootstrap"
 import { setMonitorDataEvent } from "../redux/actions/main"
 import { connect } from "react-redux"
-import monitor from "../public/monitor.json"
-import green from "../images/green.png"
-import red from "../images/red.png"
-import gray from "../images/gray.png"
+import green from "../images/green.svg"
+import red from "../images/red.svg"
+import gray from "../images/gray.svg"
 
 let a_connected
 let a_voltage
@@ -78,55 +77,57 @@ const Alerts = (props) => {
   console.log("props Pelotitas: ", props)
 
   return (
-    <Container>
-      <Card>
-        <Card.Header>Vlad Status</Card.Header>
-        <Card.Body>
-          <blockquote className="blockquote mb-0">
-            <Table striped bordered hover size="sm">
-              <thead>
-                <tr>
-                  <th>Vlad ID</th>
-                  <th>Connection</th>
-                  <th>Voltage</th>
-                  <th>Current</th>
-                  <th>AGC Up</th>
-                  <th>AGC Down</th>
-                  <th>Ptx</th>
-                </tr>
-              </thead>
-              <tbody>
-                {state.alerts?.map((data) => {
-                  return (
-                    <tr>
-                      <td>{data.id}</td>
-                      <td>
-                        <img alt="" src={data.connected} width={20} height={20} />
-                      </td>
-                      <td>
-                        <img alt="" src={data.voltage} width={20} height={20} />
-                      </td>
-                      <td>
-                        <img alt="" src={data.current} width={20} height={20} />
-                      </td>
-                      <td>
-                        <img alt="" src={data.gupl} width={20} height={20} />
-                      </td>
-                      <td>
-                        <img alt="" src={data.guwl} width={20} height={20} />
-                      </td>
-                      <td>
-                        <img alt="" src={data.power} width={20} height={20} />
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </Table>
-          </blockquote>
-        </Card.Body>
-      </Card>
-    </Container>
+    <div className="containers">
+      <div className="text-center mt-2 mb-2">
+        <h5>Vlad Status</h5>
+      </div>
+      <div class="card h-100">
+        <div className="card-body">
+          {/* CONTENIDO */}
+          <table className="table table-striped table-bordered table-light">
+            <thead>
+              <tr>
+                <th>Vlad ID</th>
+                <th>Connection</th>
+                <th>Voltage</th>
+                <th>Current</th>
+                <th>AGC Up</th>
+                <th>AGC Down</th>
+                <th>Ptx</th>
+              </tr>
+            </thead>
+            <tbody>
+              {state.alerts?.map((data) => {
+                return (
+                  <tr>
+                    <td>{data.id}</td>
+                    <td>
+                      <img alt="" src={data.connected} width={20} height={20} />
+                    </td>
+                    <td>
+                      <img alt="" src={data.voltage} width={20} height={20} />
+                    </td>
+                    <td>
+                      <img alt="" src={data.current} width={20} height={20} />
+                    </td>
+                    <td>
+                      <img alt="" src={data.gupl} width={20} height={20} />
+                    </td>
+                    <td>
+                      <img alt="" src={data.guwl} width={20} height={20} />
+                    </td>
+                    <td>
+                      <img alt="" src={data.power} width={20} height={20} />
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+          {/* FIN CONTENIDO */}
+        </div>
+      </div>
+    </div>
   )
 }
 

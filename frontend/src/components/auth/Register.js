@@ -1,27 +1,31 @@
-import React, { useState } from 'react';
-import { Form, Button, Container, Card, Row, Col } from 'react-bootstrap';
+import { useState } from "react"
+import { Form, Button, Row, Col } from "react-bootstrap"
 import axios from "axios"
 
 function Register(props) {
-
-  const [ state, setState ] = useState({
-    email: '',
-    company: '',
-    password: ''
-  });
+  const [state, setState] = useState({
+    email: "",
+    company: "",
+    password: "",
+  })
 
   const onSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault()
     // get our form data out of state
-    const user = { email: state.email, company: state.company, password: state.password };
+    const user = {
+      email: state.email,
+      company: state.company,
+      password: state.password,
+    }
 
-    axios.post('http://localhost:3000/api/auth/postUser', user)
-      .then((result) => {
+    axios.post("http://localhost:3000/api/auth/postUser", user).then(
+      (result) => {
         alert("User created successfully")
-      }, (error) => {
-        console.log(error);
+      },
+      (error) => {
+        console.log(error)
       }
-    );
+    )
   }
 
   const handleChange = (e) => {
@@ -29,46 +33,56 @@ function Register(props) {
   }
 
   return (
-            <Container>
-                <Card>
-                    <Card.Header>Register New User</Card.Header>
-                    <Card.Body>
-                        <blockquote className="blockquote mb-0">
-                            <Form onSubmit={onSubmit}>
-                                <Form.Group as={Row} controlId="email">
-                                    <Form.Label column sm="2">
-                                    Email
-                                    </Form.Label>
-                                    <Col sm="10">
-                                    <Form.Control type="text" placeholder="example@example.com" onChange={handleChange}/>
-                                    </Col>
-                                </Form.Group>
-    
-                                <Form.Group as={Row} controlId="company">
-                                    <Form.Label column sm="2">
-                                    Company
-                                    </Form.Label>
-                                    <Col sm="10">
-                                    <Form.Control type="text" placeholder="Company" onChange={handleChange}/>
-                                    </Col>
-                                </Form.Group>
-    
-                                <Form.Group as={Row} controlId="password">
-                                    <Form.Label column sm="2">
-                                    Password
-                                    </Form.Label>
-                                    <Col sm="10">
-                                    <Form.Control type="password" onChange={handleChange}/>
-                                    </Col>
-                                </Form.Group>
-                                <Button variant="primary" type="submit">
-                                    Create Account
-                                </Button>
-                            </Form>
-                        </blockquote>
-                    </Card.Body>
-                </Card>
-            </Container>
+    <>
+      <div className="containers">
+        <div className="text-center mt-2 mb-2">
+          <h5>Register</h5>
+        </div>
+        <div class="card h-100">
+          <div className="card-body">
+            <Form onSubmit={onSubmit}>
+              <Form.Group as={Row} controlId="email">
+                <Form.Label column sm="2">
+                  Email
+                </Form.Label>
+                <Col sm="10">
+                  <Form.Control
+                    type="text"
+                    placeholder="example@example.com"
+                    onChange={handleChange}
+                  />
+                </Col>
+              </Form.Group>
+
+              <Form.Group as={Row} controlId="company">
+                <Form.Label column sm="2">
+                  Company
+                </Form.Label>
+                <Col sm="10">
+                  <Form.Control
+                    type="text"
+                    placeholder="Company"
+                    onChange={handleChange}
+                  />
+                </Col>
+              </Form.Group>
+
+              <Form.Group as={Row} controlId="password">
+                <Form.Label column sm="2">
+                  Password
+                </Form.Label>
+                <Col sm="10">
+                  <Form.Control type="password" onChange={handleChange} />
+                </Col>
+              </Form.Group>
+              <Button variant="primary" type="submit">
+                Create Account
+              </Button>
+            </Form>
+          </div>
+        </div>
+      </div>
+    </>
   )
 }
 
