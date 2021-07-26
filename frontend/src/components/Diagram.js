@@ -35,6 +35,13 @@ const Diagram = (props) => {
   const Rect = dynamic(() => import("react-konva").then((module) => module.Rect), {
     ssr: false,
   })
+
+  const Circle = dynamic(
+    () => import("react-konva").then((module) => module.Circle),
+    {
+      ssr: false,
+    }
+  )
   const Text = dynamic(() => import("react-konva").then((module) => module.Text), {
     ssr: false,
   })
@@ -249,11 +256,10 @@ const Diagram = (props) => {
                 return (
                   <Group>
                     <Text text={square.name} x={square.x + 20} y={square.y + 5} />
-                    <Rect
+                    <Circle
                       x={square.x}
                       y={square.y}
-                      width={20}
-                      height={20}
+                      radius={10}
                       fill={square.fill}
                       onDragEnd={onDragEndSquare}
                       draggable
