@@ -1,14 +1,20 @@
-import React, { Component } from "react"
+import { useEffect } from "react"
 import { Navbar, Nav, NavDropdown } from "react-bootstrap"
 import NextLink from "next/link"
 import LogoSigma from "../../images/logoSigma.png"
 
 import { connect } from "react-redux"
 import { setActiveComponent } from "../../redux/actions/main"
+import { logout } from "../../redux/actions/auth/user"
 
 const Header = (props) => {
-  const { isLoggedIn, setActiveComponent } = props
+  const { user, isLoggedIn, setActiveComponent, logout } = props
 
+  useEffect(() => {
+    if (isLoggedIn) setActiveComponent("alerts")
+  }, [isLoggedIn])
+
+  console.log(user)
   if (isLoggedIn) {
     return (
       <Navbar
@@ -61,12 +67,18 @@ const Header = (props) => {
               </NavDropdown>
             </Nav>
           </Navbar.Collapse>
-
           <Nav>
+            <a className="nav-link">{user.data.name}</a>
+            <a className="nav-link" onClick={() => logout()}>
+              Logout
+            </a>
+          </Nav>
+
+          {/* <Nav>
             <a className="nav-link" onClick={() => setActiveComponent("login")}>
               Login
             </a>
-          </Nav>
+          </Nav> */}
         </div>
       </Navbar>
     )
@@ -106,10 +118,11 @@ const Header = (props) => {
 }
 
 const mapStateToProps = (state) => {
-  return { isLoggedIn: state.user.isLoggedIn }
+  return { user: state.user.user, isLoggedIn: state.user.isLoggedIn }
 }
 const mapDispatchToProps = {
   setActiveComponent,
+  logout,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Header)
