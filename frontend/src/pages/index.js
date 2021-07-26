@@ -4,42 +4,47 @@ import { useEffect } from "react"
 
 import Schema from "../components/Schema"
 import Status from "../components/common/Status"
+import Login from "../components/auth/Login"
 
 import { connect } from "react-redux"
 import { setConfig, setDevices } from "../redux/actions/main"
 import DynamicComponent from "../components/DynamicComponent"
 
 const Home = (props) => {
-  const { dbConfig, dbDevices, setConfig, setDevices } = props
+  const { isLoggedIn, dbConfig, dbDevices, setConfig, setDevices } = props
+  console.log(isLoggedIn)
 
   useEffect(() => {
     setConfig(dbConfig)
     setDevices(dbDevices)
   }, [])
 
-  return (
-    <main className="container-fluid">
-      <div className="col-md-12">
-        <div className="row">
-          <div className="col-md-7" id="myMap">
-            <div className="row">
-              <Schema />
+  if (!isLoggedIn) {
+    return <Login />
+  } else
+    return (
+      <main className="container-fluid">
+        <div className="col-md-12">
+          <div className="row">
+            <div className="col-md-7" id="myMap">
+              <div className="row">
+                <Schema />
+              </div>
             </div>
-          </div>
-          <div className="col-md-5">
-            <div className="row">
-              <Status />
-            </div>
-            <div className="row">
-              <div className="col-md-12">
-                <DynamicComponent activeComponent="alerts" />
+            <div className="col-md-5">
+              <div className="row">
+                <Status />
+              </div>
+              <div className="row">
+                <div className="col-md-12">
+                  <DynamicComponent activeComponent="alerts" />
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </main>
-  )
+      </main>
+    )
 }
 export async function getServerSideProps(context) {
   const dbConfig = await axios
@@ -62,7 +67,7 @@ const mapDispatchToProps = { setConfig, setDevices }
 
 const mapStateToProps = (state) => {
   return {
-    // config: state.main.config,
+    isLoggedIn: state.user.isLoggedIn,
   }
 }
 

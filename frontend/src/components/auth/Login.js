@@ -8,7 +8,6 @@ const Login = (props) => {
   const { user, isLoggedIn, login } = props
 
   useEffect(() => {
-    console.log(isLoggedIn)
     // if (isLoggedIn) alert("Usuario Identificado")
   }, [user])
 
@@ -22,9 +21,6 @@ const Login = (props) => {
 
   return (
     <div className="containers">
-      <div className="text-center mt-2 mb-2">
-        <h5>LoginForm</h5>
-      </div>
       <div class="card h-100">
         <div className="card-body">
           <Row>
