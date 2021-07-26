@@ -5,23 +5,19 @@ import { useEffect } from "react"
 import Schema from "../components/Schema"
 import Status from "../components/common/Status"
 import Login from "../components/auth/Login"
-
 import { connect } from "react-redux"
 import { setConfig, setDevices } from "../redux/actions/main"
 import DynamicComponent from "../components/DynamicComponent"
 
 const Home = (props) => {
   const { isLoggedIn, dbConfig, dbDevices, setConfig, setDevices } = props
-  console.log(isLoggedIn)
 
   useEffect(() => {
     setConfig(dbConfig)
     setDevices(dbDevices)
   }, [])
 
-  if (!isLoggedIn) {
-    return <Login />
-  } else
+  if (isLoggedIn) {
     return (
       <main className="container-fluid">
         <div className="col-md-12">
@@ -45,6 +41,7 @@ const Home = (props) => {
         </div>
       </main>
     )
+  } else return <Login />
 }
 export async function getServerSideProps(context) {
   const dbConfig = await axios

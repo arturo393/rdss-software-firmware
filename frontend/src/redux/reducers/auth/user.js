@@ -4,7 +4,7 @@ import { getCookie, setCookie, removeCookie } from "../../../lib/cookie"
 let initialState
 if (typeof localStorage !== "undefined") {
   const authCookie = getCookie("auth")
-  if (authCookie) {
+  if (authCookie && authCookie.o != undefined) {
     initialState = JSON.parse(decodeURIComponent(authCookie))
   } else {
     initialState = {
