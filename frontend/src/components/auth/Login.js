@@ -1,16 +1,23 @@
-import React, { useState } from "react"
+import { useState, useEffect } from "react"
 import { Form, Button, Container, Card, Row, Col } from "react-bootstrap"
 import imgLoginForm from "../../images/Login_sigma.png"
-
 import { connect } from "react-redux"
-import { login } from "../../redux/actions/user"
+import { login } from "../../redux/actions/auth/user"
 
-function LoginForm(props) {
-  console.log(props)
+const Login = (props) => {
+  const { user, isLoggedIn, login } = props
 
-  const handleLoginSubmit = (value) => {
-    const { dispatch } = this.props
-    dispatch(login(value))
+  useEffect(() => {
+    console.log(isLoggedIn)
+    // if (isLoggedIn) alert("Usuario Identificado")
+  }, [user])
+
+  const handleLoginSubmit = (e) => {
+    e.preventDefault()
+    login({
+      email: e.target[0].value,
+      password: e.target[1].value,
+    })
   }
 
   return (
@@ -25,7 +32,7 @@ function LoginForm(props) {
               <img src={imgLoginForm.src} alt="" width="100%" />
             </Col>
             <Col md={8}>
-              <Form onSumit={handleLoginSubmit}>
+              <Form onSubmit={handleLoginSubmit}>
                 <Form.Group controlId="email">
                   <Form.Label>Email address</Form.Label>
                   <Form.Control type="email" placeholder="Enter email" />
@@ -42,7 +49,7 @@ function LoginForm(props) {
                   <Form.Check type="checkbox" label="Check me out" />
                 </Form.Group>
                 <Button variant="primary" type="submit">
-                  LoginForm
+                  Login
                 </Button>
               </Form>
             </Col>
@@ -53,11 +60,13 @@ function LoginForm(props) {
   )
 }
 
+const mapDispatchToProps = { login }
+
 function mapStateToProps(state) {
   return {
-    user: state.user,
+    user: state.user.user,
     isLoggedIn: state.user.isLoggedIn,
   }
 }
 
-export default connect(mapStateToProps)(LoginForm)
+export default connect(mapStateToProps, mapDispatchToProps)(Login)

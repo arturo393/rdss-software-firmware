@@ -1,4 +1,5 @@
 import * as t from "../../types/auth/user"
+import axios from "axios"
 
 export const setUserName = (userName) => (dispatch) => {
   dispatch({
@@ -31,8 +32,12 @@ export const login = (loginDetails) => {
   return async (dispatch) => {
     try {
       dispatch(deAuthenticateAction())
-      // login code. And storing data in result variable
-      dispatch(authenticateAction(result))
+      const result = await axios.post(
+        "http://localhost:3000/api/auth/postLogin",
+        loginDetails
+      )
+      if (result.data.name === loginDetails.email)
+        dispatch(authenticateAction(result))
     } catch (e) {
       dispatch(deAuthenticateAction())
     }
