@@ -11,6 +11,7 @@ const NetworkForm = (props) => {
   const [status, setStatus] = useState()
   const [file, setFile] = useState()
   const [base64, setBase64] = useState()
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     document.getElementById("status").style.display = "none"
@@ -18,7 +19,23 @@ const NetworkForm = (props) => {
   }, [])
 
   useEffect(() => {
-    if (config) setNewConfig(config)
+    if (config) {
+      setNewConfig(config)
+      if (saving) {
+        axios.post("http://localhost:3000/api/manage/editConfig", config).then(
+          (result) => {
+            document.getElementById("status").style.display = "block"
+            result
+              ? setStatus("Networks Parameters updated successfully")
+              : setStatus("Error when try to save config")
+          },
+          (error) => {
+            console.log(error)
+          }
+        )
+        setSaving(false)
+      }
+    }
   }, [config])
 
   const handleChange = (e) => {
@@ -35,18 +52,7 @@ const NetworkForm = (props) => {
   const saveConfig = (e) => {
     e.preventDefault()
     setConfig(newConfig)
-
-    axios.post("http://localhost:3000/api/manage/editConfig", config).then(
-      (result) => {
-        document.getElementById("status").style.display = "block"
-        result
-          ? setStatus("Networks Parameters updated successfully")
-          : setStatus("Error when try to save config")
-      },
-      (error) => {
-        console.log(error)
-      }
-    )
+    setSaving(true)
   }
 
   const restoreConfig = () => {

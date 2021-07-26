@@ -24,8 +24,11 @@ const Schema = (props) => {
   })
 
   const { monitorData, config, devices } = props
-
   const [image, setImage] = useState(null)
+  const [scale, setScale] = useState(1)
+  const [x, setX] = useState(100)
+  const [y, setY] = useState(100)
+  const [squares, setSquares] = useState([])
 
   useEffect(() => {
     if (config.image) {
@@ -43,55 +46,55 @@ const Schema = (props) => {
     }
   }, [config.image])
 
-  const [state, setState] = useState({
-    scale: 1,
-    x: 0,
-    y: 0,
-    devices: devices,
-  })
-
-  const [stateSquare, setSquare] = useState({
-    squares: [],
-  })
-
   useEffect(() => {
-    monitorData?.map((monitor) => {
+    console.log("===RECIBIENDO DATOS DESDE MONITOR===")
+    monitorData.map((monitor) => {
       const data = JSON.parse(monitor)
       let fill = data.connected ? "green" : "red"
       if (data.connected || data.alerts != undefined) {
         fill = "yellow"
       }
 
-      let squares = [...stateSquare.squares]
-      let square = squares.find((square) => square.id == data.id)
-      squares.pop(square)
-      square.fill = fill
-      squares.push(square)
-      setSquare({ squares })
+      let newSquares = squares
+      let square = devices.find((square) => square.id == data.id)
+      square = {
+        x: square.status.x,
+        y: square.status.y,
+        fill: fill,
+        name: square.type + "-" + square.id,
+        id: square.id,
+      }
+
+      newSquares.push(square)
+      setSquares(removeDuplicates(newSquares, (square) => square.id))
     })
   }, [monitorData])
 
   useEffect(() => {
-    if (devices.length) {
+    console.log("===RECIBIENDO DATOS DESDE DEVICES===")
+
+    if (devices) {
       devices.map((device) => {
         if (device.status.provisioned) {
           const fill = device.status.connected ? "green" : "red"
-          setSquare((prevSquare) => ({
-            squares: [
-              ...prevSquare.squares,
-              {
-                x: device.status.x,
-                y: device.status.y,
-                fill: fill,
-                name: "Vlad - " + device.id,
-                id: device.id,
-              },
-            ],
-          }))
+          let newSquares = squares
+          const square = {
+            x: device.status.x,
+            y: device.status.y,
+            fill: fill,
+            name: device.type + "-" + device.id,
+            id: device.id,
+          }
+          newSquares.push(square)
+          setSquares(removeDuplicates(newSquares, (square) => square.id))
         }
       })
     }
   }, [devices])
+
+  function removeDuplicates(data, key) {
+    return [...new Map(data.map((item) => [key(item), item])).values()]
+  }
 
   const handleWheel = (e) => {
     e.evt.preventDefault()
@@ -105,13 +108,9 @@ const Schema = (props) => {
     }
 
     const newScale = e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy
-
-    setState({
-      ...state,
-      scale: newScale,
-      x: (stage.getPointerPosition().x / newScale - mousePointTo.x) * newScale,
-      y: (stage.getPointerPosition().y / newScale - mousePointTo.y) * newScale,
-    })
+    setScale(newScale)
+    setX((stage.getPointerPosition().x / newScale - mousePointTo.x) * newScale)
+    setY((stage.getPointerPosition().y / newScale - mousePointTo.y) * newScale)
   }
   // return <>Schema </>
 
@@ -124,15 +123,15 @@ const Schema = (props) => {
             width={500}
             height={800}
             onWheel={handleWheel}
-            scaleX={state.scale}
-            scaleY={state.scale}
-            x={state.x}
-            y={state.y}
+            scaleX={scale}
+            scaleY={scale}
+            x={x}
+            y={y}
             draggable
           >
             <Layer>
               <Image image={image} layout="fill" />
-              {stateSquare.squares?.map((square) => {
+              {squares.map((square) => {
                 return (
                   <Group>
                     <Text text={square.name} x={square.x + 20} y={square.y + 5} />
@@ -142,7 +141,7 @@ const Schema = (props) => {
                       width={20}
                       height={20}
                       fill={square.fill}
-                      id={square.id}
+                      id={square.id.toString()}
                     />
                   </Group>
                 )
