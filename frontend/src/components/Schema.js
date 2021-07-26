@@ -40,7 +40,7 @@ const Schema = (props) => {
     }
 
     setWidth((window.innerWidth / 100) * 50)
-    setHeight(window.innerHeight / 1.5)
+    setHeight(window.innerHeight / 1.65)
   }, [])
 
   // useEffect(() => {

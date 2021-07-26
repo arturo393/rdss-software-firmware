@@ -29,7 +29,7 @@ const Home = (props) => {
               <Status />
             </div>
             <div className="row">
-              <div className="col-md-12 lightBgColor hundredHeight">
+              <div className="col-md-12 lightBgColor fullHeight">
                 <DynamicComponent activeComponent="alerts" />
               </div>
             </div>
