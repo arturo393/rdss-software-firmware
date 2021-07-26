@@ -82,7 +82,7 @@ const Alerts = (props) => {
         <h5>Vlad Status</h5>
       </div>
       <div class="card h-100">
-        <div className="card-body">
+        <div className="card-body table-responsive">
           {/* CONTENIDO */}
           <table className="table table-striped table-bordered table-light">
             <thead>

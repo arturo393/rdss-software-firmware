@@ -18,6 +18,9 @@ const Diagram = (props) => {
   const [x, setX] = useState(100)
   const [y, setY] = useState(100)
 
+  const [width, setWidth] = useState(500)
+  const [height, setHeight] = useState(500)
+
   const [image] = useImage(config.image)
 
   const Stage = dynamic(() => import("react-konva").then((module) => module.Stage), {
@@ -44,6 +47,8 @@ const Diagram = (props) => {
   }
 
   useEffect(() => {
+    setWidth((window.innerWidth / 100) * 80)
+    setHeight(window.innerHeight / 2)
     if (devices.length > 0) {
       let squaresArr = []
 
@@ -227,47 +232,38 @@ const Diagram = (props) => {
         </div>
       </div>
       <Container>
-        <Card>
-          <Card.Header>Leaky Feeder network status</Card.Header>
-          <Card.Body>
-            <Stage
-              width={(window.innerWidth / 100) * 50}
-              height={window.innerHeight}
-              onWheel={handleWheel}
-              scaleX={scale}
-              scaleY={scale}
-              x={x}
-              y={y}
-              draggable
-            >
-              <Layer>
-                <Image image={image} />
-                {squares &&
-                  squares.map((square) => {
-                    return (
-                      <Group>
-                        <Text
-                          text={square.name}
-                          x={square.x + 20}
-                          y={square.y + 5}
-                        />
-                        <Rect
-                          x={square.x}
-                          y={square.y}
-                          width={20}
-                          height={20}
-                          fill={square.fill}
-                          onDragEnd={onDragEndSquare}
-                          draggable
-                          id={square.id.toString()}
-                        />
-                      </Group>
-                    )
-                  })}
-              </Layer>
-            </Stage>
-          </Card.Body>
-        </Card>
+        <Stage
+          width={width}
+          height={height}
+          onWheel={handleWheel}
+          scaleX={scale}
+          scaleY={scale}
+          x={x}
+          y={y}
+          draggable
+        >
+          <Layer>
+            <Image image={image} />
+            {squares &&
+              squares.map((square) => {
+                return (
+                  <Group>
+                    <Text text={square.name} x={square.x + 20} y={square.y + 5} />
+                    <Rect
+                      x={square.x}
+                      y={square.y}
+                      width={20}
+                      height={20}
+                      fill={square.fill}
+                      onDragEnd={onDragEndSquare}
+                      draggable
+                      id={square.id.toString()}
+                    />
+                  </Group>
+                )
+              })}
+          </Layer>
+        </Stage>
       </Container>
     </>
   )

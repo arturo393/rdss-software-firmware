@@ -7,12 +7,27 @@
   box-shadow: 0 2px 4px 0 rgba(150, 150, 150, 0.5);
 }
 
-.halfWidth {
+.fullWidth {
   width: 100vw;
 }
 
-.hundredHeight {
+.fullHeight {
   height: 100vh;
+}
+
+.sigma-modal {
+  width: 90vw;
+  max-width: 90vw;
+}
+/* .modal-dialog {
+  width: 100vw;
+} */
+
+.modal-header {
+  background-color: #337ab7;
+  padding: 16px 16px;
+  color: #fff;
+  border-bottom: 2px dashed #337ab7;
 }
 
 .sigmaDarkBg {
@@ -37,4 +52,10 @@
 
 .rounded-rtrb-pill {
   border-radius: 0 31px 31px 0;
+}
+
+@media only screen and (max-width: 1026px) {
+  #myMap {
+    display: none;
+  }
 }

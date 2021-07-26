@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Button, Modal } from "react-bootstrap"
+import { Modal } from "react-bootstrap"
 
 import Diagram from "./Diagram"
 const DiagramEdit = () => {
@@ -20,17 +20,16 @@ const DiagramEdit = () => {
       <div className="containers">
         <div className="text-center mt-2 mb-2">
           <button className="btn btn-primary" onClick={handleShow}>
-            Diagram Edit
+            Open Diagram Editor
           </button>
         </div>
       </div>
-
       <Modal
-        size="lg"
         aria-labelledby="contained-modal-title-vcenter"
         centered
         show={show}
         onHide={handleClose}
+        dialogClassName="sigma-modal"
       >
         <Modal.Header>
           <Modal.Title>Diagram Edit</Modal.Title>

@@ -39,9 +39,14 @@ const Schema = (props) => {
       setImage(config.image)
     }
 
-    setWidth((window.innerWidth / 100) * 40)
-    setHeight(window.innerHeight)
+    setWidth((window.innerWidth / 100) * 50)
+    setHeight(window.innerHeight / 1.5)
   }, [])
+
+  // useEffect(() => {
+  //   setWidth((window.innerWidth / 100) * 50)
+  //   setHeight(window.innerHeight)
+  // }, [window])
 
   useEffect(() => {
     if (config.image) {

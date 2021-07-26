@@ -21,10 +21,10 @@ const Home = (props) => {
     <main>
       <div className="container-fluid">
         <div className="row">
-          <div className="col-md-6">
+          <div className="col-md-7" id="myMap">
             <Schema />
           </div>
-          <div className="col-md-6">
+          <div className="col-md-5">
             <div className="row">
               <Status />
             </div>

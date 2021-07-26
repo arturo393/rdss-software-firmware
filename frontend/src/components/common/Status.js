@@ -30,39 +30,39 @@ const Status = (props) => {
 
   return (
     <>
-      <div className="container-fluid sigmaDarkBg">
+      <div className="container-fluid sigmaDarkBg float-sm-star">
         <div className="row">
           <div className="col-md-12">
-            <div className="row">
-              <div className="col-md-4">
-                <h3 className="mt-3 mb-3">
+            <div className="row mb-3 mt-3">
+              <div className="col-md-4 text-center">
+                <h4>
                   <span className="badge rounded-ltlb-pill bg-light text-dark">
                     In Network
                   </span>
                   <span className="badge rounded-rtrb-pill sigmaBlue">
                     {status.network ? status.network : 0}
                   </span>
-                </h3>
+                </h4>
               </div>
-              <div className="col-md-4">
-                <h3 className="mt-3 mb-3">
+              <div className="col-md-4 text-center">
+                <h4>
                   <span className="badge rounded-ltlb-pill bg-light text-dark ">
                     Connected
                   </span>
                   <span className="badge rounded-rtrb-pill sigmaBlue">
                     {status.connected ? status.connected : 0}
                   </span>
-                </h3>
+                </h4>
               </div>
-              <div className="col-md-4">
-                <h3 className="mt-3 mb-3">
+              <div className="col-md-4 text-center">
+                <h4>
                   <span className="badge rounded-ltlb-pill bg-light text-dark ">
                     With Alerts
                   </span>
                   <span className="badge rounded-rtrb-pill sigmaRed">
                     {status.alert ? status.alert : 0}
                   </span>
-                </h3>
+                </h4>
               </div>
             </div>
           </div>
