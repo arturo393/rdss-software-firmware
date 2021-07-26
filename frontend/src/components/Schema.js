@@ -29,6 +29,8 @@ const Schema = (props) => {
   const [x, setX] = useState(100)
   const [y, setY] = useState(100)
   const [squares, setSquares] = useState([])
+  const [width, setWidth] = useState(500)
+  const [height, setHeight] = useState(500)
 
   useEffect(() => {
     if (config.image) {
@@ -36,6 +38,9 @@ const Schema = (props) => {
       newImage.src = config.image
       setImage(config.image)
     }
+
+    setWidth((window.innerWidth / 100) * 40)
+    setHeight(window.innerHeight)
   }, [])
 
   useEffect(() => {
@@ -120,14 +125,15 @@ const Schema = (props) => {
         <Card.Header>Leaky Feeder network status</Card.Header>
         <Card.Body>
           <Stage
-            width={500}
-            height={800}
+            width={width}
+            height={height}
             onWheel={handleWheel}
             scaleX={scale}
             scaleY={scale}
             x={x}
             y={y}
             draggable
+            id="myStage"
           >
             <Layer>
               <Image image={image} layout="fill" />

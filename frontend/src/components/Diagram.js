@@ -228,8 +228,8 @@ const Diagram = (props) => {
           <Card.Header>Leaky Feeder network status</Card.Header>
           <Card.Body>
             <Stage
-              width={1250}
-              height={1000}
+              width={(window.innerWidth / 100) * 50}
+              height={window.innerHeight}
               onWheel={handleWheel}
               scaleX={scale}
               scaleY={scale}
