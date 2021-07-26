@@ -20,6 +20,7 @@
     "eslint-plugin-react": "^7.24.0",
     "hammerjs": "^2.0.8",
     "isodate": "^0.1.4",
+    "js-cookie": "^3.0.0",
     "konva": "^8.1.1",
     "mongodb": "^3.5.9",
     "next": "^11.0.1",

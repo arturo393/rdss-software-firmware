@@ -1,6 +1,6 @@
 import { combineReducers } from "redux"
 import main from "./main"
-import user from "./user"
+import user from "./auth/user"
 import rol from "./rol"
 import diagram from "./diagram"
 

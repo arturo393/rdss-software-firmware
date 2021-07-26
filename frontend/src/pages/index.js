@@ -18,11 +18,13 @@ const Home = (props) => {
   }, [])
 
   return (
-    <main>
-      <div className="container-fluid">
+    <main className="container-fluid">
+      <div className="col-md-12">
         <div className="row">
           <div className="col-md-7" id="myMap">
-            <Schema />
+            <div className="row">
+              <Schema />
+            </div>
           </div>
           <div className="col-md-5">
             <div className="row">
@@ -39,8 +41,7 @@ const Home = (props) => {
     </main>
   )
 }
-
-export async function getServerSideProps() {
+export async function getServerSideProps(context) {
   const dbConfig = await axios
     .get("http://localhost:3000/api/manage/config")
     .then((res) => {

@@ -131,42 +131,44 @@ const Schema = (props) => {
   // return <>Schema </>
 
   return (
-    <Container>
-      <Card>
-        <Card.Header>Leaky Feeder network status</Card.Header>
-        <Card.Body>
-          <Stage
-            width={width}
-            height={height}
-            onWheel={handleWheel}
-            scaleX={scale}
-            scaleY={scale}
-            x={x}
-            y={y}
-            draggable
-            id="myStage"
-          >
-            <Layer>
-              <Image image={image} layout="fill" />
-              {squares.map((square) => {
-                return (
-                  <Group>
-                    <Text text={square.name} x={square.x + 20} y={square.y + 5} />
-                    <Circle
-                      radius={10}
-                      x={square.x}
-                      y={square.y}
-                      fill={square.fill}
-                      id={square.id.toString()}
-                    />
-                  </Group>
-                )
-              })}
-            </Layer>
-          </Stage>
-        </Card.Body>
-      </Card>
-    </Container>
+    <div className="container-fluid">
+      <Stage
+        width={width}
+        height={height}
+        onWheel={handleWheel}
+        scaleX={scale}
+        scaleY={scale}
+        x={x}
+        y={y}
+        draggable
+        id="myStage"
+      >
+        <Layer>
+          <Image image={image} layout="fill" />
+          {squares.map((square) => {
+            return (
+              <Group>
+                <Text
+                  text={square.name}
+                  x={square.x + 20}
+                  y={square.y + 5}
+                  fill="#000000"
+                  stroke="#ffffff"
+                  fillAfterStrokeEnabled="true"
+                />
+                <Circle
+                  radius={10}
+                  x={square.x}
+                  y={square.y}
+                  fill={square.fill}
+                  id={square.id.toString()}
+                />
+              </Group>
+            )
+          })}
+        </Layer>
+      </Stage>
+    </div>
   )
 }
 const mapStateToProps = (state) => {

@@ -13,54 +13,54 @@ const Header = (props) => {
     <Navbar
       collapseOnSelect
       expand="lg"
-      className="custom-navbar"
+      className="navbar navbar-expand-lg  sticky-top   custom-navbar"
       variant="dark"
-      // fixed="top"
     >
-      <div className="offset-0">
+      <div className="container-fluid">
         <a className="navbar-brand">
           <img src={LogoSigma.src} alt="Sigma Telecom" height="37px" width="160px" />
         </a>
-      </div>
-      <Navbar.Toggle aria-controls="responsive-navbar-nav" />
-      <Navbar.Collapse id="responsive-navbar-nav">
-        <Nav className="mr-auto">
-          <a className="nav-link" onClick={() => setActiveComponent("alerts")}>
-            Alerts
-          </a>
-          <a className="nav-link" onClick={() => setActiveComponent("rtdata")}>
-            RT-Data
-          </a>
-          <NavDropdown title="Manage" id="collasible-nav-dropdown">
-            <NextLink href="/manage/roles/roles">
-              <a className="dropdown-item">Roles</a>
-            </NextLink>
-            <NextLink href="/manage/users/users">
-              <a className="dropdown-item">Users</a>
-            </NextLink>
-            <a
-              className="dropdown-item"
-              onClick={() => setActiveComponent("diagramedit")}
-            >
-              Diagram Edit
+        <Navbar.Toggle aria-controls="responsive-navbar-nav" />
+        <Navbar.Collapse
+          id="responsive-navbar-nav"
+          className="collapse navbar-collapse"
+        >
+          <Nav className="mr-auto">
+            <a className="nav-link" onClick={() => setActiveComponent("alerts")}>
+              Alerts
             </a>
-            <a
-              className="dropdown-item"
-              onClick={() => setActiveComponent("networkParameters")}
-            >
-              Network Parameters
+            <a className="nav-link" onClick={() => setActiveComponent("rtdata")}>
+              RT-Data
             </a>
-          </NavDropdown>
+            <NavDropdown title="Manage" id="collasible-nav-dropdown">
+              <NextLink href="/manage/roles/roles">
+                <a className="dropdown-item">Roles</a>
+              </NextLink>
+              <NextLink href="/manage/users/users">
+                <a className="dropdown-item">Users</a>
+              </NextLink>
+              <a
+                className="dropdown-item"
+                onClick={() => setActiveComponent("diagramedit")}
+              >
+                Diagram Edit
+              </a>
+              <a
+                className="dropdown-item"
+                onClick={() => setActiveComponent("networkParameters")}
+              >
+                Network Parameters
+              </a>
+            </NavDropdown>
+          </Nav>
+        </Navbar.Collapse>
+
+        <Nav>
+          <a className="nav-link" onClick={() => setActiveComponent("login")}>
+            Login
+          </a>
         </Nav>
-      </Navbar.Collapse>
-      <Nav className="mr-auto">
-        <a className="nav-link" onClick={() => setActiveComponent("login")}>
-          Login
-        </a>
-        <a className="nav-link" onClick={() => setActiveComponent("register")}>
-          Register
-        </a>
-      </Nav>
+      </div>
     </Navbar>
   )
 }

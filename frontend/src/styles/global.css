@@ -54,8 +54,23 @@
   border-radius: 0 31px 31px 0;
 }
 
+.sigmaStatusBar {
+  border-radius: 0 0 0 5px;
+  box-shadow: 0 2px 4px 0 rgba(150, 150, 150, 0.5);
+}
+
 @media only screen and (max-width: 1026px) {
   #myMap {
     display: none;
+  }
+  .sigmaStatusBar {
+    border-radius: 0 0 5px 5px;
+  }
+  .sigmaStatusBar > div > div > h5 {
+    max-width: 90vw;
+  }
+  .sigmaStatusBar > div > div > h5 > span:first-child {
+    width: 50vw;
+    max-width: 50vw;
   }
 }

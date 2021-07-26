@@ -255,7 +255,14 @@ const Diagram = (props) => {
               squares.map((square) => {
                 return (
                   <Group>
-                    <Text text={square.name} x={square.x + 20} y={square.y + 5} />
+                    <Text
+                      text={square.name}
+                      x={square.x + 20}
+                      y={square.y + 5}
+                      fill="#000000"
+                      stroke="#ffffff"
+                      fillAfterStrokeEnabled="true"
+                    />
                     <Circle
                       x={square.x}
                       y={square.y}

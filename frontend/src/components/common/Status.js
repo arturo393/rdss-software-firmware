@@ -2,13 +2,27 @@ import { useEffect, useState } from "react"
 import { connect } from "react-redux"
 
 const Status = (props) => {
-  const { monitorData } = props
-
+  const { monitorData, devices } = props
   const [status, setStatus] = useState({
-    connected: 0,
-    network: 0,
-    alert: 0,
+    connected: "",
+    network: "",
+    alert: "",
   })
+
+  useEffect(() => {
+    var spinners = document.getElementsByName("spinner")
+    for (let i = 0; i < spinners.length; i++) {
+      spinners[i].style.visibility = "hidden"
+    }
+  }, [status])
+
+  useEffect(() => {
+    var spinners = document.getElementsByName("spinner")
+    for (let i = 0; i < spinners.length; i++) {
+      spinners[i].style.visibility = "visible"
+    }
+    console.log(devices)
+  }, [])
 
   useEffect(() => {
     var connected = 0
@@ -29,52 +43,71 @@ const Status = (props) => {
   }, [monitorData])
 
   return (
-    <>
-      <div className="container-fluid sigmaDarkBg float-sm-star">
-        <div className="row">
-          <div className="col-md-12">
-            <div className="row mb-3 mt-3">
-              <div className="col-md-4 text-center">
-                <h4>
-                  <span className="badge rounded-ltlb-pill bg-light text-dark">
-                    In Network
-                  </span>
-                  <span className="badge rounded-rtrb-pill sigmaBlue">
-                    {status.network ? status.network : 0}
-                  </span>
-                </h4>
+    <div className="container-fluid sigmaDarkBg sigmaStatusBar">
+      <div className="row justify-content-md-center text-center mb-3 mt-3">
+        <div className="col-md-auto">
+          <h5 className="text-nowrap">
+            <span className="badge rounded-ltlb-pill bg-light text-dark">
+              In Network
+            </span>
+            <span className="badge rounded-rtrb-pill sigmaBlue">
+              <div
+                className="spinner-border text-light"
+                role="status"
+                name="spinner"
+                style={{ maxWidth: "10px", maxHeight: "10px" }}
+              >
+                <span className="visually-hidden">Loading...</span>
               </div>
-              <div className="col-md-4 text-center">
-                <h4>
-                  <span className="badge rounded-ltlb-pill bg-light text-dark ">
-                    Connected
-                  </span>
-                  <span className="badge rounded-rtrb-pill sigmaBlue">
-                    {status.connected ? status.connected : 0}
-                  </span>
-                </h4>
+              {status.network}
+            </span>
+          </h5>
+        </div>
+        <div className="col-md-auto">
+          <h5 className="text-nowrap">
+            <span className="badge rounded-ltlb-pill bg-light text-dark ">
+              Connected
+            </span>
+            <span className="badge rounded-rtrb-pill sigmaBlue">
+              <div
+                className="spinner-border text-light"
+                role="status"
+                name="spinner"
+                style={{ maxWidth: "10px", maxHeight: "10px" }}
+              >
+                <span className="visually-hidden">Loading...</span>
               </div>
-              <div className="col-md-4 text-center">
-                <h4>
-                  <span className="badge rounded-ltlb-pill bg-light text-dark ">
-                    With Alerts
-                  </span>
-                  <span className="badge rounded-rtrb-pill sigmaRed">
-                    {status.alert ? status.alert : 0}
-                  </span>
-                </h4>
+              {status.connected}
+            </span>
+          </h5>
+        </div>
+        <div className="col-md-auto">
+          <h5 className="text-nowrap">
+            <span className="badge rounded-ltlb-pill bg-light text-dark ">
+              With Alerts
+            </span>
+            <span className="badge rounded-rtrb-pill sigmaRed">
+              <div
+                className="spinner-border text-light"
+                role="status"
+                name="spinner"
+                style={{ maxWidth: "10px", maxHeight: "10px" }}
+              >
+                <span className="visually-hidden">Loading...</span>
               </div>
-            </div>
-          </div>
+              {status.alert}
+            </span>
+          </h5>
         </div>
       </div>
-    </>
+    </div>
   )
 }
 
 const mapStateToProps = (state) => {
   return {
     monitorData: state.main.monitorData,
+    devices: state.main.devices,
   }
 }
 

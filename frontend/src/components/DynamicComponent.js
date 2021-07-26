@@ -6,7 +6,7 @@ import Rtdata from "./Rtdata"
 import DiagramEdit from "./DiagramEdit"
 import NetworkParameters from "./NetworkParameters"
 
-import Login from "./auth/Login"
+import LoginForm from "./auth/LoginForm"
 import Register from "./auth/Register"
 
 const DynamicComponent = (props) => {
@@ -17,7 +17,7 @@ const DynamicComponent = (props) => {
     rtdata: Rtdata,
     diagramedit: DiagramEdit,
     networkParameters: NetworkParameters,
-    login: Login,
+    login: LoginForm,
     register: Register,
   }
   const SelectComponent = components[activeComponent ? activeComponent : "alerts"]
