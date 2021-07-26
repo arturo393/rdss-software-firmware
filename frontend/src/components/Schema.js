@@ -63,14 +63,14 @@ const Schema = (props) => {
       let newSquares = squares
       let square = devices.find((square) => square.id == data.id)
       square = {
+        ...square,
         x: square.status.x,
         y: square.status.y,
         fill: fill,
         name: square.type + "-" + square.id,
         id: square.id,
       }
-
-      newSquares.push(square)
+      if (square.status.provisioned) newSquares.push(square)
       setSquares(removeDuplicates(newSquares, (square) => square.id))
     })
   }, [monitorData])

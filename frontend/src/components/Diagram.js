@@ -4,11 +4,13 @@ import axios from "axios"
 import dynamic from "next/dynamic"
 import { setDevices } from "../redux/actions/main"
 import { connect } from "react-redux"
+
 import useImage from "use-image"
 import { alert } from "react-bootstrap-confirmation"
 
 const Diagram = (props) => {
   const { config, devices, setDevices } = props
+
   const [newDevices, setNewDevices] = useState([])
   const [squares, setSquares] = useState([])
   const [vlad, setVlad] = useState({})
@@ -186,6 +188,7 @@ const Diagram = (props) => {
       let newDevicesList = devices || newDevices
       newDevicesList[objIndex] = dev
       setNewDevices(newDevicesList)
+      setDevices(newDevicesList)
     } else {
       console.log("NO HAY DATA ID")
     }

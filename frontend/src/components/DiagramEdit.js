@@ -26,26 +26,27 @@ const DiagramEdit = () => {
       </div>
 
       <Modal
-        size="xl"
+        size="lg"
         aria-labelledby="contained-modal-title-vcenter"
         centered
         show={show}
         onHide={handleClose}
       >
-        <Modal.Header closeButton>
+        <Modal.Header>
           <Modal.Title>Diagram Edit</Modal.Title>
+          <div>
+            <button className="btn btn-secondary" onClick={handleClose}>
+              Close
+            </button>
+            <button className="btn btn-primary" onClick={handleClose}>
+              Save Changes
+            </button>
+          </div>
         </Modal.Header>
         <Modal.Body>
           <Diagram />
         </Modal.Body>
-        <Modal.Footer>
-          <button className="btn btn-secondary" onClick={handleClose}>
-            Close
-          </button>
-          <button className="btn btn-primary" onClick={handleClose}>
-            Save Changes
-          </button>
-        </Modal.Footer>
+        <Modal.Footer></Modal.Footer>
       </Modal>
     </>
   )
