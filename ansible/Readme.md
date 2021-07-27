@@ -13,6 +13,8 @@ Please refer to:
 
 Edit `vars.yaml` file and change variables with yours
 
+Define templates located at `playbooks/templates` as you desire
+
 ## Add all miniPCs to inventory
 
 edit `inventory/hosts.yaml` file and add all miniPCs IPs
