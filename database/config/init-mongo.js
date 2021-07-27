@@ -1,4 +1,8 @@
 db.dropUser('admin');
+db.users.remove({});
+db.devices.remove({});
+db.config.remove({});
+db.roles.remove({});
 
 db.createUser({
   user: 'admin',
