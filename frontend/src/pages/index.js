@@ -49,7 +49,8 @@ export async function getServerSideProps(context) {
       "http://" +
         process.env.NEXT_PUBLIC_APIHOST +
         ":" +
-        process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/config"
+        process.env.NEXT_PUBLIC_APIPORT +
+        "/api/manage/config"
     )
     .then((res) => {
       return res.data[0]
@@ -59,7 +60,8 @@ export async function getServerSideProps(context) {
       "http://" +
         process.env.NEXT_PUBLIC_APIHOST +
         ":" +
-        process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/devices/devices"
+        process.env.NEXT_PUBLIC_APIPORT +
+        "/api/devices/devices"
     )
     .then((res) => {
       return res.data

@@ -16,7 +16,8 @@ const Edit = () => {
         "http://" +
           process.env.NEXT_PUBLIC_APIHOST +
           ":" +
-          process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/rolid",
+          process.env.NEXT_PUBLIC_APIPORT +
+          "/api/manage/rolid",
         rolId
       )
       .then(

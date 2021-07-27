@@ -26,7 +26,8 @@ const NetworkForm = (props) => {
             "http://" +
               process.env.NEXT_PUBLIC_APIHOST +
               ":" +
-              process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/editConfig",
+              process.env.NEXT_PUBLIC_APIPORT +
+              "/api/manage/editConfig",
             config
           )
           .then(

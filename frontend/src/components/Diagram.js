@@ -121,7 +121,8 @@ const Diagram = (props) => {
         "http://" +
           process.env.NEXT_PUBLIC_APIHOST +
           ":" +
-          process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/devices/editDevice",
+          process.env.NEXT_PUBLIC_APIPORT +
+          "/api/devices/editDevice",
         device
       )
       .then(
@@ -190,7 +191,8 @@ const Diagram = (props) => {
           "http://" +
             process.env.NEXT_PUBLIC_APIHOST +
             ":" +
-            process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/devices/delDevice",
+            process.env.NEXT_PUBLIC_APIPORT +
+            "/api/devices/delDevice",
           device
         )
         .then(

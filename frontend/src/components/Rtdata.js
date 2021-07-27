@@ -13,7 +13,8 @@ const Rtdata = (props) => {
         "http://" +
           process.env.NEXT_PUBLIC_APIHOST +
           ":" +
-          process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/devices/devices"
+          process.env.NEXT_PUBLIC_APIPORT +
+          "/api/devices/devices"
       )
       .then((res) => {
         const devices = res.data

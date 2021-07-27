@@ -22,7 +22,8 @@ const User = ({ user }) => {
           "http://" +
             process.env.NEXT_PUBLIC_APIHOST +
             ":" +
-            process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/deleteuser",
+            process.env.NEXT_PUBLIC_APIPORT +
+            "/api/manage/deleteuser",
           idUser
         )
         .then(

@@ -47,7 +47,8 @@ const DeviceGraphs = (props) => {
           "http://" +
             process.env.NEXT_PUBLIC_APIHOST +
             ":" +
-            process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/devices/devices"
+            process.env.NEXT_PUBLIC_APIPORT +
+            "/api/devices/devices"
         )
         .then((res) => {
           device = res.data.find((data) => data.id == deviceId)
@@ -146,7 +147,8 @@ const DeviceGraphs = (props) => {
           "http://" +
             process.env.NEXT_PUBLIC_APIHOST +
             ":" +
-            process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/devices/deviceId",
+            process.env.NEXT_PUBLIC_APIPORT +
+            "/api/devices/deviceId",
           deviceReq
         )
         .then((res) => {

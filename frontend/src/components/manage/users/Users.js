@@ -16,7 +16,8 @@ const Users = (props) => {
         "http://" +
           process.env.NEXT_PUBLIC_APIHOST +
           ":" +
-          process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/users"
+          process.env.NEXT_PUBLIC_APIPORT +
+          "/api/manage/users"
       )
       .then((res) => {
         return res.data
@@ -55,7 +56,8 @@ const Users = (props) => {
         "http://" +
           process.env.NEXT_PUBLIC_APIHOST +
           ":" +
-          process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/addUser",
+          process.env.NEXT_PUBLIC_APIPORT +
+          "/api/manage/addUser",
         user
       )
       .then(
@@ -93,7 +95,8 @@ const Users = (props) => {
           "http://" +
             process.env.NEXT_PUBLIC_APIHOST +
             ":" +
-            process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/deleteuser",
+            process.env.NEXT_PUBLIC_APIPORT +
+            "/api/manage/deleteuser",
           { id: selectedUserId }
         )
         .then(

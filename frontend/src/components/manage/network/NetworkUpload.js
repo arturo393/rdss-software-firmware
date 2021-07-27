@@ -32,7 +32,8 @@ const NetworkUpload = () => {
         "http://" +
           process.env.NEXT_PUBLIC_APIHOST +
           ":" +
-          process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/editConfigPhoto",
+          process.env.NEXT_PUBLIC_APIPORT +
+          "/api/manage/editConfigPhoto",
         photo
       )
       .then(

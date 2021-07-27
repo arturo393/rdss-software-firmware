@@ -57,7 +57,8 @@ export async function getServerSideProps() {
       "http://" +
         process.env.NEXT_PUBLIC_APIHOST +
         ":" +
-        process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/roles"
+        process.env.NEXT_PUBLIC_APIPORT +
+        "/api/manage/roles"
     )
     .then((res) => {
       return res.data

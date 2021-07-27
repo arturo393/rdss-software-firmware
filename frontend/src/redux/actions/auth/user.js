@@ -36,7 +36,8 @@ export const login = (loginDetails) => {
         "http://" +
           process.env.NEXT_PUBLIC_APIHOST +
           ":" +
-          process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/auth/postLogin",
+          process.env.NEXT_PUBLIC_APIPORT +
+          "/api/auth/postLogin",
         loginDetails
       )
       if (result.data.email === loginDetails.email)

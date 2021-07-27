@@ -22,7 +22,8 @@ const ManageUser = (props) => {
         "http://" +
           process.env.NEXT_PUBLIC_APIHOST +
           ":" +
-          process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/rolid",
+          process.env.NEXT_PUBLIC_APIPORT +
+          "/api/manage/rolid",
         rolId
       )
       .then(
@@ -69,7 +70,8 @@ const ManageUser = (props) => {
         "http://" +
           process.env.NEXT_PUBLIC_APIHOST +
           ":" +
-          process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/editRolUser",
+          process.env.NEXT_PUBLIC_APIPORT +
+          "/api/manage/editRolUser",
         rolUser
       )
       .then(
@@ -146,7 +148,8 @@ export async function getServerSideProps() {
       "http://" +
         process.env.NEXT_PUBLIC_APIHOST +
         ":" +
-        process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/users"
+        process.env.NEXT_PUBLIC_APIPORT +
+        "/api/manage/users"
     )
     .then((res) => {
       return res.data

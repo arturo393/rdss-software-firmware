@@ -3,6 +3,8 @@
 - name: Install RDSS Frontend
   hosts: all
   become: true
+  vars_files:
+    - ../vars.yaml
   tasks:
   - name: "Installing frontend files"
     copy:
@@ -20,6 +22,10 @@
       dest: /opt/rdss/frontend/node_modules/hammerjs/hammer.js
       owner: root
       group: root
+  - name: Apply Config Template
+    template:
+      src: frontend_config.j2
+      dest: /opt/rdss/frontend/.env.local
   - name: "Build frontend dist"
     shell: npm run build
     args:
@@ -31,8 +37,6 @@
       dest: /etc/systemd/system
       owner: root
       group: root
-    # notify:
-    # - "Start frontend"
   - name: "Start frontend"
     systemd:
       name: webappRDSS

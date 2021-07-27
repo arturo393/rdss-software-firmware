@@ -5,8 +5,8 @@ db.config.remove({});
 db.roles.remove({});
 
 db.createUser({
-  user: 'admin',
-  pwd: 'Admin123',
+  user: '{{ db_user }}',
+  pwd: '{{ db_pass }}',
   roles: [{ role: 'readWrite', db: 'rdss' }],
 });
 
