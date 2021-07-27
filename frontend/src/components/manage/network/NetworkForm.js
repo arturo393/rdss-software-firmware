@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react"
 import { connect } from "react-redux"
-import { setConfig } from "../../redux/actions/main"
+import { setConfig } from "../../../redux/actions/main"
 import axios from "axios"
 
 const NetworkForm = (props) => {

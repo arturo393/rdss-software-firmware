@@ -21,7 +21,6 @@ const Status = (props) => {
     for (let i = 0; i < spinners.length; i++) {
       spinners[i].style.visibility = "visible"
     }
-    console.log(devices)
   }, [])
 
   useEffect(() => {

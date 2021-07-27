@@ -29,24 +29,23 @@ const User = ({ user }) => {
   }
 
   return (
-    <div>
-      <Card>
-        <Card.Header>{user?.name}</Card.Header>
-        <Card.Body>
-          <blockquote className="blockquote mb-0">
-            <NextLink href={`/manage/users/edit/${user?._id}`}>
-              <Button variant="primary" type="button">
-                Edit
-              </Button>
-            </NextLink>{" "}
-            <Button variant="danger" type="button" onClick={handleDelete}>
-              Delete
-            </Button>
-          </blockquote>
-        </Card.Body>
-      </Card>
-      <br></br>
-    </div>
+    <tr>
+      <td>
+        {user?.name} ({user?.email})
+      </td>
+      <td>
+        <button className="btn btn-primary btn-sm" type="button">
+          Edit
+        </button>
+        <button
+          className="btn btn-warning btn-sm"
+          type="button"
+          onClick={handleDelete}
+        >
+          Delete
+        </button>
+      </td>
+    </tr>
   )
 }
 

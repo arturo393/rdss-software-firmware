@@ -1,8 +1,8 @@
 import React from "react"
 import { Container, Card } from "react-bootstrap"
 
-import NetworkUpload from "../components/Manage/NetworkUpload"
-import NetworkForm from "../components/Manage/NetworkForm"
+import NetworkUpload from "./manage/network/NetworkUpload"
+import NetworkForm from "./manage/network/NetworkForm"
 
 const NetworkParameters = () => {
   return (

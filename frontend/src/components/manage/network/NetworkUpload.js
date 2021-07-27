@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react"
 import { Form, Button, Row } from "react-bootstrap"
 import axios from "axios"
 import NextLink from "next/link"
-import { setConfig } from "../../redux/actions/main"
+import { setConfig } from "../../../redux/actions/main"
 
 const NetworkUpload = () => {
   const [state, setState] = useState({

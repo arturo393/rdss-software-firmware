@@ -14,7 +14,6 @@ const Header = (props) => {
     if (isLoggedIn) setActiveComponent("alerts")
   }, [isLoggedIn])
 
-  console.log(user)
   if (isLoggedIn) {
     return (
       <Navbar
@@ -45,13 +44,20 @@ const Header = (props) => {
               <a className="nav-link" onClick={() => setActiveComponent("rtdata")}>
                 RT-Data
               </a>
+
               <NavDropdown title="Manage" id="collasible-nav-dropdown">
-                <NextLink href="/manage/roles/roles">
-                  <a className="dropdown-item">Roles</a>
-                </NextLink>
-                <NextLink href="/manage/users/users">
-                  <a className="dropdown-item">Users</a>
-                </NextLink>
+                <a
+                  className="dropdown-item"
+                  onClick={() => setActiveComponent("rolesadmin")}
+                >
+                  Roles
+                </a>
+                <a
+                  className="dropdown-item"
+                  onClick={() => setActiveComponent("usersadmin")}
+                >
+                  Users
+                </a>
                 <a
                   className="dropdown-item"
                   onClick={() => setActiveComponent("diagramedit")}
@@ -67,9 +73,11 @@ const Header = (props) => {
               </NavDropdown>
             </Nav>
           </Navbar.Collapse>
-          <Nav>
-            <a className="nav-link">{user.data.name}</a>
-            <a className="nav-link" onClick={() => logout()}>
+          <Nav className="ml-auto">
+            <a className="nav-link">
+              {user.data.name} ({user.data.rol})
+            </a>
+            <a className="nav-link btn sigmaDarkBg" onClick={() => logout()}>
               Logout
             </a>
           </Nav>
@@ -107,7 +115,10 @@ const Header = (props) => {
           ></Navbar.Collapse>
 
           <Nav>
-            <a className="nav-link" onClick={() => setActiveComponent("login")}>
+            <a
+              className="nav-link btn sigmaDarkBg"
+              onClick={() => setActiveComponent("login")}
+            >
               Login
             </a>
           </Nav>
