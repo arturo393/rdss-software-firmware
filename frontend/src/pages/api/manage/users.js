@@ -1,3 +1,4 @@
+import { connect } from "react-redux"
 import { connectToDatabase } from "../../../components/db/util/mongodb"
 
 export default async function (req, res) {
@@ -10,5 +11,5 @@ export default async function (req, res) {
     .limit(20)
     .toArray()
 
-  res.json(users)
+  res.status(200).json(users)
 }

@@ -57,6 +57,7 @@ const Users = (props) => {
     getUsers().then((usrs) => {
       setUsers(usrs)
     })
+
     closeForm()
   }
 
@@ -115,7 +116,7 @@ const Users = (props) => {
   }
 
   return (
-    <div className="container">
+    <div className="container-fluid ">
       <div className="text-center mt-2 mb-2">
         <h5>Users Admin</h5>
       </div>
