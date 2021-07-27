@@ -5,7 +5,7 @@
  * Licensed under the MIT license */
 if(typeof window !== 'undefined' && typeof document !== 'undefined') { (function(window, document, exportName, undefined) {
     'use strict';
-  
+
   var VENDOR_PREFIXES = ['', 'webkit', 'Moz', 'MS', 'ms', 'o'];
   var TEST_ELEMENT = document.createElement('div');
   
