@@ -43,6 +43,30 @@ export function convertISODateToTimeFormat(ISODate) {
 
   export function initOptions(text) {
     let initialOptions = {
+      maintainAspectRatio: true,
+      scales: {
+        xAxes: [{
+          gridLines: {
+           display: false,
+           color: '#03A5C5',
+           lineWidth: 8,
+           },
+          ticks: {
+            fontColor: "white",
+          },
+        }],
+        yAxes: [{
+          gridLines: {
+           display: false,
+           color: '#03A5C5',
+           lineWidth: 8,
+           },
+          ticks: {
+            fontColor: "white",
+            beginAtZero: true,
+          }
+        }]
+      },
       title: {
         display: true,
         text: text,
@@ -52,6 +76,7 @@ export function convertISODateToTimeFormat(ISODate) {
         display: true,
         position: 'right'
       },
+      
       plugins: {
         zoom: {
           zoom: {
