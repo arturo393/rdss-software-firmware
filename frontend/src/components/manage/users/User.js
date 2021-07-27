@@ -17,14 +17,22 @@ const User = ({ user }) => {
       setState(state)
 
       console.log(state.userState)
-      axios.post("http://localhost:3000/api/manage/deleteuser", idUser).then(
-        (result) => {
-          alert("User has been deleted")
-        },
-        (error) => {
-          console.log(error)
-        }
-      )
+      axios
+        .post(
+          "http://" +
+            process.env.NEXT_PUBLIC_APIHOST +
+            ":" +
+            process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/deleteuser",
+          idUser
+        )
+        .then(
+          (result) => {
+            alert("User has been deleted")
+          },
+          (error) => {
+            console.log(error)
+          }
+        )
     }
   }
 

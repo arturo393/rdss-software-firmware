@@ -13,6 +13,13 @@
     shell: npm install
     args:
       chdir: /opt/rdss/frontend
+  - name: "Patching hammerJS"
+    copy:
+      remote_src: true
+      src: /tmp/rdss2/frontend/src/lib/hammer.js
+      dest: /opt/rdss/frontend/node_modules/hammerjs/hammer.js
+      owner: root
+      group: root
   - name: "Build frontend dist"
     shell: npm run build
     args:

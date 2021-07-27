@@ -21,17 +21,25 @@ const NetworkForm = (props) => {
     if (config) {
       setNewConfig(config)
       if (saving) {
-        axios.post("http://localhost:3000/api/manage/editConfig", config).then(
-          (result) => {
-            document.getElementById("status").style.display = "block"
-            result
-              ? setStatus("Networks Parameters updated successfully")
-              : setStatus("Error when try to save config")
-          },
-          (error) => {
-            console.log(error)
-          }
-        )
+        axios
+          .post(
+            "http://" +
+              process.env.NEXT_PUBLIC_APIHOST +
+              ":" +
+              process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/editConfig",
+            config
+          )
+          .then(
+            (result) => {
+              document.getElementById("status").style.display = "block"
+              result
+                ? setStatus("Networks Parameters updated successfully")
+                : setStatus("Error when try to save config")
+            },
+            (error) => {
+              console.log(error)
+            }
+          )
         setSaving(false)
       }
     }

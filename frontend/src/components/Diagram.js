@@ -116,12 +116,20 @@ const Diagram = (props) => {
 
     updateDeviceList("changePos", device)
 
-    axios.post("http://localhost:3000/api/devices/editDevice", device).then(
-      (result) => {},
-      (error) => {
-        console.log(error)
-      }
-    )
+    axios
+      .post(
+        "http://" +
+          process.env.NEXT_PUBLIC_APIHOST +
+          ":" +
+          process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/devices/editDevice",
+        device
+      )
+      .then(
+        (result) => {},
+        (error) => {
+          console.log(error)
+        }
+      )
   }
 
   const onChangeVlad = (e) => {
@@ -147,7 +155,14 @@ const Diagram = (props) => {
 
       const device = { id: parseInt(vlad.id) }
       axios
-        .post("http://localhost:3000/api/devices/editDeviceProvisioned", device)
+        .post(
+          "http://" +
+            process.env.NEXT_PUBLIC_APIHOST +
+            ":" +
+            process.env.NEXT_PUBLIC_APIPORT ||
+            80 + "/api/devices/editDeviceProvisioned",
+          device
+        )
         .then(
           (result) => {},
           (error) => {
@@ -170,12 +185,20 @@ const Diagram = (props) => {
       setSquares(removeDuplicates(newSquares, (square) => square.id))
 
       const device = { id: parseInt(vlad.id) }
-      axios.post("http://localhost:3000/api/devices/delDevice", device).then(
-        (result) => {},
-        (error) => {
-          console.log(error)
-        }
-      )
+      axios
+        .post(
+          "http://" +
+            process.env.NEXT_PUBLIC_APIHOST +
+            ":" +
+            process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/devices/delDevice",
+          device
+        )
+        .then(
+          (result) => {},
+          (error) => {
+            console.log(error)
+          }
+        )
       updateDeviceList("del", device)
     }
   }

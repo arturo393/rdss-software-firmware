@@ -12,7 +12,12 @@ const Users = (props) => {
 
   async function getUsers() {
     const usrs = await axios
-      .get("http://localhost:3000/api/manage/users")
+      .get(
+        "http://" +
+          process.env.NEXT_PUBLIC_APIHOST +
+          ":" +
+          process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/users"
+      )
       .then((res) => {
         return res.data
       })
@@ -45,14 +50,22 @@ const Users = (props) => {
       return false
     }
 
-    axios.post("http://localhost:3000/api/manage/addUser", user).then(
-      (result) => {
-        alert("User has been Registered")
-      },
-      (error) => {
-        console.log(error)
-      }
-    )
+    axios
+      .post(
+        "http://" +
+          process.env.NEXT_PUBLIC_APIHOST +
+          ":" +
+          process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/addUser",
+        user
+      )
+      .then(
+        (result) => {
+          alert("User has been Registered")
+        },
+        (error) => {
+          console.log(error)
+        }
+      )
 
     getUsers().then((usrs) => {
       setUsers(usrs)
@@ -76,7 +89,13 @@ const Users = (props) => {
         return el._id != selectedUserId
       })
       axios
-        .post("http://localhost:3000/api/manage/deleteuser", { id: selectedUserId })
+        .post(
+          "http://" +
+            process.env.NEXT_PUBLIC_APIHOST +
+            ":" +
+            process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/deleteuser",
+          { id: selectedUserId }
+        )
         .then(
           (result) => {
             alert("User has been deleted")

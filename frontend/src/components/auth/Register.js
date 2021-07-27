@@ -18,14 +18,22 @@ function Register(props) {
       password: state.password,
     }
 
-    axios.post("http://localhost:3000/api/auth/postUser", user).then(
-      (result) => {
-        alert("User created successfully")
-      },
-      (error) => {
-        console.log(error)
-      }
-    )
+    axios
+      .post(
+        "http://" +
+          process.env.NEXT_PUBLIC_APIHOST +
+          ":" +
+          process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/auth/postUser",
+        user
+      )
+      .then(
+        (result) => {
+          alert("User created successfully")
+        },
+        (error) => {
+          console.log(error)
+        }
+      )
   }
 
   const handleChange = (e) => {

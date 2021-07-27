@@ -33,7 +33,10 @@ export const login = (loginDetails) => {
     try {
       dispatch(deAuthenticateAction())
       const result = await axios.post(
-        "http://localhost:3000/api/auth/postLogin",
+        "http://" +
+          process.env.NEXT_PUBLIC_APIHOST +
+          ":" +
+          process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/auth/postLogin",
         loginDetails
       )
       if (result.data.email === loginDetails.email)

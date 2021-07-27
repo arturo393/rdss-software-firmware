@@ -1,11 +1,17 @@
 import io from "socket.io-client"
 
 export default function socketMiddleware() {
-  const socket = io("http://localhost:4200", {
-    // transports: ["polling"],
-    // transports: ["websocket"],
-    // transports: ["websock  et", "polling"],
-  })
+  const socket = io(
+    "http://" +
+      process.env.NEXT_PUBLIC_SOCKETSHOST +
+      ":" +
+      process.env.NEXT_PUBLIC_SOCKETSPORT,
+    {
+      // transports: ["polling"],
+      // transports: ["websocket"],
+      // transports: ["websock  et", "polling"],
+    }
+  )
 
   return (store) => (next) => (action) => {
     if (typeof action === "function") {

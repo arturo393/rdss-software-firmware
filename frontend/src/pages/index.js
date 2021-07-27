@@ -45,12 +45,22 @@ const Home = (props) => {
 }
 export async function getServerSideProps(context) {
   const dbConfig = await axios
-    .get("http://localhost:3000/api/manage/config")
+    .get(
+      "http://" +
+        process.env.NEXT_PUBLIC_APIHOST +
+        ":" +
+        process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/manage/config"
+    )
     .then((res) => {
       return res.data[0]
     })
   const dbDevices = await axios
-    .get("http://localhost:3000/api/devices/devices")
+    .get(
+      "http://" +
+        process.env.NEXT_PUBLIC_APIHOST +
+        ":" +
+        process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/devices/devices"
+    )
     .then((res) => {
       return res.data
     })

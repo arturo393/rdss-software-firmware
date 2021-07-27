@@ -8,10 +8,17 @@ const Rtdata = (props) => {
   const [device, setDevice] = useState(0)
 
   useEffect(() => {
-    axios.get("http://localhost:3000/api/devices/devices").then((res) => {
-      const devices = res.data
-      setDevices(devices)
-    })
+    axios
+      .get(
+        "http://" +
+          process.env.NEXT_PUBLIC_APIHOST +
+          ":" +
+          process.env.NEXT_PUBLIC_APIPORT || 80 + "/api/devices/devices"
+      )
+      .then((res) => {
+        const devices = res.data
+        setDevices(devices)
+      })
   }, [])
 
   const setSelectedDevice = (e) => {
