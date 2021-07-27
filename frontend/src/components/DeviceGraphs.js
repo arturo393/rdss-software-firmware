@@ -8,7 +8,7 @@ import { convertISODateToTimeFormat, initConfig, setGraficoData, addGraficoData,
 //import RtChart from "../components/common/RtChart"
 import zoomPlugin from "chartjs-plugin-zoom"
 Chart.register(zoomPlugin) // REGISTER PLUGIN
-// Chart.register(zoomPlugin) // REGISTER PLUGIN
+
 const DeviceGraphs = (props) => {
 
 
@@ -80,25 +80,15 @@ const DeviceGraphs = (props) => {
         }
       })
 
-      /*INICIO DUMMY */
-      const rtData = {
-        voltaje: 12,
-        current: 50,
-        gupl: 23,
-        gdwl: 70,
-        power: 100,
-        sampleTime: "2021-07-27 14:29:22"
+      if(monitorData.rtData != undefined ) {
+        setVoltaje(dataDevice.rtData.voltaje)
+        setPower(dataDevice.rtData.power)
+        setCurrent(dataDevice.rtData.current)
+
+        setGraficoVoltaje(addGraficoData({ ...graficoVoltaje },dataDevice.rtData.sampleTime,dataDevice.rtData.voltaje))
+        setGraficoCurrent(addGraficoData({ ...graficoCurrent },dataDevice.rtData.sampleTime,dataDevice.rtData.current))
+        setGraficoPower(addGraficoData({ ...graficoPower },dataDevice.rtData.sampleTime,dataDevice.rtData.power))
       }
-      dataDevice.rtData = rtData
-      /*FIN  DUMMY */
-      setVoltaje(dataDevice.rtData.voltaje)
-      setPower(dataDevice.rtData.power)
-      setCurrent(dataDevice.rtData.current)
-
-      setGraficoVoltaje(addGraficoData({ ...graficoVoltaje },dataDevice.rtData.sampleTime,dataDevice.rtData.voltaje))
-      setGraficoCurrent(addGraficoData({ ...graficoCurrent },dataDevice.rtData.sampleTime,dataDevice.rtData.current))
-      setGraficoPower(addGraficoData({ ...graficoPower },dataDevice.rtData.sampleTime,dataDevice.rtData.power))
-
     }
   }, [monitorData])
 
