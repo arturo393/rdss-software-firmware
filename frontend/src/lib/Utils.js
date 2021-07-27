@@ -40,3 +40,32 @@ export function convertISODateToTimeFormat(ISODate) {
     }
     return objectConfigGraph
   }
+
+  export function initOptions(text) {
+    let initialOptions = {
+      title: {
+        display: true,
+        text: text,
+        fontSize: 20
+      },
+      legend: {
+        display: true,
+        position: 'right'
+      },
+      plugins: {
+        zoom: {
+          zoom: {
+            wheel: {
+              enabled: true,
+            },
+            pinch: {
+              enabled: true
+            },
+            mode: 'xy',
+          }
+        }
+      }
+    };
+    return initialOptions
+  }
+ 

@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react"
 import axios from "axios"
-//import hammer from 'hammerjs'
-import {Chart, Line } from 'react-chartjs-2'
+import hammer from 'hammerjs'
+import {Chart, Line, Bar } from 'react-chartjs-2'
 import * as Zoom from "chartjs-plugin-zoom";
 import { connect } from "react-redux"
 import { Button } from 'react-bootstrap'
-import { convertISODateToTimeFormat, initConfig, setGraficoData, addGraficoData} from '../lib/Utils'
+import { convertISODateToTimeFormat, initConfig, setGraficoData, addGraficoData, initOptions} from '../lib/Utils'
 
 const DeviceGraphs = (props) => {
 
   const { deviceId, monitorData } = props
+  const [voltaje, setVoltaje] = useState()
+  const [power, setPower] = useState()
+  const [current, setCurrent] = useState()
+
   const [device, setDevice] = useState({})
   const [graficoVoltaje, setGraficoVoltaje] = useState(initConfig('rgba(75,192,192,1)','rgba(0,0,0,1)', 'Voltaje'))
   const [graficoCurrent, setGraficoCurrent] = useState(initConfig('rgba(75,192,192,1)','rgba(0,0,0,1)', 'Current'))
@@ -17,13 +21,18 @@ const DeviceGraphs = (props) => {
 
 
   useEffect(() => {
-    //Chart.register(Zoom);
+
+    Chart.register(Zoom);
   }, []);
 
  /* Actualizacion por BD*/
   useEffect(() => {
 
     if (deviceId > 0) {
+      setVoltaje(0)
+      setPower(0)
+      setCurrent(0)
+
       let device = {}
       axios.get("http://localhost:3000/api/devices/devices").then((res) => {
         device = res.data.find(data => data.id == deviceId)
@@ -79,6 +88,9 @@ const DeviceGraphs = (props) => {
       }
       dataDevice.rtData = rtData
       /*FIN  DUMMY */
+      setVoltaje(dataDevice.rtData.voltaje)
+      setPower(dataDevice.rtData.power)
+      setCurrent(dataDevice.rtData.current)
 
       setGraficoVoltaje(addGraficoData({ ...graficoVoltaje },dataDevice.rtData.sampleTime,dataDevice.rtData.voltaje))
       setGraficoCurrent(addGraficoData({ ...graficoCurrent },dataDevice.rtData.sampleTime,dataDevice.rtData.current))
@@ -91,6 +103,7 @@ const DeviceGraphs = (props) => {
   const Filtro = (dias) => {
 
     if (deviceId > 0) {
+
       let device = {}
       var date = new Date()
       date.setDate(date.getDate() - dias)
@@ -129,84 +142,20 @@ const DeviceGraphs = (props) => {
 
   return (
     <>
-      Estos son los gráficos del device ID: {deviceId}
       {deviceId > 0 && (
+        
         <div>
-          <Button variant="primary" type="button" id='dia' onClick={() => Filtro(1)}>Dia</Button>
-          <Button variant="primary" type="button" id='mes' onClick={() => Filtro(30)}>Mes</Button>
-          <Button variant="primary" type="button" id='ano' onClick={() => Filtro(365)}>Año</Button>
-          <h5>Gráfico de Voltaje</h5>
-          <Line
-            data={graficoVoltaje}
-            options={{
-              title: {
-                display: true,
-                text: 'Voltaje',
-                fontSize: 20
-              },
-              legend: {
-                display: true,
-                position: 'right'
-              },
-              plugins: {
-                zoom: {
-                  limits: {
-                    y: { min: 0, max: 100 },
-                    y2: { min: -5, max: 5 }
-                  },
-                }
-              }
 
-            }}
-          />
-          <h5>Grafico de Power</h5>
-          <Line
-            data={graficoPower}
-            options={{
-              title: {
-                display: true,
-                text: 'Power',
-                fontSize: 20
-              },
-              legend: {
-                display: true,
-                position: 'right'
-              },
-              plugins: {
-                zoom: {
-                  limits: {
-                    y: { min: 0, max: 100 },
-                    y2: { min: -5, max: 5 }
-                  },
-                }
-              }
-
-            }}
-          />
-          <h5>Grafico de Current</h5>
-          <Line
-            data={graficoCurrent}
-            options={{
-              title: {
-                display: true,
-                text: 'Current',
-                fontSize: 20
-              },
-              legend: {
-                display: true,
-                position: 'right'
-              },
-              plugins: {
-                zoom: {
-                  limits: {
-                    y: { min: 0, max: 100 },
-                    y2: { min: -5, max: 5 }
-                  },
-                }
-              }
-
-            }}
-          />          
+          <Button  className="col-md-4 text-center" variant="primary" type="button" id='dia' onClick={() => Filtro(1)}>Dia</Button>
+          <Button  className="col-md-4 text-center  btn btn-info" variant="primary" type="button" id='mes' onClick={() => Filtro(30)}>Mes</Button>
+          <Button  className="col-md-4 text-center btn btn-secondary" variant="primary" type="button" id='ano' onClick={() => Filtro(365)}>Año</Button>
+          
+          <h5>Voltaje: {voltaje > 0 ? voltaje : 'Esperando señal' } [V]  </h5>
+          <Line data={graficoVoltaje} options={initOptions('Voltaje')} />
+          <h5>Power: {power > 0 ? power : 'Esperando señal' } [A]  </h5>
+          <Line data={graficoPower} options={initOptions('Power')}/>
+          <h5>Current : {current > 0 ? current : 'Esperando señal' } [U]  </h5>
+          <Line data={graficoCurrent} options={initOptions('Current')}/>    
         </div>
       )}
     </>
