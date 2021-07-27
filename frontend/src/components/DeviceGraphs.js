@@ -10,8 +10,6 @@ import { convertISODateToTimeFormat, initConfig, setGraficoData, addGraficoData,
 
 const DeviceGraphs = (props) => {
 
-  
-
 
   const { deviceId, monitorData } = props
   const [voltaje, setVoltaje] = useState()
