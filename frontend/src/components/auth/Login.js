@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react"
 import { Form, Button, Container, Card, Row, Col } from "react-bootstrap"
-import imgLoginForm from "../../images/login_sigma.png"
 import { connect } from "react-redux"
 import { login } from "../../redux/actions/auth/user"
 
@@ -26,7 +25,7 @@ const Login = (props) => {
           <div className="card-body ">
             <Row>
               <Col md={4}>
-                <img src={imgLoginForm.src} alt="" width="100%" />
+                <img src="/images/login_sigma.png" alt="" width="100%" />
               </Col>
               <Col md={1}></Col>
               <Col md={6}>

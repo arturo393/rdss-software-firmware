@@ -27,7 +27,7 @@ const Footer = ({ url }) => {
                   <a href="mailto:info@sigma-telecom.com">info@sigma-telecom.com</a>
                 </div>
                 <div className="col-md-3 text-center">
-                  <img src={ImgUrl.src} alt="" width="100px" />
+                  <img src="/images/Url.png" alt="" width="100px" />
                 </div>
                 <div className="col-md-3 text-center">
                   <label>Find Us</label>
