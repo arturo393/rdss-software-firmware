@@ -14,8 +14,6 @@ const Header = (props) => {
     if (isLoggedIn) setActiveComponent("alerts")
   }, [isLoggedIn])
 
-  console.log(user?.data)
-
   return (
     <Navbar
       collapseOnSelect
