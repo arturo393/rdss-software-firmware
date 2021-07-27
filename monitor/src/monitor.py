@@ -69,7 +69,7 @@ def getConfigParams():
     try:
         collection_name = database["config"]
         config = collection_name.find(
-            {}, {"_id": 0}).limit(1)
+            {}, {"_id": 0, "image": 0}).limit(1)
     except Exception as e:
         logging.exception(e)
     return config
@@ -146,17 +146,19 @@ def evaluateAlerts(response):
     Check if the data collected is within the parameters configured in the DB
     """
     alerts = {}
-    params = getConfigParams()[0]
 
-    if (response["voltage"] < params["minVoltage"]) or (response["voltage"] > params["maxVoltage"]):
+    params = getConfigParams()[0]
+    reponse = json.dumps(response, default=defaultJSONconverter)
+
+    if (response["voltage"] < float(params["minVoltage"])) or (response["voltage"] > float(params["maxVoltage"])):
         alerts["voltage"] = True
-    if (response["current"] < params["minCurrent"]) or (response["current"] > params["maxCurrent"]):
+    if (response["current"] < float(params["minCurrent"])) or (response["current"] > float(params["maxCurrent"])):
         alerts["current"] = True
-    if (response["gupl"] < params["minUplink"]) or (response["gupl"] > params["maxUplink"]):
+    if (response["gupl"] < float(params["minUplink"])) or (response["gupl"] > float(params["maxUplink"])):
         alerts["gupl"] = True
-    if (response["gdwl"] < params["minDownlink"]) or (response["gdwl"] > params["maxDownlink"]):
+    if (response["gdwl"] < float(params["minDownlink"])) or (response["gdwl"] > float(params["maxDownlink"])):
         alerts["gdwl"] = True
-    if (response["power"] < params["minPower"]) or (response["power"] > params["maxPower"]):
+    if (response["power"] < float(params["minDownlinkOut"])) or (response["power"] > float(params["maxDownlinkOut"])):
         alerts["power"] = True
     return alerts
 
@@ -169,7 +171,7 @@ def sendCmd(ser, cmd, createdevice):
     """
 
     haveData = False
-    deviceData = {}
+    finalData = {}
 
     # return({
     #     "voltage": 12,
@@ -221,8 +223,6 @@ def sendCmd(ser, cmd, createdevice):
         )):
             return False
         # ------------------------
-
-        haveData = True
 
         data = list()
 
@@ -291,7 +291,11 @@ def sendCmd(ser, cmd, createdevice):
         ser.flushInput()
         ser.flushOutput()
 
-        deviceData = {
+        SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
+
+        finalData = {
+            "sampleTime": timeNow,
             "voltage": tranformData[0],
             "current": tranformData[3],
             "gupl": solutionAgcUpl,
@@ -299,13 +303,12 @@ def sendCmd(ser, cmd, createdevice):
             "power": tranformData[7]
         }
 
-        return(json.dumps(deviceData))
-        # return haveData
+        return(json.dumps(finalData))
 
     except Exception as e:
         logging.error(e)
 
-    return deviceData
+    return finalData
 
 
 def sendStatusToFrontEnd(rtData):
@@ -364,7 +367,6 @@ def run_monitor():
                 connectedDevices += 1
                 deviceData["connected"] = True
                 deviceData["rtData"] = response
-                deviceData["rtData"]["sampleTime"] = timeNow
                 deviceData["alerts"] = evaluateAlerts(response)
 
                 updateDeviceConnectionStatus(device, True)
@@ -401,3 +403,4 @@ eventlet.spawn(listen)
 
 if __name__ == '__main__':
     socket.run(app, host='0.0.0.0', port=4200)
+
