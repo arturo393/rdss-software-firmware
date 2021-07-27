@@ -35,7 +35,7 @@ const Users = (props) => {
       name: e.target.name.value,
       email: e.target.email.value,
       password: e.target.password.value,
-      admin: e.target.admin.checked,
+      rol: e.target.rol.value,
     }
 
     let obj = users.find((o) => o.email === e.target.email.value)
@@ -97,7 +97,7 @@ const Users = (props) => {
     document.getElementById("email").value = obj.email
     document.getElementById("email").readOnly = true
     document.getElementById("password").required = false
-    document.getElementById("admin").checked = obj.admin
+    document.getElementById("rol").value = obj.rol
     showForm()
   }
 
@@ -113,6 +113,7 @@ const Users = (props) => {
     document.getElementById("email").value = ""
     document.getElementById("email").readOnly = false
     document.getElementById("password").value = ""
+    document.getElementById("rol").value = "user"
   }
 
   return (
@@ -198,17 +199,13 @@ const Users = (props) => {
               </div>
 
               <div className="col-md-12">
-                <div class="form-check">
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    value=""
-                    id="admin"
-                  />
-                  <label class="form-check-label" for="flexCheckDefault">
-                    Is Administrator
-                  </label>
-                </div>
+                <select class="form-select" aria-label="rol" id="rol">
+                  <option value="user" selected>
+                    Normal User
+                  </option>
+                  <option value="admin">Network Administrator</option>
+                  <option value="sadmin">Super Administrator</option>
+                </select>
               </div>
             </div>
           </div>

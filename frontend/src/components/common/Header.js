@@ -14,118 +14,87 @@ const Header = (props) => {
     if (isLoggedIn) setActiveComponent("alerts")
   }, [isLoggedIn])
 
-  if (isLoggedIn) {
-    return (
-      <Navbar
-        collapseOnSelect
-        expand="lg"
-        className="navbar navbar-expand-lg  sticky-top   custom-navbar"
-        variant="dark"
-      >
-        <div className="container-fluid">
-          <a className="navbar-brand">
-            <img
-              src={LogoSigma.src}
-              alt="Sigma Telecom"
-              height="37px"
-              width="160px"
-            />
-          </a>
-          <Navbar.Toggle aria-controls="responsive-navbar-nav" />
+  console.log(user?.data)
 
-          <Navbar.Collapse
-            id="responsive-navbar-nav"
-            className="collapse navbar-collapse"
-          >
-            <Nav className="mr-auto">
-              <a className="nav-link" onClick={() => setActiveComponent("alerts")}>
-                Alerts
-              </a>
-              <a className="nav-link" onClick={() => setActiveComponent("rtdata")}>
-                RT-Data
-              </a>
+  return (
+    <Navbar
+      collapseOnSelect
+      expand="lg"
+      className="navbar navbar-expand-lg  sticky-top   custom-navbar"
+      variant="dark"
+    >
+      <div className="container-fluid">
+        <a className="navbar-brand">
+          <img src={LogoSigma.src} alt="Sigma Telecom" height="37px" width="160px" />
+        </a>
+        <Navbar.Toggle aria-controls="responsive-navbar-nav" />
 
+        <Navbar.Collapse
+          id="responsive-navbar-nav"
+          className="collapse navbar-collapse"
+        >
+          <Nav className="mr-auto">
+            {isLoggedIn && (
+              <>
+                <a className="nav-link" onClick={() => setActiveComponent("alerts")}>
+                  Alerts
+                </a>
+                <a className="nav-link" onClick={() => setActiveComponent("rtdata")}>
+                  RT-Data
+                </a>
+              </>
+            )}
+
+            {user && (user.data?.rol === "admin" || user.data?.rol === "sadmin") && (
               <NavDropdown title="Manage" id="collasible-nav-dropdown">
-                <a
-                  className="dropdown-item"
-                  onClick={() => setActiveComponent("rolesadmin")}
-                >
-                  Roles
-                </a>
-                <a
-                  className="dropdown-item"
-                  onClick={() => setActiveComponent("usersadmin")}
-                >
-                  Users
-                </a>
-                <a
-                  className="dropdown-item"
-                  onClick={() => setActiveComponent("diagramedit")}
-                >
-                  Diagram Edit
-                </a>
-                <a
-                  className="dropdown-item"
-                  onClick={() => setActiveComponent("networkParameters")}
-                >
-                  Network Parameters
-                </a>
+                {user && user.data?.rol === "sadmin" && (
+                  <a
+                    className="dropdown-item"
+                    onClick={() => setActiveComponent("usersadmin")}
+                  >
+                    Users
+                  </a>
+                )}
+
+                <>
+                  <a
+                    className="dropdown-item"
+                    onClick={() => setActiveComponent("diagramedit")}
+                  >
+                    Diagram Edit
+                  </a>
+                  <a
+                    className="dropdown-item"
+                    onClick={() => setActiveComponent("networkParameters")}
+                  >
+                    Network Parameters
+                  </a>
+                </>
               </NavDropdown>
-            </Nav>
-          </Navbar.Collapse>
+            )}
+          </Nav>
+        </Navbar.Collapse>
+        {isLoggedIn && (
           <Nav className="ml-auto">
             <a className="nav-link">
-              {user.data.name} ({user.data.rol})
+              {user.data?.name} ({user.data?.rol})
             </a>
+
             <a className="nav-link btn sigmaDarkBg" onClick={() => logout()}>
               Logout
             </a>
           </Nav>
-
-          {/* <Nav>
+        )}
+        {!isLoggedIn && (
+          <Nav>
             <a className="nav-link" onClick={() => setActiveComponent("login")}>
               Login
             </a>
-          </Nav> */}
-        </div>
-      </Navbar>
-    )
-  } else {
-    return (
-      <Navbar
-        collapseOnSelect
-        expand="lg"
-        className="navbar navbar-expand-lg  sticky-top   custom-navbar"
-        variant="dark"
-      >
-        <div className="container-fluid">
-          <a className="navbar-brand">
-            <img
-              src={LogoSigma.src}
-              alt="Sigma Telecom"
-              height="37px"
-              width="160px"
-            />
-          </a>
-          <Navbar.Toggle aria-controls="responsive-navbar-nav" />
-
-          <Navbar.Collapse
-            id="responsive-navbar-nav"
-            className="collapse navbar-collapse"
-          ></Navbar.Collapse>
-
-          <Nav>
-            <a
-              className="nav-link btn sigmaDarkBg"
-              onClick={() => setActiveComponent("login")}
-            >
-              Login
-            </a>
           </Nav>
-        </div>
-      </Navbar>
-    )
-  }
+        )}
+      </div>
+    </Navbar>
+  )
 }
 
 const mapStateToProps = (state) => {
