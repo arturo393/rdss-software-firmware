@@ -14,17 +14,15 @@ let a_agcdown
 let a_ptx
 
 const Alerts = (props) => {
-  const [state, setState] = useState({
-    alerts: [],
-  })
-  const { setMonitorDataEvent } = props
+  const [alerts, setAlerts] = useState([])
+  const { monitorData } = props
 
   useEffect(() => {
-    setMonitorDataEvent()
-    let alerts = []
-    setState({ alerts })
-    props.monitorData?.map((monitor) => {
+    let currentAlerts = []
+
+    monitorData?.map((monitor) => {
       const data = JSON.parse(monitor)
+
       if (data.connected) {
         a_connected = green.src
         a_voltage = data.alerts.voltage ? green.src : red.src
@@ -32,21 +30,6 @@ const Alerts = (props) => {
         a_agcup = data.alerts.gupl ? green.src : red.src
         a_agcdown = data.alerts.guwl ? green.src : red.src
         a_ptx = data.alerts.power ? green.src : red.src
-
-        setState((prevState) => ({
-          alerts: [
-            ...prevState.alerts,
-            {
-              id: data.id,
-              connected: a_connected,
-              voltage: a_voltage,
-              current: a_current,
-              gupl: a_agcup,
-              guwl: a_agcdown,
-              power: a_ptx,
-            },
-          ],
-        }))
       } else {
         a_connected = red.src
         a_voltage = gray.src
@@ -54,27 +37,21 @@ const Alerts = (props) => {
         a_agcup = gray.src
         a_agcdown = gray.src
         a_ptx = gray.src
-
-        setState((prevState) => ({
-          alerts: [
-            ...prevState.alerts,
-            {
-              id: data.id,
-              connected: a_connected,
-              voltage: a_voltage,
-              current: a_current,
-              gupl: a_agcup,
-              guwl: a_agcdown,
-              power: a_ptx,
-            },
-          ],
-        }))
       }
-    })
-    // console.log("estado alertas: ", state)
-  }, [props.monitorData])
 
-  // console.log("props Pelotitas: ", props)
+      const device = {
+        id: data.id,
+        connected: a_connected,
+        voltage: a_voltage,
+        current: a_current,
+        gupl: a_agcup,
+        guwl: a_agcdown,
+        power: a_ptx,
+      }
+      currentAlerts.push(device)
+    })
+    setAlerts(currentAlerts)
+  }, [monitorData])
 
   return (
     <div className="containers">
@@ -97,7 +74,7 @@ const Alerts = (props) => {
               </tr>
             </thead>
             <tbody>
-              {state.alerts?.map((data) => {
+              {alerts?.map((data) => {
                 return (
                   <tr>
                     <td>{data.id}</td>
@@ -137,8 +114,4 @@ const mapStateToProps = (state) => {
   }
 }
 
-const mapDispatchToProps = {
-  setMonitorDataEvent,
-}
-
-export default connect(mapStateToProps, mapDispatchToProps)(Alerts)
+export default connect(mapStateToProps)(Alerts)

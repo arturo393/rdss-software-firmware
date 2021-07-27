@@ -30,9 +30,10 @@ const Status = (props) => {
     monitorData?.map((monitor) => {
       const data = JSON.parse(monitor)
       data.connected ? connected++ : alerted++
-      if (data.connected && data.alerts != undefined && data.alerts.length > 0) {
+      if (data.connected && data.alerts != undefined) {
         alerted++
       }
+
       setStatus({
         connected: connected,
         network: monitorData.length,
