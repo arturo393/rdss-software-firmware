@@ -1,7 +1,7 @@
 import { useEffect } from "react"
 import { Navbar, Nav, NavDropdown } from "react-bootstrap"
 import NextLink from "next/link"
-import LogoSigma from "../../images/logoSigma.png"
+// import LogoSigma from "../../images/logoSigma.png"
 
 import { connect } from "react-redux"
 import { setActiveComponent } from "../../redux/actions/main"
@@ -23,7 +23,12 @@ const Header = (props) => {
     >
       <div className="container-fluid">
         <a className="navbar-brand">
-          <img src={LogoSigma.src} alt="Sigma Telecom" height="37px" width="160px" />
+          <img
+            src="/images/logoSigma.png"
+            alt="Sigma Telecom"
+            height="37px"
+            width="160px"
+          />
         </a>
         <Navbar.Toggle aria-controls="responsive-navbar-nav" />
 

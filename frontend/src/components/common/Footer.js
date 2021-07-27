@@ -1,6 +1,6 @@
 import React from "react"
 import { Navbar, NavDropdown, Nav } from "react-bootstrap"
-import ImgUrl from "../../images/Url.png"
+// import ImgUrl from "../../images/Url.png"
 import NextLink from "next/link"
 
 const Footer = ({ url }) => {
