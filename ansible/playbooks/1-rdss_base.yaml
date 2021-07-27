@@ -6,6 +6,10 @@
   vars_files:
     - ../vars.yaml
   tasks:  
+  - name: Clean artifact path
+    file:
+      state: absent
+      path: /tmp/rdss2
   - name: "Cloning RDSSv2 repo"
     git:
       repo: https://{{gitlabuser | urlencode}}:{{gitlabpassword | urlencode}}@gitlab.com/itaum/rdss2.git
