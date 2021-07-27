@@ -31,7 +31,7 @@ const DiagramEdit = () => {
         onHide={handleClose}
         dialogClassName="sigma-modal"
       >
-        <Modal.Header>
+        <Modal.Header className="sigmaDarkBg">
           <Modal.Title>Diagram Edit</Modal.Title>
           <div>
             <button className="btn btn-secondary" onClick={handleClose}>

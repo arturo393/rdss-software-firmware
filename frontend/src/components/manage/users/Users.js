@@ -141,7 +141,7 @@ const Users = (props) => {
                         Edit
                       </button>
                       <button
-                        className="btn btn-warning btn-sm"
+                        className="btn btn-danger btn-sm"
                         type="button"
                         onClick={handleDelete}
                         id={user._id}
@@ -154,9 +154,13 @@ const Users = (props) => {
               </tbody>
             </table>
           </div>
-          <button className="btn btn-primary" type="button" onClick={showForm}>
-            Create New User
-          </button>
+          <div class="row">
+            <div class="col text-center">
+              <button className="btn btn-primary" type="button" onClick={showForm}>
+                Create New User
+              </button>
+            </div>
+          </div>
         </div>
         <form onSubmit={handleSubmit} id="userForm">
           <div className="container-fluid">
@@ -208,21 +212,22 @@ const Users = (props) => {
                 </select>
               </div>
             </div>
-          </div>
-
-          <div className="row">
-            <div className="col-md-12 text-center">
-              <div className="btn-group" role="group">
-                <button
-                  className="btn btn-secondary"
-                  type="button"
-                  onClick={closeForm}
-                >
-                  Cancel
-                </button>
-                <button className="btn btn-primary" type="submit">
-                  Save User Data
-                </button>
+            <div class="container">
+              <div class="row">
+                <div class="col text-center">
+                  <button
+                    className="btn btn-secondary"
+                    type="button"
+                    onClick={closeForm}
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <div class="col text-center">
+                  <button className="btn btn-primary" type="submit">
+                    Save
+                  </button>
+                </div>
               </div>
             </div>
           </div>

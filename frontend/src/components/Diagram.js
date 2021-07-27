@@ -213,29 +213,43 @@ const Diagram = (props) => {
   return (
     <>
       <div className="container-fluid">
-        <div className="row">
-          <div className="col-md-12  text-center">
-            <div className="form-floating input-group mb-3">
-              <select className="form-control" id="device" onChange={onChangeVlad}>
-                <option value={0}>=== Select a device ===</option>
-                {devices.map((device) => {
-                  return (
-                    <option value={device.id}>
-                      {device.type}
-                      {device.id}
-                    </option>
-                  )
-                })}
-              </select>
-              <label for="device">Device</label>
-              <Button className="btn btn-primary" type="button" onClick={onClickAdd}>
-                Add
-              </Button>
-              <Button className="btn btn-danger" type="button" onClick={onClickDel}>
-                Del
-              </Button>
+        <div class="row">
+          <div class="col-2"></div>
+          <div class="col-7">
+            <div className="card-body text-center">
+              <div class="input-group mb-3">
+                <span class="input-group-text" id="device-label">
+                  Device
+                </span>
+                <select className="form-control" id="device" onChange={onChangeVlad}>
+                  <option value={0}>=== Select a Device ===</option>
+                  {devices.map((device) => {
+                    return (
+                      <option value={device.id}>
+                        {device.type}
+                        {device.id}
+                      </option>
+                    )
+                  })}
+                </select>
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={onClickAdd}
+                >
+                  Add
+                </button>
+                <button
+                  className="btn btn-danger"
+                  type="button"
+                  onClick={onClickDel}
+                >
+                  Del
+                </button>
+              </div>
             </div>
           </div>
+          <div class="col-2"></div>
         </div>
       </div>
       <Container>

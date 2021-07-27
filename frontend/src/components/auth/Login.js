@@ -20,41 +20,44 @@ const Login = (props) => {
   }
 
   return (
-    <div className="containers">
-      <div class="card h-100">
-        <div className="card-body">
-          <Row>
-            <Col md={4}>
-              <img src={imgLoginForm.src} alt="" width="100%" />
-            </Col>
-            <Col md={8}>
-              <Form onSubmit={handleLoginSubmit}>
-                <Form.Group controlId="email">
-                  <Form.Label>Email address</Form.Label>
-                  <Form.Control type="email" placeholder="Enter email" />
-                  <Form.Text className="text-muted">
-                    We'll never share your email with anyone else.
-                  </Form.Text>
-                </Form.Group>
+    <>
+      <div className="container">
+        <div class="card h-100 ">
+          <div className="card-body ">
+            <Row>
+              <Col md={4}>
+                <img src={imgLoginForm.src} alt="" width="100%" />
+              </Col>
+              <Col md={1}></Col>
+              <Col md={6}>
+                <Form onSubmit={handleLoginSubmit}>
+                  <Form.Group controlId="email">
+                    <Form.Label>Email address</Form.Label>
+                    <Form.Control type="email" placeholder="Enter email" />
+                    <Form.Text className="text-muted">
+                      We'll never share your email with anyone else.
+                    </Form.Text>
+                  </Form.Group>
 
-                <Form.Group controlId="password">
-                  <Form.Label>Password</Form.Label>
-                  <Form.Control type="password" placeholder="Password" />
-                </Form.Group>
-                {/* <Form.Group controlId="formBasicCheckbox">
+                  <Form.Group controlId="password">
+                    <Form.Label>Password</Form.Label>
+                    <Form.Control type="password" placeholder="Password" />
+                  </Form.Group>
+                  {/* <Form.Group controlId="formBasicCheckbox">
                   <Form.Check type="checkbox" label="Check me out" />
                 </Form.Group> */}
-                <div className="row mt-5">
-                  <Button variant="primary" type="submit">
-                    Login
-                  </Button>
-                </div>
-              </Form>
-            </Col>
-          </Row>
+                  <div className="row mt-5">
+                    <Button variant="primary" type="submit">
+                      Login
+                    </Button>
+                  </div>
+                </Form>
+              </Col>
+            </Row>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 

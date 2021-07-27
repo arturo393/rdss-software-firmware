@@ -250,18 +250,22 @@ const NetworkForm = (props) => {
                 </div>
               </div>
               <div className="row">
-                <div className="col-md-12 text-center">
-                  <div className="btn-group" role="group">
-                    <button
-                      className="btn btn-secondary"
-                      type="button"
-                      onClick={restoreConfig}
-                    >
-                      Cancel
-                    </button>
-                    <button className="btn btn-primary" type="submit">
-                      Update Config
-                    </button>
+                <div class="container">
+                  <div class="row">
+                    <div class="col text-center">
+                      <button
+                        className="btn btn-secondary"
+                        type="button"
+                        onClick={restoreConfig}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    <div class="col text-center">
+                      <button className="btn btn-primary" type="submit">
+                        Update
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

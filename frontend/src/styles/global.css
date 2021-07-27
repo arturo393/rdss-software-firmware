@@ -74,3 +74,14 @@
     max-width: 50vw;
   }
 }
+
+.btn-primary {
+  background-color: #006486;
+}
+.btn-primary:hover {
+  background-color: #006486;
+}
+
+.btn-seconday {
+  background-color: #636463;
+}
