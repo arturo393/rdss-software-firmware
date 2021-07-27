@@ -36,7 +36,7 @@ export const login = (loginDetails) => {
         "http://localhost:3000/api/auth/postLogin",
         loginDetails
       )
-      if (result.data.name === loginDetails.email)
+      if (result.data.email === loginDetails.email)
         dispatch(authenticateAction(result))
     } catch (e) {
       dispatch(deAuthenticateAction())

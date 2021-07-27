@@ -7,7 +7,7 @@ import DiagramEdit from "./DiagramEdit"
 import NetworkParameters from "./NetworkParameters"
 
 import Login from "./auth/Login"
-import Register from "./auth/Register"
+import UsersAdmin from "./manage/users/Users"
 
 const DynamicComponent = (props) => {
   const { activeComponent } = props
@@ -18,7 +18,7 @@ const DynamicComponent = (props) => {
     diagramedit: DiagramEdit,
     networkParameters: NetworkParameters,
     login: Login,
-    register: Register,
+    usersadmin: UsersAdmin,
   }
   const SelectComponent = components[activeComponent ? activeComponent : "alerts"]
   return <SelectComponent />
