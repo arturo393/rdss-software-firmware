@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react"
 import axios from "axios"
-import hammer from 'hammerjs'
+import hammer from '../lib/hammer'
 import {Chart, Line, Bar } from 'react-chartjs-2'
 import * as Zoom from "chartjs-plugin-zoom";
 import { connect } from "react-redux"
 import { Button } from 'react-bootstrap'
 import { convertISODateToTimeFormat, initConfig, setGraficoData, addGraficoData, initOptions} from '../lib/Utils'
 
+
 const DeviceGraphs = (props) => {
+
+  
+
 
   const { deviceId, monitorData } = props
   const [voltaje, setVoltaje] = useState()
@@ -22,7 +26,7 @@ const DeviceGraphs = (props) => {
 
   useEffect(() => {
 
-    Chart.register(Zoom);
+
   }, []);
 
  /* Actualizacion por BD*/
