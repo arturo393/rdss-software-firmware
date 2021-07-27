@@ -13,6 +13,10 @@ db.users.insert({
   rolname: 'TestRol',
 });
 
+db.users.insert({
+  {"email":"sigmadev@sigma-telecom.com","name":"Sigma Dev","password":"Admin.123","rol":"sadmin"}
+})
+
 db.roles.insert({
   name: 'TestRol',
   users: [

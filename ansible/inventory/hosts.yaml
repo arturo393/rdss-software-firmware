@@ -2,4 +2,4 @@
 miniPCs:
   hosts:
     miniPC1:
-      ansible_host: 165.227.192.32
+      ansible_host: 192.168.60.78

@@ -1,6 +1,8 @@
 # RDSS Ansible miniPC installation
 
-## Dependencies
+## Local Dependencies
+
+Install sshpass àpt get install sshpass`
 
 Install ansible locally
 
@@ -31,6 +33,6 @@ miniPCs:
 
 Just execute:
 
-`ansible-playbook -K main.yaml`
+`ansible-playbook -K main.yaml --ask-pass`
 
 (will be prompted miniPC user sudo password)
