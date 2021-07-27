@@ -20,8 +20,8 @@
       dest: /etc/systemd/system
       owner: root
       group: root
-    notify:
-    - "Start monitor"
+    # notify:
+    # - "Start monitor"
   - name: "Start monitor"
     systemd:
       name: monitorRDSS
