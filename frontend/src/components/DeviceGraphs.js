@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react"
 import axios from "axios"
-import hammer from '../lib/hammer'
 import {Chart, Line, Bar } from 'react-chartjs-2'
-import * as Zoom from "chartjs-plugin-zoom";
+
 import { connect } from "react-redux"
 import { Button } from 'react-bootstrap'
 import { convertISODateToTimeFormat, initConfig, setGraficoData, addGraficoData, initOptions} from '../lib/Utils'
-
-
+//import RtChart from "../components/common/RtChart"
+import zoomPlugin from "chartjs-plugin-zoom"
+Chart.register(zoomPlugin) // REGISTER PLUGIN
+// Chart.register(zoomPlugin) // REGISTER PLUGIN
 const DeviceGraphs = (props) => {
 
 
@@ -23,7 +24,7 @@ const DeviceGraphs = (props) => {
 
 
   useEffect(() => {
-
+  
 
   }, []);
 
@@ -152,12 +153,15 @@ const DeviceGraphs = (props) => {
           <Button  className="col-md-4 text-center  btn btn-info" variant="primary" type="button" id='mes' onClick={() => Filtro(30)}>Mes</Button>
           <Button  className="col-md-4 text-center btn btn-secondary" variant="primary" type="button" id='ano' onClick={() => Filtro(365)}>Año</Button>
           
+          {/* <RtChart title="hola" labels={graficoVoltaje.labels} datasets={graficoVoltaje.datasets} options={initOptions('Voltaje')} /> */}
+
           <h5>Voltaje: {voltaje > 0 ? voltaje : 'Esperando señal' } [V]  </h5>
           <Line data={graficoVoltaje} options={initOptions('Voltaje')} />
           <h5>Power: {power > 0 ? power : 'Esperando señal' } [A]  </h5>
           <Line data={graficoPower} options={initOptions('Power')}/>
           <h5>Current : {current > 0 ? current : 'Esperando señal' } [U]  </h5>
           <Line data={graficoCurrent} options={initOptions('Current')}/>    
+          
         </div>
       )}
     </>

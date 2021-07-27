@@ -25,7 +25,7 @@ export function convertISODateToTimeFormat(ISODate) {
   
   export function initConfig(backgroundColor,borderColor, label) {
     let objectConfigGraph = {
-      labels: [],
+      labels: ["Hola", "Chao"],
       datasets: [
         {
           label: label,
@@ -34,7 +34,7 @@ export function convertISODateToTimeFormat(ISODate) {
           backgroundColor: backgroundColor,
           borderColor: borderColor,
           borderWidth: 2,
-          data: []
+          data: [1,2]
         }
       ]
     }
@@ -76,21 +76,23 @@ export function convertISODateToTimeFormat(ISODate) {
         display: true,
         position: 'right'
       },
-      
       plugins: {
         zoom: {
           zoom: {
             wheel: {
-              enabled: true,
+              enabled: true, // SET SCROOL ZOOM TO TRUE 
             },
-            pinch: {
-              enabled: true
-            },
-            mode: 'xy',
-          }
-        }
-      }
-    };
+            mode: "xy",
+            speed: 100,
+          },
+          pan: {
+            enabled: true,
+            mode: "xy",
+            speed: 100,
+          },
+        },
+      },
+    }
     return initialOptions
   }
  
