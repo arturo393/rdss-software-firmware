@@ -19,12 +19,12 @@
       state: present
   - name: Install mongo software
     apt: name=mongodb-org state=latest update_cache=yes
-  # - name: Start mongod service
-  #   service:
-  #    name: mongod
-  #    enabled: yes
-  #    state: started
-  #    daemon_reload: yes
-  #   with_sequence: start=0 end={{ansible_processor_cores-1}}
+  - name: Start mongod service
+    service:
+     name: mongod
+     enabled: yes
+     state: started
+     daemon_reload: yes
+    with_sequence: start=0 end={{ansible_processor_cores-1}}
 
   
