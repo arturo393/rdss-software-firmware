@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { Form, Button, Container, Card, Row, Col } from "react-bootstrap"
-import imgLoginForm from "../../images/Login_sigma.png"
+import imgLoginForm from "../../images/login_sigma.png"
 import { connect } from "react-redux"
 import { login } from "../../redux/actions/auth/user"
 
