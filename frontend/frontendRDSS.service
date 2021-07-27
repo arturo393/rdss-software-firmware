@@ -1,5 +1,5 @@
 [Unit]
-Description=RDSS WebApp Service
+Description=RDSS Frontend Service
 After=network.target
 StartLimitIntervalSec=0
 

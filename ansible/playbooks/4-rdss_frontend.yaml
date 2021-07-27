@@ -33,12 +33,12 @@
   - name: "Installing frontend system service"
     copy:
       remote_src: true
-      src: /tmp/rdss2/frontend/webappRDSS.service
+      src: /tmp/rdss2/frontend/frontendRDSS.service
       dest: /etc/systemd/system
       owner: root
       group: root
   - name: "Start frontend"
     systemd:
-      name: webappRDSS
+      name: frontendRDSS
       state: started
       enabled: yes
