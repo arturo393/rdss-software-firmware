@@ -20,7 +20,6 @@ const Home = (props) => {
   if (isLoggedIn) {
     return (
       <main className="container-fluid">
-        s{" "}
         <div className="col-md-12">
           <div className="row">
             <div className="col-md-7" id="myMap">
