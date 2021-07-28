@@ -12,7 +12,12 @@ export default function socketMiddleware() {
   //     // transports: ["websocket", "polling"],
   //   }
   // )
-  const socket = io("http://localhost:4200")
+  const socket = io(
+    "http://" +
+      process.env.NEXT_PUBLIC_SOCKETSHOST +
+      ":" +
+      process.env.NEXT_PUBLIC_SOCKETSPORT
+  )
 
   console.log("=== INICIANDO SOCKETS MIDDLEWARE ===")
   console.log(socket)
