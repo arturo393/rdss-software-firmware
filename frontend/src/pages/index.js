@@ -35,12 +35,12 @@ const Home = (props) => {
                 <Schema />
               </div>
             </div>
-            <div className="col-md-5">
+            <div className="col-md-5" id="myStatus">
               <div className="row">
                 <Status />
               </div>
               <div className="row">
-                <div className="col-md-12">
+                <div className="col-md-12" id="myAlerts">
                   <DynamicComponent activeComponent="alerts" />
                 </div>
               </div>

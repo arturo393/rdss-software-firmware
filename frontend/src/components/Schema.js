@@ -45,14 +45,22 @@ const Schema = (props) => {
       setImage(config.image)
     }
 
-    setWidth((window.innerWidth / 100) * 50)
-    setHeight(window.innerHeight / 1.65)
+    if (window.innerWidth > 600) {
+      setWidth((window.innerWidth / 100) * 55)
+    } else {
+      setWidth((window.innerWidth / 100) * 80)
+    }
+    setHeight(window.innerHeight)
   }, [])
 
-  // useEffect(() => {
-  //   setWidth((window.innerWidth / 100) * 50)
-  //   setHeight(window.innerHeight)
-  // }, [window])
+  useEffect(() => {
+    if (window.innerWidth > 600) {
+      setWidth((window.innerWidth / 100) * 55)
+    } else {
+      setWidth((window.innerWidth / 100) * 80)
+    }
+    setHeight(window.innerHeight)
+  }, [window])
 
   useEffect(() => {
     if (config.image) {
@@ -133,42 +141,46 @@ const Schema = (props) => {
 
   return (
     <div className="container-fluid">
-      <Stage
-        width={width}
-        height={height}
-        onWheel={handleWheel}
-        scaleX={scale}
-        scaleY={scale}
-        x={x}
-        y={y}
-        draggable
-        id="myStage"
-      >
-        <Layer>
-          <Image image={image} layout="fill" />
-          {squares.map((square) => {
-            return (
-              <Group>
-                <Text
-                  text={square.name}
-                  x={square.x + 20}
-                  y={square.y + 5}
-                  fill="#000000"
-                  stroke="#ffffff"
-                  fillAfterStrokeEnabled="true"
-                />
-                <Circle
-                  radius={10}
-                  x={square.x}
-                  y={square.y}
-                  fill={square.fill}
-                  id={square.id.toString()}
-                />
-              </Group>
-            )
-          })}
-        </Layer>
-      </Stage>
+      <div className="row">
+        <div className="col">
+          <Stage
+            width={width}
+            height={height}
+            onWheel={handleWheel}
+            scaleX={scale}
+            scaleY={scale}
+            x={x}
+            y={y}
+            draggable
+            id="myStage"
+          >
+            <Layer>
+              <Image image={image} layout="fill" />
+              {squares.map((square) => {
+                return (
+                  <Group>
+                    <Text
+                      text={square.name}
+                      x={square.x + 20}
+                      y={square.y + 5}
+                      fill="#000000"
+                      stroke="#ffffff"
+                      fillAfterStrokeEnabled="true"
+                    />
+                    <Circle
+                      radius={10}
+                      x={square.x}
+                      y={square.y}
+                      fill={square.fill}
+                      id={square.id.toString()}
+                    />
+                  </Group>
+                )
+              })}
+            </Layer>
+          </Stage>
+        </div>
+      </div>
     </div>
   )
 }

@@ -59,9 +59,22 @@
   box-shadow: 0 2px 4px 0 rgba(150, 150, 150, 0.5);
 }
 
-@media only screen and (max-width: 1026px) {
+.hidden {
+  display: none;
+}
+
+@media only screen and (min-width: 480px) {
+  #mapMenuItem {
+    display: none;
+  }
+}
+
+@media only screen and (max-width: 480px) {
   #myMap {
     display: none;
+  }
+  #mapMenuItem {
+    display: block;
   }
   .sigmaStatusBar {
     border-radius: 0 0 5px 5px;
