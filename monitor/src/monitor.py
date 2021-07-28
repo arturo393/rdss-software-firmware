@@ -141,14 +141,13 @@ def getChecksum(cmd):
     return checksum
 
 
-def evaluateAlerts(response):
+def c(response):
     """
     Check if the data collected is within the parameters configured in the DB
     """
     alerts = {}
 
     params = getConfigParams()[0]
-    # reponse = json.dumps(response, default=defaultJSONconverter)
 
     if (response["voltage"] < float(params["minVoltage"])) or (response["voltage"] > float(params["maxVoltage"])):
         alerts["voltage"] = True
@@ -303,7 +302,7 @@ def sendCmd(ser, cmd, createdevice):
             "power": tranformData[7]
         }
 
-        return(json.dumps(finalData, default=defaultJSONconverter))
+        return(finalData)
 
     except Exception as e:
         logging.error(e)
