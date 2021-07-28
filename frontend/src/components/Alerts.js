@@ -63,13 +63,27 @@ const Alerts = (props) => {
           <table className="table table-striped table-bordered table-light">
             <thead>
               <tr>
-                <th>Vlad ID</th>
-                <th>Connection</th>
-                <th>Voltage</th>
-                <th>Current</th>
-                <th>AGC Up</th>
-                <th>AGC Down</th>
-                <th>Ptx</th>
+                <th>
+                  <h6>ID</h6>
+                </th>
+                <th>
+                  <h6>Connection</h6>
+                </th>
+                <th>
+                  <h6>Voltage</h6>
+                </th>
+                <th>
+                  <h6>Current</h6>
+                </th>
+                <th>
+                  <h6>AGC Up</h6>
+                </th>
+                <th>
+                  <h6>AGC Down</h6>
+                </th>
+                <th>
+                  <h6>Ptx</h6>
+                </th>
               </tr>
             </thead>
             <tbody>
