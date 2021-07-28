@@ -23,6 +23,12 @@ export function convertISODateToTimeFormat(ISODate) {
     return state;
   }
   
+  export function setBorderColor(state,borderColor){
+    state.datasets[0].borderColor = borderColor
+    return state;
+  }
+  
+
   export function initConfig(backgroundColor,borderColor, label) {
     let objectConfigGraph = {
       labels: [],
