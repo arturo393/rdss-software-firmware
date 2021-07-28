@@ -67,7 +67,7 @@ const Schema = (props) => {
     monitorData.map((monitor) => {
       const data = JSON.parse(monitor)
       let fill = data.connected ? "green" : "red"
-      if (data.connected || data.alerts != undefined) {
+      if (data.connected && data.alerts != undefined) {
         fill = "yellow"
       }
 
