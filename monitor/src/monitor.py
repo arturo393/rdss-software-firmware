@@ -148,7 +148,7 @@ def evaluateAlerts(response):
     alerts = {}
 
     params = getConfigParams()[0]
-    reponse = json.dumps(response, default=defaultJSONconverter)
+    # reponse = json.dumps(response, default=defaultJSONconverter)
 
     if (response["voltage"] < float(params["minVoltage"])) or (response["voltage"] > float(params["maxVoltage"])):
         alerts["voltage"] = True
@@ -303,7 +303,7 @@ def sendCmd(ser, cmd, createdevice):
             "power": tranformData[7]
         }
 
-        return(json.dumps(finalData))
+        return(json.dumps(finalData, default=defaultJSONconverter))
 
     except Exception as e:
         logging.error(e)
@@ -316,8 +316,15 @@ def sendStatusToFrontEnd(rtData):
     Sends via SocketIO the real-time provisioned devices status
     This updates frontend interface
     """
-    socket.emit('set_rtdata_event', {"event": 'set_rtdata_event', "leave": False,
-                                     "handle": 'SET_RTDATA_EVENT', "data": rtData})
+    logging.debug("Emiting event...")
+    data = {
+        "event": 'set_rtdata_event',
+        "leave": False,
+        "handle": 'SET_MONITOR_DATA_EVENT',
+        "data": rtData
+    }
+    logging.debug(data)
+    socket.emit('set_rtdata_event', data)
 
 
 def defaultJSONconverter(o):
@@ -349,8 +356,8 @@ def run_monitor():
     rtData = []
     provisionedDevicesArr = getProvisionedDevices()
     connectedDevices = 0
-    SampleTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%d %H:%M:%S')
+    SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
     showBanner(provisionedDevicesArr, timeNow)
 
     if (len(provisionedDevicesArr) > 0):
@@ -403,4 +410,3 @@ eventlet.spawn(listen)
 
 if __name__ == '__main__':
     socket.run(app, host='0.0.0.0', port=4200)
-

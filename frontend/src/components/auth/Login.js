@@ -21,7 +21,7 @@ const Login = (props) => {
   return (
     <>
       <div className="container">
-        <div class="card h-100 ">
+        <div className="card h-100 ">
           <div className="card-body ">
             <Row>
               <Col md={4}>

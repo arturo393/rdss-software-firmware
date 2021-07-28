@@ -253,15 +253,15 @@ const NetworkForm = (props) => {
               </div>
               <div className="row">
                 <div className="col-md-12 text-center">
-                  <div class="alert alert-success" role="alert" id="status">
+                  <div className="alert alert-success" role="alert" id="status">
                     {status}
                   </div>
                 </div>
               </div>
               <div className="row">
-                <div class="container">
-                  <div class="row">
-                    <div class="col text-center">
+                <div className="container">
+                  <div className="row">
+                    <div className="col text-center">
                       <button
                         className="btn btn-secondary"
                         type="button"
@@ -270,7 +270,7 @@ const NetworkForm = (props) => {
                         Cancel
                       </button>
                     </div>
-                    <div class="col text-center">
+                    <div className="col text-center">
                       <button className="btn btn-primary" type="submit">
                         Update
                       </button>

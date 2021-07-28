@@ -37,10 +37,10 @@ const Rtdata = (props) => {
       <div className="text-center mt-2 mb-2">
         <h5>RT-Data</h5>
       </div>
-      <div class="card h-100">
+      <div className="card h-100">
         <div className="card-body text-center">
-          <div class="input-group mb-3">
-            <span class="input-group-text" id="device-label">
+          <div className="input-group mb-3">
+            <span className="input-group-text" id="device-label">
               Device
             </span>
             <select className="form-select" id="device">

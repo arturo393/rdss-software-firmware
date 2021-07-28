@@ -16,7 +16,6 @@ let a_ptx
 const Alerts = (props) => {
   const [alerts, setAlerts] = useState([])
   const { monitorData } = props
-
   useEffect(() => {
     let currentAlerts = []
 
@@ -58,7 +57,7 @@ const Alerts = (props) => {
       <div className="text-center mt-2 mb-2">
         <h5>Vlad Status</h5>
       </div>
-      <div class="card h-100">
+      <div className="card h-100">
         <div className="card-body table-responsive">
           {/* CONTENIDO */}
           <table className="table table-striped table-bordered table-light">

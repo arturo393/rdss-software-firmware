@@ -143,10 +143,10 @@ const Users = (props) => {
       <div className="text-center mt-2 mb-2">
         <h5>Users Admin</h5>
       </div>
-      <div class="card h-100">
+      <div className="card h-100">
         <div className="card-body">
-          <div class="table-responsive">
-            <table class="table table-striped">
+          <div className="table-responsive">
+            <table className="table table-striped">
               <tbody>
                 {users?.map((user) => (
                   <tr>
@@ -176,8 +176,8 @@ const Users = (props) => {
               </tbody>
             </table>
           </div>
-          <div class="row">
-            <div class="col text-center">
+          <div className="row">
+            <div className="col text-center">
               <button className="btn btn-primary" type="button" onClick={showForm}>
                 Create New User
               </button>
@@ -225,7 +225,7 @@ const Users = (props) => {
               </div>
 
               <div className="col-md-12">
-                <select class="form-select" aria-label="rol" id="rol">
+                <select className="form-select" aria-label="rol" id="rol">
                   <option value="user" selected>
                     Normal User
                   </option>
@@ -234,9 +234,9 @@ const Users = (props) => {
                 </select>
               </div>
             </div>
-            <div class="container">
-              <div class="row">
-                <div class="col text-center">
+            <div className="container">
+              <div className="row">
+                <div className="col text-center">
                   <button
                     className="btn btn-secondary"
                     type="button"
@@ -245,7 +245,7 @@ const Users = (props) => {
                     Cancel
                   </button>
                 </div>
-                <div class="col text-center">
+                <div className="col text-center">
                   <button className="btn btn-primary" type="submit">
                     Save
                   </button>

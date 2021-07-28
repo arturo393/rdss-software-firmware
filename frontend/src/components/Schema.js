@@ -119,6 +119,7 @@ const Schema = (props) => {
     const stage = e.target.getStage()
     const oldScale = stage.scaleX()
     const mousePointTo = {
+      key: x * y,
       x: stage.getPointerPosition().x / oldScale - stage.x() / oldScale,
       y: stage.getPointerPosition().y / oldScale - stage.y() / oldScale,
     }

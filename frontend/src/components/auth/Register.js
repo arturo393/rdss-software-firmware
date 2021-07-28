@@ -47,7 +47,7 @@ function Register(props) {
         <div className="text-center mt-2 mb-2">
           <h5>Register</h5>
         </div>
-        <div class="card h-100">
+        <div className="card h-100">
           <div className="card-body">
             <Form onSubmit={onSubmit}>
               <Form.Group as={Row} controlId="email">

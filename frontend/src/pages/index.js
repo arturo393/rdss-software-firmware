@@ -6,15 +6,23 @@ import Schema from "../components/Schema"
 import Status from "../components/common/Status"
 import Login from "../components/auth/Login"
 import { connect } from "react-redux"
-import { setConfig, setDevices } from "../redux/actions/main"
+import { setConfig, setDevices, setMonitorDataEvent } from "../redux/actions/main"
 import DynamicComponent from "../components/DynamicComponent"
 
 const Home = (props) => {
-  const { isLoggedIn, dbConfig, dbDevices, setConfig, setDevices } = props
+  const {
+    isLoggedIn,
+    dbConfig,
+    dbDevices,
+    setConfig,
+    setDevices,
+    setMonitorDataEvent,
+  } = props
 
   useEffect(() => {
     setConfig(dbConfig)
     setDevices(dbDevices)
+    setMonitorDataEvent()
   }, [])
 
   if (isLoggedIn) {
@@ -72,7 +80,7 @@ export async function getServerSideProps(context) {
   }
 }
 
-const mapDispatchToProps = { setConfig, setDevices }
+const mapDispatchToProps = { setConfig, setDevices, setMonitorDataEvent }
 
 const mapStateToProps = (state) => {
   return {
