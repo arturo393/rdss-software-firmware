@@ -32,14 +32,16 @@ const DeviceGraphs = (props) => {
     initConfig("rgba(75,192,192,1)", "rgba(0,0,0,1)", "Power")
   )
 
+  const valorLecturasNull = -9999
+
   useEffect(() => {}, [])
 
   /* Actualizacion por BD*/
   useEffect(() => {
     if (deviceId > 0) {
-      setVoltaje(0)
-      setPower(0)
-      setCurrent(0)
+      setVoltaje(valorLecturasNull)
+      setPower(valorLecturasNull)
+      setCurrent(valorLecturasNull)
 
       let device = {}
       axios
@@ -69,7 +71,7 @@ const DeviceGraphs = (props) => {
 
             dataGraphCurrent.push(obj.current)
             dataGraphPower.push(obj.power)
-            dataGraphVoltaje.push(obj.voltaje)
+            dataGraphVoltaje.push(obj.voltage)
           })
 
           setGraficoVoltaje(
@@ -104,8 +106,8 @@ const DeviceGraphs = (props) => {
         }
       })
 
-      if (monitorData.rtData != undefined) {
-        setVoltaje(dataDevice.rtData.voltaje)
+      if (dataDevice.rtData != undefined) {
+        setVoltaje(dataDevice.rtData.voltage)
         setPower(dataDevice.rtData.power)
         setCurrent(dataDevice.rtData.current)
 
@@ -113,7 +115,7 @@ const DeviceGraphs = (props) => {
           addGraficoData(
             { ...graficoVoltaje },
             dataDevice.rtData.sampleTime,
-            dataDevice.rtData.voltaje
+            dataDevice.rtData.voltage
           )
         )
         setGraficoCurrent(
@@ -130,6 +132,10 @@ const DeviceGraphs = (props) => {
             dataDevice.rtData.power
           )
         )
+      } else  {
+        setVoltaje(valorLecturasNull)
+        setPower(valorLecturasNull)
+        setCurrent(valorLecturasNull)
       }
     }
   }, [monitorData])
@@ -168,7 +174,7 @@ const DeviceGraphs = (props) => {
               labelGraphCurrent.push(convertISODateToTimeFormat(obj.sampleTime))
               labelGraphPower.push(convertISODateToTimeFormat(obj.sampleTime))
 
-              dataGraphVoltaje.push(obj.voltaje)
+              dataGraphVoltaje.push(obj.voltage)
               dataGraphCurrent.push(obj.current)
               dataGraphPower.push(obj.power)
             }
@@ -225,11 +231,11 @@ const DeviceGraphs = (props) => {
 
           {/* <RtChart title="hola" labels={graficoVoltaje.labels} datasets={graficoVoltaje.datasets} options={initOptions('Voltaje')} /> */}
 
-          <h5>Voltaje: {voltaje > 0 ? voltaje : "Esperando señal"} [V] </h5>
+          <h5>Voltaje: {voltaje != valorLecturasNull ? voltaje : "Esperando señal"} [V] </h5>
           <Line data={graficoVoltaje} options={initOptions("Voltaje")} />
-          <h5>Power: {power > 0 ? power : "Esperando señal"} [A] </h5>
+          <h5>Power: {power != valorLecturasNull ? power : "Esperando señal"} [dBm] </h5>
           <Line data={graficoPower} options={initOptions("Power")} />
-          <h5>Current : {current > 0 ? current : "Esperando señal"} [U] </h5>
+          <h5>Current : {current != valorLecturasNull ? current : "Esperando señal"} [A] </h5>
           <Line data={graficoCurrent} options={initOptions("Current")} />
         </div>
       )}
