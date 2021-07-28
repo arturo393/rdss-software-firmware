@@ -27,6 +27,7 @@ const Header = (props) => {
           alt="Sigma Telecom"
           height="37px"
           width="160px"
+          onClick={() => setActiveComponent("alerts")}
         />
       </a>
       <Navbar.Toggle aria-controls="responsive-navbar-nav" />
