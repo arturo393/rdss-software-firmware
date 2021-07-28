@@ -132,7 +132,7 @@ const DeviceGraphs = (props) => {
             dataDevice.rtData.power
           )
         )
-      } else  {
+      } else {
         setVoltaje(valorLecturasNull)
         setPower(valorLecturasNull)
         setCurrent(valorLecturasNull)
@@ -201,41 +201,46 @@ const DeviceGraphs = (props) => {
     <>
       {deviceId > 0 && (
         <div>
-          <Button
-            className="col-md-4 text-center"
-            variant="primary"
+          <button
+            className="col-md-4 text-center btn btn-primary"
             type="button"
             id="dia"
             onClick={() => Filtro(1)}
           >
-            Dia
-          </Button>
-          <Button
-            className="col-md-4 text-center  btn btn-info"
+            Day
+          </button>
+          <button
+            className="col-md-4 text-center  btn btn-secondary "
             variant="primary"
             type="button"
             id="mes"
             onClick={() => Filtro(30)}
           >
-            Mes
-          </Button>
-          <Button
-            className="col-md-4 text-center btn btn-secondary"
+            Month
+          </button>
+          <button
+            className="col-md-4 text-center btn btn-dark"
             variant="primary"
             type="button"
             id="ano"
             onClick={() => Filtro(365)}
           >
-            Año
-          </Button>
+            Year
+          </button>
 
           {/* <RtChart title="hola" labels={graficoVoltaje.labels} datasets={graficoVoltaje.datasets} options={initOptions('Voltaje')} /> */}
 
-          <h5>Voltaje: {voltaje != valorLecturasNull ? voltaje : "Esperando señal"} [V] </h5>
-          <Line data={graficoVoltaje} options={initOptions("Voltaje")} />
-          <h5>Power: {power != valorLecturasNull ? power : "Esperando señal"} [dBm] </h5>
+          <h5>
+            Voltage: {voltaje != valorLecturasNull ? voltaje : "Waiting signal"} [V]{" "}
+          </h5>
+          <Line data={graficoVoltaje} options={initOptions("Voltage")} />
+          <h5>
+            Power: {power != valorLecturasNull ? power : "Waiting signal"} [dBm]{" "}
+          </h5>
           <Line data={graficoPower} options={initOptions("Power")} />
-          <h5>Current : {current != valorLecturasNull ? current : "Esperando señal"} [A] </h5>
+          <h5>
+            Current : {current != valorLecturasNull ? current : "Waiting signal"} [A]{" "}
+          </h5>
           <Line data={graficoCurrent} options={initOptions("Current")} />
         </div>
       )}
