@@ -24,11 +24,11 @@ const Alerts = (props) => {
 
       if (data.connected) {
         a_connected = green.src
-        a_voltage = data.alerts.voltage ? green.src : red.src
-        a_current = data.alerts.current ? green.src : red.src
-        a_agcup = data.alerts.gupl ? green.src : red.src
-        a_agcdown = data.alerts.guwl ? green.src : red.src
-        a_ptx = data.alerts.power ? green.src : red.src
+        a_voltage = data.alerts.voltage ? red.src : green.src
+        a_current = data.alerts.current ? red.src : green.src
+        a_agcup = data.alerts.gupl ? red.src : green.src
+        a_agcdown = data.alerts.guwl ? red.src : green.src
+        a_ptx = data.alerts.power ? red.src : green.src
       } else {
         a_connected = red.src
         a_voltage = gray.src

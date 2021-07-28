@@ -27,10 +27,6 @@ export default function socketMiddleware() {
       return next(action)
     }
     const { event, leave, handle, ...rest } = action
-    console.log(action)
-    console.log(event)
-    console.log(handle)
-
     if (!event) {
       return next(action)
     }

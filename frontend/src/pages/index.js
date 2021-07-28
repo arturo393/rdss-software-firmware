@@ -31,7 +31,7 @@ const Home = (props) => {
         <div className="col-md-12">
           <div className="row">
             <div className="col-md-7" id="myMap">
-              <div className="row">
+              <div className="row bg-dark">
                 <Schema />
               </div>
             </div>
