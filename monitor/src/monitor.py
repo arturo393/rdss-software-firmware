@@ -256,7 +256,12 @@ def sendCmd(ser, cmd, createdevice):
         tranformData.append(deviceData[4] / 10.0)
         tranformData.append(deviceData[5] / 1.0)
         tranformData.append(deviceData[6] / 10.0)
-        tranformData.append((deviceData[7] / 1.0) - 255)
+
+        if (deviceData[7] >= cfg.RANGE_MIN_PTX and deviceData[7] <= cfg.RANGE_MAX_PTX):
+            tranformData.append((deviceData[7] / 1.0) - 255)
+        else:
+            tranformData.append((deviceData[7] / 1.0))
+
         # -----------------------------------------------------
         tranformData[0] = round(
             (tranformData[0] * 1.0075) + 0.108, 2)
@@ -322,7 +327,6 @@ def sendStatusToFrontEnd(rtData):
         "handle": 'SET_MONITOR_DATA_EVENT',
         "data": rtData
     }
-    logging.debug(data)
     socket.emit('set_rtdata_event', data)
 
 
