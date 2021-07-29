@@ -10,6 +10,7 @@ import {
   setGraficoData,
   addGraficoData,
   initOptions,
+  setBorderColor
 } from "../lib/Utils"
 //import RtChart from "../components/common/RtChart"
 import zoomPlugin from "chartjs-plugin-zoom"
@@ -110,6 +111,12 @@ const DeviceGraphs = (props) => {
         setVoltaje(dataDevice.rtData.voltage)
         setPower(dataDevice.rtData.power)
         setCurrent(dataDevice.rtData.current)
+        
+        if(dataDevice.rtData.gdwl > 0){
+          setBorderColor({ ...graficoPower }, 'rgb(255, 99, 132)')
+        } else {
+          setBorderColor({ ...graficoPower }, 'rgba(0,0,0,1)')
+        }
 
         setGraficoVoltaje(
           addGraficoData(
