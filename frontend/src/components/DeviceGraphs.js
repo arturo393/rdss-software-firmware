@@ -118,13 +118,12 @@ const DeviceGraphs = (props) => {
           setBorderColor({ ...graficoPower }, 'rgba(0,0,0,1)')
         }
 
-        setGraficoVoltaje(
           addGraficoData(
             { ...graficoVoltaje },
             dataDevice.rtData.sampleTime,
             dataDevice.rtData.voltage
           )
-        )
+
         setGraficoCurrent(
           addGraficoData(
             { ...graficoCurrent },

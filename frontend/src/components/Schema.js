@@ -120,6 +120,16 @@ const Schema = (props) => {
     return [...new Map(data.map((item) => [key(item), item])).values()]
   }
 
+
+  const selectDevice = (id) => {
+    const deviceSelector = document.getElementById("device")
+    if(deviceSelector != null && deviceSelector != undefined)  {
+      deviceSelector.selectedIndex =id
+      document.getElementById("searchDevice").click()
+    }
+  }
+
+
   const handleWheel = (e) => {
     e.evt.preventDefault()
 
@@ -173,7 +183,9 @@ const Schema = (props) => {
                       y={square.y}
                       fill={square.fill}
                       id={square.id.toString()}
-                    />
+                      onClick={() => selectDevice(square.id.toString())}
+                      onTap={() => selectDevice(square.id.toString())}
+                      />
                   </Group>
                 )
               })}

@@ -54,7 +54,7 @@ const Rtdata = (props) => {
                 )
               })}
             </select>
-            <button onClick={setSelectedDevice} className="btn btn-primary">
+            <button id="searchDevice" onClick={setSelectedDevice} className="btn btn-primary">
               Search
             </button>
           </div>
