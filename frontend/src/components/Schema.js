@@ -53,8 +53,6 @@ const Schema = (props) => {
       setWidth((window.innerWidth / 100) * 80)
     }
     setHeight(window.innerHeight)
-    setStageX(config.x)
-    setStageY(config.y)
   }, [])
 
   useEffect(() => {
@@ -96,8 +94,8 @@ const Schema = (props) => {
       if (square.status.provisioned) newSquares.push(square)
       setSquares(removeDuplicates(newSquares, (square) => square.id))
 
-      setStageX(config.x)
-      setStageY(config.y)
+      // setStageX(config.x)
+      // setStageY(config.y)
     })
   }, [monitorData])
 
@@ -169,14 +167,11 @@ const Schema = (props) => {
     setStageY((stage.getPointerPosition().y / newScale - mousePointTo.y) * newScale)
   }
   const handleMultiTouch = (e) => {
-    console.log("MultiTouch")
     e.evt.preventDefault()
 
     var touch1 = e.evt.touches[0]
     var touch2 = e.evt.touches[1]
 
-    console.log(touch1)
-    console.log(touch2)
     const stage = e.target.getStage()
 
     if (touch1 && touch2) {

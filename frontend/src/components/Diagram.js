@@ -2,14 +2,14 @@ import React, { useEffect, useState } from "react"
 import { Container, Card, Button } from "react-bootstrap"
 import axios from "axios"
 import dynamic from "next/dynamic"
-import { setDevices, saveConfig } from "../redux/actions/main"
+import { setDevices } from "../redux/actions/main"
 import { connect } from "react-redux"
 
 import useImage from "use-image"
 import { alert } from "react-bootstrap-confirmation"
 
 const Diagram = (props) => {
-  const { config, devices, setDevices, saveConfig } = props
+  const { config, devices, setDevices } = props
 
   const [newDevices, setNewDevices] = useState([])
   const [squares, setSquares] = useState([])
@@ -77,8 +77,8 @@ const Diagram = (props) => {
         }
       })
       setSquares(removeDuplicates(squaresArr, (square) => square.id))
-      setStageX(config.x)
-      setStageY(config.y)
+      // setStageX(config.x)
+      // setStageY(config.y)
     }
   }, [])
 
@@ -258,7 +258,7 @@ const Diagram = (props) => {
     setStageX((stage.getPointerPosition().x / newScale - mousePointTo.x) * newScale)
     setStageY((stage.getPointerPosition().y / newScale - mousePointTo.y) * newScale)
 
-    saveConfig({ x: stageX, y: stageY, image: config.image })
+    // saveConfig({ x: stageX, y: stageY, image: config.image })
   }
 
   return (
@@ -358,7 +358,7 @@ const mapStateToProps = (state) => {
 
 const mapDispatchToProps = {
   setDevices,
-  saveConfig,
+  // saveConfig,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Diagram)

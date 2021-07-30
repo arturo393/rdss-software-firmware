@@ -27,24 +27,24 @@ export const setActiveDeviceId = (id) => (dispatch) => {
   })
 }
 
-export const saveConfig = (config) => {
-  console.log("SAVE CONFIG")
-  return async (dispatch) => {
-    try {
-      const result = await axios.post(
-        "http://" +
-          process.env.NEXT_PUBLIC_APIHOST +
-          ":" +
-          process.env.NEXT_PUBLIC_APIPORT +
-          "/api/manage/saveConfig",
-        config
-      )
-      if (result) dispatch(setConfig(config))
-    } catch (e) {
-      console.log(e)
-    }
-  }
-}
+// export const saveConfig = (config) => {
+//   console.log("SAVE CONFIG")
+//   return async (dispatch) => {
+//     try {
+//       const result = await axios.post(
+//         "http://" +
+//           process.env.NEXT_PUBLIC_APIHOST +
+//           ":" +
+//           process.env.NEXT_PUBLIC_APIPORT +
+//           "/api/manage/saveConfig",
+//         config
+//       )
+//       if (result) dispatch(setConfig(config))
+//     } catch (e) {
+//       console.log(e)
+//     }
+//   }
+// }
 
 export const setConfig = (config) => (dispatch) => {
   console.log("SET_CONFIG")
