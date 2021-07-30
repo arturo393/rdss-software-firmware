@@ -6,3 +6,10 @@ export const setPath = (path) => (dispatch) => {
     payload: company,
   })
 }
+
+export const setXY = (x, y) => (dispatch) => {
+  dispatch({
+    type: t.SET_DIAGRAM_XY,
+    payload: { x: x, y: y },
+  })
+}

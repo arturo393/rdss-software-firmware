@@ -53,6 +53,8 @@ const Schema = (props) => {
       setWidth((window.innerWidth / 100) * 80)
     }
     setHeight(window.innerHeight)
+    setStageX(config.x)
+    setStageY(config.y)
   }, [])
 
   useEffect(() => {
@@ -70,9 +72,10 @@ const Schema = (props) => {
       newImage.src = config.image
       setImage(newImage)
     }
-  }, [config.image])
+  }, [config])
 
   useEffect(() => {
+    console.log(config)
     console.log("===RECIBIENDO DATOS DESDE MONITOR===")
     monitorData.map((monitor) => {
       const data = JSON.parse(monitor)
@@ -93,6 +96,9 @@ const Schema = (props) => {
       }
       if (square.status.provisioned) newSquares.push(square)
       setSquares(removeDuplicates(newSquares, (square) => square.id))
+
+      setStageX(config.x)
+      setStageY(config.y)
     })
   }, [monitorData])
 
@@ -164,10 +170,14 @@ const Schema = (props) => {
     setStageY((stage.getPointerPosition().y / newScale - mousePointTo.y) * newScale)
   }
   const handleMultiTouch = (e) => {
-    e.evt.preventDefault()
     console.log("MultiTouch")
+    e.evt.preventDefault()
+
     var touch1 = e.evt.touches[0]
     var touch2 = e.evt.touches[1]
+
+    console.log(touch1)
+    console.log(touch2)
     const stage = e.target.getStage()
 
     if (touch1 && touch2) {
@@ -227,11 +237,10 @@ const Schema = (props) => {
   }
 
   const multiTouchEnd = () => {
-    let lastCenter = null
-    let lastDist = 0
+    const lastCenter = null
+    const lastDist = 0
   }
   // return <>Schema </>
-
   return (
     <div className="container-fluid">
       <div className="row">

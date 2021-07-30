@@ -2,14 +2,14 @@ import React, { useEffect, useState } from "react"
 import { Container, Card, Button } from "react-bootstrap"
 import axios from "axios"
 import dynamic from "next/dynamic"
-import { setDevices } from "../redux/actions/main"
+import { setDevices, saveConfig } from "../redux/actions/main"
 import { connect } from "react-redux"
 
 import useImage from "use-image"
 import { alert } from "react-bootstrap-confirmation"
 
 const Diagram = (props) => {
-  const { config, devices, setDevices } = props
+  const { config, devices, setDevices, saveConfig } = props
 
   const [newDevices, setNewDevices] = useState([])
   const [squares, setSquares] = useState([])
@@ -17,6 +17,9 @@ const Diagram = (props) => {
   const [scale, setScale] = useState(1)
   const [x, setX] = useState(100)
   const [y, setY] = useState(100)
+
+  const [stageX, setStageX] = useState(0)
+  const [stageY, setStageY] = useState(0)
 
   const [width, setWidth] = useState(500)
   const [height, setHeight] = useState(500)
@@ -74,6 +77,8 @@ const Diagram = (props) => {
         }
       })
       setSquares(removeDuplicates(squaresArr, (square) => square.id))
+      setStageX(config.x)
+      setStageY(config.y)
     }
   }, [])
 
@@ -235,6 +240,27 @@ const Diagram = (props) => {
     setDevices(newDevices)
   }, [newDevices])
 
+  const handleDragStart = (e) => {
+    e.evt.preventDefault()
+  }
+  const handleDragEnd = (e) => {
+    e.evt?.preventDefault()
+    const scaleBy = 1.02
+    const stage = e.target.getStage()
+    const oldScale = stage.scaleX()
+    const mousePointTo = {
+      key: stageX * stageY,
+      x: stage.getPointerPosition().x / oldScale - stage.x() / oldScale,
+      y: stage.getPointerPosition().y / oldScale - stage.y() / oldScale,
+    }
+    const newScale = e.evt?.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy
+    setScale(newScale)
+    setStageX((stage.getPointerPosition().x / newScale - mousePointTo.x) * newScale)
+    setStageY((stage.getPointerPosition().y / newScale - mousePointTo.y) * newScale)
+
+    saveConfig({ x: stageX, y: stageY, image: config.image })
+  }
+
   return (
     <>
       <div className="container-fluid">
@@ -277,15 +303,17 @@ const Diagram = (props) => {
           <div className="col-2"></div>
         </div>
       </div>
-      <Container>
+      <Container className="sigmaDarkBg">
         <Stage
           width={width}
           height={height}
           onWheel={handleWheel}
           scaleX={scale}
           scaleY={scale}
-          x={x}
-          y={y}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          x={stageX}
+          y={stageY}
           draggable
         >
           <Layer>
@@ -330,6 +358,7 @@ const mapStateToProps = (state) => {
 
 const mapDispatchToProps = {
   setDevices,
+  saveConfig,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Diagram)

@@ -41,7 +41,7 @@ const Rtdata = (props) => {
   useEffect(() => {
     document.getElementById("device").value = activeDeviceId
     setDevice(activeDeviceId)
-    setDeviceName("vlad" + activeDeviceId)
+    if (activeDeviceId) setDeviceName("vlad" + activeDeviceId)
   }, [activeDeviceId])
 
   return (

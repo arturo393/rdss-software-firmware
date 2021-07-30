@@ -53,13 +53,11 @@ const Alerts = (props) => {
   }, [monitorData])
 
   return (
-    <div className="containers">
-      <div className="text-center mt-2 mb-2">
-        <h5>Vlad Status</h5>
-      </div>
-      <div className="card h-100">
-        <div className="card-body table-responsive">
-          {/* CONTENIDO */}
+    <>
+      <h5 className="text-center">Vlad Status</h5>
+      <div className="container table-responsive text-center ">
+        {/* CONTENIDO */}
+        <div className="row">
           <table className="table table-striped table-bordered table-light">
             <thead>
               <tr>
@@ -114,10 +112,10 @@ const Alerts = (props) => {
               })}
             </tbody>
           </table>
-          {/* FIN CONTENIDO */}
         </div>
+        {/* FIN CONTENIDO */}
       </div>
-    </div>
+    </>
   )
 }
 

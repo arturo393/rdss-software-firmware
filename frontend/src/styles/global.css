@@ -104,6 +104,18 @@ body {
   }
 }
 
+@media only screen and (max-width: 1110px) {
+  #myAlerts > div > div > table > thead > tr > th > h6 {
+    font-size: small;
+  }
+}
+
+@media only screen and (max-width: 1000px) {
+  #myAlerts > div > div > table > thead > tr > th > h6 {
+    font-size: x-small;
+  }
+}
+
 @media only screen and (max-width: 480px) {
   #myMap {
     display: none;
@@ -120,6 +132,10 @@ body {
   .sigmaStatusBar > div > div > h5 > span:first-child {
     width: 50vw;
     max-width: 50vw;
+  }
+
+  #myAlerts > div > div > table > thead > tr > th > h6 {
+    font-size: xx-small;
   }
 }
 

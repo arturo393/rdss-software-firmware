@@ -3,6 +3,7 @@ import * as t from "../types"
 const diagram = (
   state = {
     path: "none",
+    xy: { x: 0, y: 0 },
   },
   action
 ) => {
@@ -11,6 +12,11 @@ const diagram = (
       return {
         ...state,
         path: action.payload,
+      }
+    case t.SET_DIAGRAM_XY:
+      return {
+        ...state,
+        xy: action.payload,
       }
     default:
       return { ...state }

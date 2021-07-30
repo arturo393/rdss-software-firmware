@@ -103,7 +103,10 @@ const NetworkForm = (props) => {
               </div>
               <div className="row">
                 <div className="col-md-6">
-                  <div className="form-floating input-group mb-3">
+                  <label for="minVoltage" className="form-label">
+                    <h6>Min Voltage</h6>
+                  </label>
+                  <div className="input-group mb-3">
                     <input
                       type="number"
                       value={newConfig.minVoltage}
@@ -112,12 +115,15 @@ const NetworkForm = (props) => {
                       placeholder={newConfig.minVoltage}
                       onChange={handleChange}
                     />
-                    <label for="minVoltage">Min Voltage</label>
+
                     <span className="input-group-text">[Volts]</span>
                   </div>
                 </div>
                 <div className="col-md-6">
-                  <div className="form-floating input-group mb-3">
+                  <label for="maxVoltage" className="form-label">
+                    <h6>Max Voltage</h6>
+                  </label>
+                  <div className="input-group mb-3">
                     <input
                       type="number"
                       value={newConfig.maxVoltage}
@@ -126,14 +132,17 @@ const NetworkForm = (props) => {
                       placeholder={newConfig.maxVoltage}
                       onChange={handleChange}
                     />
-                    <label for="maxVoltage">Max Voltage</label>
+
                     <span className="input-group-text">[Volts]</span>
                   </div>
                 </div>
               </div>
               <div className="row">
                 <div className="col-md-6">
-                  <div className="form-floating input-group mb-3">
+                  <label for="minCurrent" className="form-label">
+                    <h6>Min Current</h6>
+                  </label>
+                  <div className="input-group mb-3">
                     <input
                       type="number"
                       value={newConfig.minCurrent}
@@ -142,12 +151,15 @@ const NetworkForm = (props) => {
                       placeholder={newConfig.minCurrent}
                       onChange={handleChange}
                     />
-                    <label for="minCurrent">Min Current</label>
+
                     <span className="input-group-text">[A]</span>
                   </div>
                 </div>
                 <div className="col-md-6">
-                  <div className="form-floating input-group mb-3">
+                  <label for="maxCurrent" className="form-label">
+                    <h6>Max Current</h6>
+                  </label>
+                  <div className="input-group mb-3">
                     <input
                       type="number"
                       value={newConfig.maxCurrent}
@@ -156,14 +168,17 @@ const NetworkForm = (props) => {
                       placeholder={newConfig.maxCurrent}
                       onChange={handleChange}
                     />
-                    <label for="maxCurrent">Max Current</label>
+
                     <span className="input-group-text">[A]</span>
                   </div>
                 </div>
               </div>
               <div className="row">
                 <div className="col-md-6">
-                  <div className="form-floating input-group mb-3">
+                  <label for="minUplink" className="form-label">
+                    <h6>Min Uplink</h6>
+                  </label>
+                  <div className="input-group mb-3">
                     <input
                       type="number"
                       value={newConfig.minUplink}
@@ -172,12 +187,15 @@ const NetworkForm = (props) => {
                       placeholder={newConfig.minUplink}
                       onChange={handleChange}
                     />
-                    <label for="minUplink">Min Uplink</label>
+
                     <span className="input-group-text">[dB]</span>
                   </div>
                 </div>
                 <div className="col-md-6">
-                  <div className="form-floating input-group mb-3">
+                  <label for="maxUplink" className="form-label">
+                    <h6>Max Uplink AGC</h6>
+                  </label>
+                  <div className="input-group mb-3">
                     <input
                       type="number"
                       value={newConfig.maxUplink}
@@ -186,14 +204,17 @@ const NetworkForm = (props) => {
                       placeholder={newConfig.maxUplink}
                       onChange={handleChange}
                     />
-                    <label for="maxUplink">Max Uplink AGC</label>
+
                     <span className="input-group-text">[dB]</span>
                   </div>
                 </div>
               </div>
               <div className="row">
                 <div className="col-md-6">
-                  <div className="form-floating input-group mb-3">
+                  <label for="minDownlink" className="form-label">
+                    <h6>Min Downlink</h6>
+                  </label>
+                  <div className="input-group mb-3">
                     <input
                       type="number"
                       value={newConfig.minDownlink}
@@ -202,12 +223,15 @@ const NetworkForm = (props) => {
                       placeholder={newConfig.minDownlink}
                       onChange={handleChange}
                     />
-                    <label for="minDownlink">Min Downlink</label>
+
                     <span className="input-group-text">[dB]</span>
                   </div>
                 </div>
                 <div className="col-md-6">
-                  <div className="form-floating input-group mb-3">
+                  <label for="maxDownlink" className="form-label">
+                    <h6>Max Downlink</h6>
+                  </label>
+                  <div className="input-group mb-3">
                     <input
                       type="number"
                       value={newConfig.maxDownlink}
@@ -216,14 +240,17 @@ const NetworkForm = (props) => {
                       placeholder={newConfig.maxDownlink}
                       onChange={handleChange}
                     />
-                    <label for="maxDownlink">Max Downlink</label>
+
                     <span className="input-group-text">[dB]</span>
                   </div>
                 </div>
               </div>
               <div className="row">
                 <div className="col-md-6">
-                  <div className="form-floating input-group mb-3">
+                  <label for="minDownlinkOut" className="form-label">
+                    <h6>Min DL Output Power</h6>
+                  </label>
+                  <div className="input-group mb-3">
                     <input
                       type="number"
                       value={newConfig.minDownlinkOut}
@@ -232,22 +259,27 @@ const NetworkForm = (props) => {
                       placeholder={newConfig.minDownlinkOut}
                       onChange={handleChange}
                     />
-                    <label for="minDownlinkOut">Min DL Output Power</label>
+
                     <span className="input-group-text">[dBm]</span>
                   </div>
                 </div>
                 <div className="col-md-6">
-                  <div className="form-floating input-group mb-3">
-                    <input
-                      type="number"
-                      value={newConfig.maxDownlinkOut}
-                      className="form-control"
-                      id="maxDownlinkOut"
-                      placeholder={newConfig.maxDownlinkOut}
-                      onChange={handleChange}
-                    />
-                    <label for="maxDownlinkOut">Max DL Output Power</label>
-                    <span className="input-group-text">[dBm]</span>
+                  <div className="input-group mb-3">
+                    <label for="maxDownlinkOut" className="form-label">
+                      <h6>Max DL Output Power</h6>
+                    </label>
+                    <div class="input-group mb-3">
+                      <input
+                        type="number"
+                        value={newConfig.maxDownlinkOut}
+                        className="form-control"
+                        id="maxDownlinkOut"
+                        placeholder={newConfig.maxDownlinkOut}
+                        onChange={handleChange}
+                      />
+
+                      <span className="input-group-text">[dBm]</span>
+                    </div>
                   </div>
                 </div>
               </div>
