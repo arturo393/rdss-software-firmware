@@ -75,7 +75,6 @@ const Schema = (props) => {
   }, [config])
 
   useEffect(() => {
-    console.log(config)
     console.log("===RECIBIENDO DATOS DESDE MONITOR===")
     monitorData.map((monitor) => {
       const data = JSON.parse(monitor)
