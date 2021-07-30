@@ -22,8 +22,8 @@ const Rtdata = (props) => {
         const devices = res.data
         setDevices(devices)
       })
-    console.log(activeDeviceId)
-    if (activeDeviceId) {
+
+    if (activeDeviceId != undefined) {
       document.getElementById("device").value = activeDeviceId
       setDevice(activeDeviceId)
     }
