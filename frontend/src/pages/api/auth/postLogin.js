@@ -10,7 +10,6 @@ export default async function (req, res, next) {
     },
     { password: 0, _id: 0 }
   )
-  console.log(user)
   // .toArray()
   res.status(200).json(user)
 }

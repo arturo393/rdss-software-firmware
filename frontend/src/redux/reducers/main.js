@@ -8,6 +8,7 @@ const main = (
     activeComponent: "",
     config: {},
     devices: [],
+    activeDeviceId: 0,
   },
   action
 ) => {
@@ -42,6 +43,11 @@ const main = (
       return {
         ...state,
         devices: action.payload,
+      }
+    case t.SET_ACTIVE_DEVICE_ID:
+      return {
+        ...state,
+        activeDeviceId: action.payload,
       }
     default:
       return { ...state }

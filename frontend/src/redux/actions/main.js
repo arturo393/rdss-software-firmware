@@ -19,6 +19,13 @@ export const setActiveComponent = (name) => (dispatch) => {
   })
 }
 
+export const setActiveDeviceId = (id) => (dispatch) => {
+  dispatch({
+    type: t.SET_ACTIVE_DEVICE_ID,
+    payload: id,
+  })
+}
+
 export const setConfig = (config) => (dispatch) => {
   dispatch({
     type: t.SET_CONFIG,

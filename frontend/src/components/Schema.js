@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Container, Card } from "react-bootstrap"
 import dynamic from "next/dynamic"
 import { connect } from "react-redux"
+import { setActiveComponent, setActiveDeviceId } from "../redux/actions/main"
 
 const Schema = (props) => {
   const Stage = dynamic(() => import("react-konva").then((module) => module.Stage), {
@@ -29,11 +30,12 @@ const Schema = (props) => {
     ssr: false,
   })
 
-  const { monitorData, config, devices } = props
+  const { monitorData, config, devices, setActiveComponent, setActiveDeviceId } =
+    props
   const [image, setImage] = useState(null)
   const [scale, setScale] = useState(1)
-  const [x, setX] = useState(100)
-  const [y, setY] = useState(100)
+  const [stageX, setStageX] = useState(0)
+  const [stageY, setStageY] = useState(0)
   const [squares, setSquares] = useState([])
   const [width, setWidth] = useState(500)
   const [height, setHeight] = useState(500)
@@ -120,15 +122,10 @@ const Schema = (props) => {
     return [...new Map(data.map((item) => [key(item), item])).values()]
   }
 
-
   const selectDevice = (id) => {
-    const deviceSelector = document.getElementById("device")
-    if(deviceSelector != null && deviceSelector != undefined)  {
-      deviceSelector.selectedIndex =id
-      document.getElementById("searchDevice").click()
-    }
+    setActiveComponent("rtdata")
+    setActiveDeviceId(id)
   }
-
 
   const handleWheel = (e) => {
     e.evt.preventDefault()
@@ -137,15 +134,101 @@ const Schema = (props) => {
     const stage = e.target.getStage()
     const oldScale = stage.scaleX()
     const mousePointTo = {
-      key: x * y,
+      key: stageX * stageY,
       x: stage.getPointerPosition().x / oldScale - stage.x() / oldScale,
       y: stage.getPointerPosition().y / oldScale - stage.y() / oldScale,
     }
 
     const newScale = e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy
     setScale(newScale)
-    setX((stage.getPointerPosition().x / newScale - mousePointTo.x) * newScale)
-    setY((stage.getPointerPosition().y / newScale - mousePointTo.y) * newScale)
+    setStageX((stage.getPointerPosition().x / newScale - mousePointTo.x) * newScale)
+    setStageY((stage.getPointerPosition().y / newScale - mousePointTo.y) * newScale)
+  }
+
+  const handleDragStart = (e) => {
+    e.evt.preventDefault()
+  }
+  const handleDragEnd = (e) => {
+    e.evt?.preventDefault()
+    const scaleBy = 1.02
+    const stage = e.target.getStage()
+    const oldScale = stage.scaleX()
+    const mousePointTo = {
+      key: stageX * stageY,
+      x: stage.getPointerPosition().x / oldScale - stage.x() / oldScale,
+      y: stage.getPointerPosition().y / oldScale - stage.y() / oldScale,
+    }
+    const newScale = e.evt?.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy
+    setScale(newScale)
+    setStageX((stage.getPointerPosition().x / newScale - mousePointTo.x) * newScale)
+    setStageY((stage.getPointerPosition().y / newScale - mousePointTo.y) * newScale)
+  }
+  const handleMultiTouch = (e) => {
+    e.evt.preventDefault()
+    console.log("MultiTouch")
+    var touch1 = e.evt.touches[0]
+    var touch2 = e.evt.touches[1]
+    const stage = e.target.getStage()
+
+    if (touch1 && touch2) {
+      if (stage.isDragging()) {
+        stage.stopDrag()
+      }
+
+      imageMove = false
+
+      var p1 = {
+        x: touch1.clientX,
+        y: touch1.clientY,
+      }
+      var p2 = {
+        x: touch2.clientX,
+        y: touch2.clientY,
+      }
+
+      if (!lastCenter) {
+        lastCenter = getCenter(p1, p2)
+        return
+      }
+      var newCenter = getCenter(p1, p2)
+
+      var dist = getDistance(p1, p2)
+
+      if (!lastDist) {
+        lastDist = dist
+      }
+
+      // local coordinates of center point
+      var pointTo = {
+        x: (newCenter.x - stage.x()) / stage.scaleX(),
+        y: (newCenter.y - stage.y()) / stage.scaleX(),
+      }
+
+      var scale = stage.scaleX() * (dist / lastDist)
+
+      stage.scaleX(scale)
+      stage.scaleY(scale)
+
+      // calculate new position of the stage
+      var dx = newCenter.x - lastCenter.x
+      var dy = newCenter.y - lastCenter.y
+
+      var newPos = {
+        x: newCenter.x - pointTo.x * scale + dx,
+        y: newCenter.y - pointTo.y * scale + dy,
+      }
+
+      stage.position(newPos)
+      stage.batchDraw()
+
+      lastDist = dist
+      lastCenter = newCenter
+    }
+  }
+
+  const multiTouchEnd = () => {
+    let lastCenter = null
+    let lastDist = 0
   }
   // return <>Schema </>
 
@@ -159,10 +242,16 @@ const Schema = (props) => {
             onWheel={handleWheel}
             scaleX={scale}
             scaleY={scale}
-            x={x}
-            y={y}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            x={stageX}
+            y={stageY}
             draggable
             id="myStage"
+            onTouchMove={handleMultiTouch}
+            onTouchEnd={() => {
+              multiTouchEnd()
+            }}
           >
             <Layer>
               <Image image={image} layout="fill" />
@@ -185,7 +274,7 @@ const Schema = (props) => {
                       id={square.id.toString()}
                       onClick={() => selectDevice(square.id.toString())}
                       onTap={() => selectDevice(square.id.toString())}
-                      />
+                    />
                   </Group>
                 )
               })}
@@ -204,4 +293,9 @@ const mapStateToProps = (state) => {
   }
 }
 
-export default connect(mapStateToProps)(Schema)
+const mapDispatchToProps = {
+  setActiveComponent,
+  setActiveDeviceId,
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(Schema)

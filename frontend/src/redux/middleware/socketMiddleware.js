@@ -20,7 +20,6 @@ export default function socketMiddleware() {
   )
 
   console.log("=== INICIANDO SOCKETS MIDDLEWARE ===")
-  console.log(socket)
 
   return (store) => (next) => (action) => {
     if (typeof action === "function") {

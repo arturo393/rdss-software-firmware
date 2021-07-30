@@ -2,7 +2,7 @@
 
 ## Local Dependencies
 
-Install sshpass àpt get install sshpass`
+Install sshpass `apt get install sshpass`
 
 Install ansible locally
 
@@ -35,6 +35,6 @@ miniPCs:
 
 Just execute:
 
-`ansible-playbook -K main.yaml --ask-pass`
+`ansible-playbook --ask-pass -K main.yaml`
 
-(will be prompted miniPC user sudo password)
+(will be prompted miniPC user password and sudo password)

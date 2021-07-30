@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react"
 import axios from "axios"
-
+import { connect } from "react-redux"
 import DeviceGraphs from "./DeviceGraphs"
 
 const Rtdata = (props) => {
+  const { activeDeviceId } = props
   const [devices, setDevices] = useState([])
   const [device, setDevice] = useState(0)
+  const [deviceName, setDeviceName] = useState("=== Select a Device ===")
 
   useEffect(() => {
     axios
@@ -20,6 +22,10 @@ const Rtdata = (props) => {
         const devices = res.data
         setDevices(devices)
       })
+    if (activeDeviceId) {
+      document.getElementById("device").value = activeDeviceId
+      setDevice(activeDeviceId)
+    }
   }, [])
 
   const setSelectedDevice = (e) => {
@@ -29,8 +35,14 @@ const Rtdata = (props) => {
   }
 
   useEffect(() => {
-    console.log("OBTENIENDO LOS DATOS DEL DEVICE" + device)
+    // console.log("GETTING DEVICES LIST: " + device)
   }, [devices])
+
+  useEffect(() => {
+    document.getElementById("device").value = activeDeviceId
+    setDevice(activeDeviceId)
+    setDeviceName("vlad" + activeDeviceId)
+  }, [activeDeviceId])
 
   return (
     <div className="containers">
@@ -44,7 +56,7 @@ const Rtdata = (props) => {
               Device
             </span>
             <select className="form-select" id="device">
-              <option value={0}>=== Select a device ===</option>
+              <option value={0}>{deviceName}</option>
               {devices.map((device) => {
                 return (
                   <option value={device.id}>
@@ -54,7 +66,11 @@ const Rtdata = (props) => {
                 )
               })}
             </select>
-            <button id="searchDevice" onClick={setSelectedDevice} className="btn btn-primary">
+            <button
+              id="searchDevice"
+              onClick={setSelectedDevice}
+              className="btn btn-primary"
+            >
               Search
             </button>
           </div>
@@ -65,4 +81,10 @@ const Rtdata = (props) => {
   )
 }
 
-export default Rtdata
+const mapStateToProps = (state) => {
+  return {
+    activeDeviceId: state.main.activeDeviceId,
+  }
+}
+
+export default connect(mapStateToProps)(Rtdata)

@@ -42,7 +42,7 @@ const Footer = ({ url }) => {
                     src="https://maps.google.com/maps?width=100%25&amp;height=600&amp;hl=es&amp;q=Los%20Romeros,%20Los%20Quillayes%20446,%20Conc%C3%B3n,%20Valpara%C3%ADso+(Sigma)&amp;t=&amp;z=17&amp;ie=UTF8&amp;iwloc=B&amp;output=embed"
                     width="270"
                     height="95"
-                    frameborder="0"
+                    frameBorder="0"
                   ></iframe>
                 </div>
               </div>
