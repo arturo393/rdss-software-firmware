@@ -45,13 +45,15 @@ const DeviceGraphs = (props) => {
       setCurrent(valorLecturasNull)
 
       let device = {}
+      const deviceReq = { id: parseInt(deviceId) }
       axios
-        .get(
+        .post(
           "http://" +
             process.env.NEXT_PUBLIC_APIHOST +
             ":" +
             process.env.NEXT_PUBLIC_APIPORT +
-            "/api/devices/devices"
+            "/api/devices/deviceId",
+          deviceReq
         )
         .then((res) => {
           device = res.data.find((data) => data.id == deviceId)
