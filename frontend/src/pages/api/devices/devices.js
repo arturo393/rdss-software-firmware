@@ -6,11 +6,23 @@ export default async function (req, res) {
   console.log(req.body)
   const filter = req.body.filter
 
+  const filterRtdata = 
+    {
+      '$project': {
+        'id': 1,
+        'status':1,
+        'type' : 1
+      }
+    }
+  ;
+
+
+  const pipeline = [filterRtdata];
+
   const devices = await db
     .collection("devices")
-    .find({ filter })
-    .sort({ metacritic: -1 })
-    .toArray()
+    .aggregate(pipeline).toArray()
+
 
   res.json(devices)
 }
