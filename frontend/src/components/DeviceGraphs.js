@@ -37,6 +37,7 @@ const DeviceGraphs = (props) => {
 
   useEffect(() => {}, [])
 
+
   /* Actualizacion por BD*/
   useEffect(() => {
     if (deviceId > 0) {
@@ -44,8 +45,13 @@ const DeviceGraphs = (props) => {
       setPower(valorLecturasNull)
       setCurrent(valorLecturasNull)
 
+      const today = new Date()
+      const yesterday = new Date(today)
+      yesterday.setDate(yesterday.getDate() - 1)
+
+
       let device = {}
-      const deviceReq = { id: parseInt(deviceId) }
+      const deviceReq = { id: parseInt(deviceId), fechaHaciaAdelante: yesterday.toISOString() }
       axios
         .post(
           "http://" +
@@ -155,7 +161,7 @@ const DeviceGraphs = (props) => {
       var date = new Date()
       date.setDate(date.getDate() - dias)
 
-      const deviceReq = { id: parseInt(deviceId) }
+      const deviceReq = { id: parseInt(deviceId) , fechaHaciaAdelante : date.toISOString() }
       axios
         .post(
           "http://" +
@@ -177,7 +183,7 @@ const DeviceGraphs = (props) => {
           let dataGraphPower = []
 
           device.rtData?.map((obj) => {
-            if (new Date(obj.sampleTime) > date) {
+
               labelGraphVoltaje.push(convertISODateToTimeFormat(obj.sampleTime))
               labelGraphCurrent.push(convertISODateToTimeFormat(obj.sampleTime))
               labelGraphPower.push(convertISODateToTimeFormat(obj.sampleTime))
@@ -185,7 +191,7 @@ const DeviceGraphs = (props) => {
               dataGraphVoltaje.push(obj.voltage)
               dataGraphCurrent.push(obj.current)
               dataGraphPower.push(obj.power)
-            }
+
           })
 
           setGraficoVoltaje(
