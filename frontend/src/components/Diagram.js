@@ -188,7 +188,7 @@ const Diagram = (props) => {
       setNewDevices(newDevicesList)
       setDevices(newDevicesList)
     } else {
-      console.log("NO HAY DATA ID")
+      console.log("THERE IS NO DATA ID")
     }
   }
 
