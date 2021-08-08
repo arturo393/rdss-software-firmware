@@ -28,31 +28,12 @@ const Diagram = (props) => {
 
   const [image] = useImage(config.image)
 
-  // const Stage = dynamic(() => import("react-konva").then((module) => module.Stage), {
-  //   ssr: false,
-  // })
-  // const Layer = dynamic(() => import("react-konva").then((module) => module.Layer), {
-  //   ssr: false,
-  // })
-  // const Image = dynamic(() => import("react-konva").then((module) => module.Image), {
-  //   ssr: false,
-  // })
-  // const Rect = dynamic(() => import("react-konva").then((module) => module.Rect), {
-  //   ssr: false,
-  // })
-
-  // const Circle = dynamic(
-  //   () => import("react-konva").then((module) => module.Circle),
-  //   {
-  //     ssr: false,
-  //   }
-  // )
-  // const Text = dynamic(() => import("react-konva").then((module) => module.Text), {
-  //   ssr: false,
-  // })
-  // const Group = dynamic(() => import("react-konva").then((module) => module.Group), {
-  //   ssr: false,
-  // })
+  // const Stage = dynamic(() => import("react-konva").then((module) => module.Stage), { ssr: false })
+  // const Layer = dynamic(() => import("react-konva").then((module) => module.Layer), { ssr: false })
+  // const Image = dynamic(() => import("react-konva").then((module) => module.Image), { ssr: false })
+  // const Circle = dynamic(() => import("react-konva").then((module) => module.Circle), { ssr: false })
+  // const Text = dynamic(() => import("react-konva").then((module) => module.Text), { ssr: false })
+  // const Group = dynamic(() => import("react-konva").then((module) => module.Group), { ssr: false })
 
   function removeDuplicates(data, key) {
     return [...new Map(data.map((item) => [key(item), item])).values()]
@@ -123,21 +104,12 @@ const Diagram = (props) => {
 
     updateDeviceList("changePos", device)
 
-    axios
-      .post(
-        "http://" +
-          process.env.NEXT_PUBLIC_APIHOST +
-          ":" +
-          process.env.NEXT_PUBLIC_APIPORT +
-          "/api/devices/editDevice",
-        device
-      )
-      .then(
-        (result) => {},
-        (error) => {
-          console.log(error)
-        }
-      )
+    axios.post("http://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/editDevice", device).then(
+      (result) => {},
+      (error) => {
+        console.log(error)
+      }
+    )
   }
 
   const onChangeVlad = (e) => {
@@ -162,21 +134,12 @@ const Diagram = (props) => {
       setSquares(removeDuplicates(newSquares, (square) => square.id))
 
       const device = { id: parseInt(vlad.id) }
-      axios
-        .post(
-          "http://" +
-            process.env.NEXT_PUBLIC_APIHOST +
-            ":" +
-            process.env.NEXT_PUBLIC_APIPORT +
-            "/api/devices/editDeviceProvisioned",
-          device
-        )
-        .then(
-          (result) => {},
-          (error) => {
-            console.log(error)
-          }
-        )
+      axios.post("http://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/editDeviceProvisioned", device).then(
+        (result) => {},
+        (error) => {
+          console.log(error)
+        }
+      )
       updateDeviceList("add", device)
     }
   }
@@ -193,21 +156,12 @@ const Diagram = (props) => {
       setSquares(removeDuplicates(newSquares, (square) => square.id))
 
       const device = { id: parseInt(vlad.id) }
-      axios
-        .post(
-          "http://" +
-            process.env.NEXT_PUBLIC_APIHOST +
-            ":" +
-            process.env.NEXT_PUBLIC_APIPORT +
-            "/api/devices/delDevice",
-          device
-        )
-        .then(
-          (result) => {},
-          (error) => {
-            console.log(error)
-          }
-        )
+      axios.post("http://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/delDevice", device).then(
+        (result) => {},
+        (error) => {
+          console.log(error)
+        }
+      )
       updateDeviceList("del", device)
     }
   }
@@ -285,18 +239,10 @@ const Diagram = (props) => {
                     )
                   })}
                 </select>
-                <button
-                  className="btn btn-primary"
-                  type="button"
-                  onClick={onClickAdd}
-                >
+                <button className="btn btn-primary" type="button" onClick={onClickAdd}>
                   Add
                 </button>
-                <button
-                  className="btn btn-danger"
-                  type="button"
-                  onClick={onClickDel}
-                >
+                <button className="btn btn-danger" type="button" onClick={onClickDel}>
                   Del
                 </button>
               </div>
@@ -306,41 +252,15 @@ const Diagram = (props) => {
         </div>
       </div>
       <Container className="sigmaDarkBg">
-        <Stage
-          width={width}
-          height={height}
-          onWheel={handleWheel}
-          scaleX={scale}
-          scaleY={scale}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          x={stageX}
-          y={stageY}
-          draggable
-        >
+        <Stage width={width} height={height} onWheel={handleWheel} scaleX={scale} scaleY={scale} onDragStart={handleDragStart} onDragEnd={handleDragEnd} x={stageX} y={stageY} draggable>
           <Layer>
             <Image image={image} />
             {squares &&
               squares.map((square) => {
                 return (
                   <Group>
-                    <Text
-                      text={square.name}
-                      x={square.x + 20}
-                      y={square.y + 5}
-                      fill="#000000"
-                      stroke="#ffffff"
-                      fillAfterStrokeEnabled="true"
-                    />
-                    <Circle
-                      x={square.x}
-                      y={square.y}
-                      radius={10}
-                      fill={square.fill}
-                      onDragEnd={onDragEndSquare}
-                      draggable
-                      id={square.id.toString()}
-                    />
+                    <Text text={square.name} x={square.x + 20} y={square.y + 5} fill="#000000" stroke="#ffffff" fillAfterStrokeEnabled="true" />
+                    <Circle x={square.x} y={square.y} radius={10} fill={square.fill} onDragEnd={onDragEndSquare} draggable id={square.id.toString()} />
                   </Group>
                 )
               })}

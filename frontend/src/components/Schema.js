@@ -1,40 +1,21 @@
-import { useEffect, useState } from "react"
-import dynamic from "next/dynamic"
-
-import { render } from "react-dom"
+import { useEffect, useState, useRef } from "react"
 import { Stage, Layer, Image, Group, Text, Circle } from "react-konva"
+// import dynamic from "next/dynamic"
 
 import { connect } from "react-redux"
 import { setActiveComponent, setActiveDeviceId } from "../redux/actions/main"
 
 const Schema = (props) => {
-  // const Stage = dynamic(() => import("react-konva").then((module) => module.Stage), {
-  //   ssr: false,
-  // })
-  // const Layer = dynamic(() => import("react-konva").then((module) => module.Layer), {
-  //   ssr: false,
-  // })
-  // const Image = dynamic(() => import("react-konva").then((module) => module.Image), {
-  //   ssr: false,
-  // })
-  // const Rect = dynamic(() => import("react-konva").then((module) => module.Rect), {
-  //   ssr: false,
-  // })
-  // const Circle = dynamic(
-  //   () => import("react-konva").then((module) => module.Circle),
-  //   {
-  //     ssr: false,
-  //   }
-  // )
-  // const Text = dynamic(() => import("react-konva").then((module) => module.Text), {
-  //   ssr: false,
-  // })
-  // const Group = dynamic(() => import("react-konva").then((module) => module.Group), {
-  //   ssr: false,
-  // })
+  const stageRef = useRef()
+  // const Stage = dynamic(() => import("react-konva").then((module) => module.Stage), { ssr: false })
+  // const Layer = dynamic(() => import("react-konva").then((module) => module.Layer), { ssr: false })
+  // const Image = dynamic(() => import("react-konva").then((module) => module.Image), { ssr: false })
+  // const Rect = dynamic(() => import("react-konva").then((module) => module.Rect), { ssr: false })
+  // const Circle = dynamic(() => import("react-konva").then((module) => module.Circle), { ssr: false })
+  // const Text = dynamic(() => import("react-konva").then((module) => module.Text), { ssr: false })
+  // const Group = dynamic(() => import("react-konva").then((module) => module.Group), { ssr: false })
 
-  const { monitorData, config, devices, setActiveComponent, setActiveDeviceId } =
-    props
+  const { monitorData, config, devices, setActiveComponent, setActiveDeviceId } = props
   const [image, setImage] = useState(null)
   const [scale, setScale] = useState(1)
   const [stageX, setStageX] = useState(0)
@@ -93,6 +74,7 @@ const Schema = (props) => {
         fill: fill,
         name: square.type + "-" + square.id,
         id: square.id,
+        key: square.status.x * square.status.y,
       }
       if (square.status.provisioned) newSquares.push(square)
       setSquares(removeDuplicates(newSquares, (square) => square.id))
@@ -243,6 +225,7 @@ const Schema = (props) => {
       <div className="row">
         <div className="col">
           <Stage
+            ref={stageRef}
             width={width}
             height={height}
             onWheel={handleWheel}
@@ -263,14 +246,7 @@ const Schema = (props) => {
               <Image image={image} layout="fill" />
               {squares.map((square) => (
                 <Group>
-                  <Text
-                    text={square.name}
-                    x={square.x + 20}
-                    y={square.y + 5}
-                    fill="#000000"
-                    stroke="#ffffff"
-                    fillAfterStrokeEnabled="true"
-                  />
+                  <Text text={square.name} x={square.x + 20} y={square.y + 5} fill="#000000" stroke="#ffffff" fillAfterStrokeEnabled="true" />
                   <Circle
                     radius={10}
                     x={square.x}

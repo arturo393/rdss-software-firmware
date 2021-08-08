@@ -1,6 +1,6 @@
 {
-  "name": "rdss_v2",
-  "version": "1.0.0",
+  "name": "rdss",
+  "version": "2.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {

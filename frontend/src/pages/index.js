@@ -10,14 +10,7 @@ import { setConfig, setDevices, setMonitorDataEvent } from "../redux/actions/mai
 import DynamicComponent from "../components/DynamicComponent"
 
 const Home = (props) => {
-  const {
-    isLoggedIn,
-    dbConfig,
-    dbDevices,
-    setConfig,
-    setDevices,
-    setMonitorDataEvent,
-  } = props
+  const { isLoggedIn, dbConfig, dbDevices, setConfig, setDevices, setMonitorDataEvent } = props
 
   useEffect(() => {
     setConfig(dbConfig)
@@ -52,28 +45,12 @@ const Home = (props) => {
   } else return <Login />
 }
 export async function getServerSideProps(context) {
-  const dbConfig = await axios
-    .get(
-      "http://" +
-        process.env.NEXT_PUBLIC_APIHOST +
-        ":" +
-        process.env.NEXT_PUBLIC_APIPORT +
-        "/api/manage/config"
-    )
-    .then((res) => {
-      return res.data[0]
-    })
-  const dbDevices = await axios
-    .get(
-      "http://" +
-        process.env.NEXT_PUBLIC_APIHOST +
-        ":" +
-        process.env.NEXT_PUBLIC_APIPORT +
-        "/api/devices/devices"
-    )
-    .then((res) => {
-      return res.data
-    })
+  const dbConfig = await axios.get("http://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/config").then((res) => {
+    return res.data[0]
+  })
+  const dbDevices = await axios.get("http://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/devices").then((res) => {
+    return res.data
+  })
 
   return {
     props: { dbConfig, dbDevices },
