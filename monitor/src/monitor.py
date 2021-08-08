@@ -119,6 +119,8 @@ def openSerialPort(port=""):
         )
     except serial.SerialException as msg:
         logging.exception("Error opening serial port %s" % msg)
+        logging.exception("Trying to open /dev/ttyUSB1")
+        openSerialPort("/dev/ttyUSB1")
     except:
         exctype, errorMsg = sys.exc_info()[:2]
         logging.exception("%s  %s" % (errorMsg, exctype))
