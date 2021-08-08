@@ -32,7 +32,7 @@ export const setActiveDeviceId = (id) => (dispatch) => {
 //   return async (dispatch) => {
 //     try {
 //       const result = await axios.post(
-//         "http://" +
+//         process.env.NEXT_PUBLIC_APIPROTO + "://" +
 //           process.env.NEXT_PUBLIC_APIHOST +
 //           ":" +
 //           process.env.NEXT_PUBLIC_APIPORT +

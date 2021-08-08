@@ -10,4 +10,5 @@ RUN npm install --save-dev eslint eslint-config-next
 # RUN npx next build
 
 CMD "npm run dev"
+# CMD node server.js
 # CMD serve -n out

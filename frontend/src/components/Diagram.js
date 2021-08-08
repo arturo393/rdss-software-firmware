@@ -104,7 +104,7 @@ const Diagram = (props) => {
 
     updateDeviceList("changePos", device)
 
-    axios.post("http://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/editDevice", device).then(
+    axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/editDevice", device).then(
       (result) => {},
       (error) => {
         console.log(error)
@@ -134,7 +134,7 @@ const Diagram = (props) => {
       setSquares(removeDuplicates(newSquares, (square) => square.id))
 
       const device = { id: parseInt(vlad.id) }
-      axios.post("http://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/editDeviceProvisioned", device).then(
+      axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/editDeviceProvisioned", device).then(
         (result) => {},
         (error) => {
           console.log(error)
@@ -156,7 +156,7 @@ const Diagram = (props) => {
       setSquares(removeDuplicates(newSquares, (square) => square.id))
 
       const device = { id: parseInt(vlad.id) }
-      axios.post("http://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/delDevice", device).then(
+      axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/delDevice", device).then(
         (result) => {},
         (error) => {
           console.log(error)

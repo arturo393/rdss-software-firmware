@@ -12,25 +12,16 @@ const ManageRol = () => {
 
   useEffect(() => {
     const userId = { userId: window.location.href.split("/").reverse()[0] }
-    axios
-      .post(
-        "http://" +
-          process.env.NEXT_PUBLIC_APIHOST +
-          ":" +
-          process.env.NEXT_PUBLIC_APIPORT +
-          "/api/manage/userid",
-        userId
-      )
-      .then(
-        (result) => {
-          const rolname = result.data[0].rolname
-          const userid = result.data[0]._id
-          setState({ namerol: rolname, id: userid })
-        },
-        (error) => {
-          console.log(error)
-        }
-      )
+    axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/userid", userId).then(
+      (result) => {
+        const rolname = result.data[0].rolname
+        const userid = result.data[0]._id
+        setState({ namerol: rolname, id: userid })
+      },
+      (error) => {
+        console.log(error)
+      }
+    )
   }, [])
 
   const handleRol = (e) => {
@@ -42,23 +33,14 @@ const ManageRol = () => {
     // get our form data out of state
     const user = { id: state.id, rolname: state.namerol }
 
-    axios
-      .post(
-        "http://" +
-          process.env.NEXT_PUBLIC_APIHOST +
-          ":" +
-          process.env.NEXT_PUBLIC_APIPORT +
-          "/api/manage/editUserRol",
-        user
-      )
-      .then(
-        (result) => {
-          alert("User updated successfully")
-        },
-        (error) => {
-          console.log(error)
-        }
-      )
+    axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/editUserRol", user).then(
+      (result) => {
+        alert("User updated successfully")
+      },
+      (error) => {
+        console.log(error)
+      }
+    )
   }
 
   return (

@@ -37,7 +37,7 @@ const DeviceGraphs = (props) => {
 
       let device = {}
       const deviceReq = { id: parseInt(deviceId), fechaHaciaAdelante: yesterday.toISOString() }
-      axios.post("http://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/deviceId", deviceReq).then((res) => {
+      axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/deviceId", deviceReq).then((res) => {
         device = res.data.find((data) => data.id == deviceId)
 
         setDevice(device)
@@ -108,7 +108,7 @@ const DeviceGraphs = (props) => {
       date.setDate(date.getDate() - dias)
 
       const deviceReq = { id: parseInt(deviceId), fechaHaciaAdelante: date.toISOString() }
-      axios.post("http://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/deviceId", deviceReq).then((res) => {
+      axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/deviceId", deviceReq).then((res) => {
         device = res.data.find((data) => data.id == deviceId)
 
         let labelGraphVoltaje = []

@@ -52,17 +52,9 @@ const mapDispatchToProps = {
 }
 
 export async function getServerSideProps() {
-  const roles = await axios
-    .get(
-      "http://" +
-        process.env.NEXT_PUBLIC_APIHOST +
-        ":" +
-        process.env.NEXT_PUBLIC_APIPORT +
-        "/api/manage/roles"
-    )
-    .then((res) => {
-      return res.data
-    })
+  const roles = await axios.get(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/roles").then((res) => {
+    return res.data
+  })
 
   return {
     props: {

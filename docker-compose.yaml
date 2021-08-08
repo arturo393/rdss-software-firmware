@@ -14,7 +14,7 @@ services:
     depends_on:
       - database
       - monitor
-    command: npm run dev
+    command: node server.js
   monitor:
     build:
       context: ./monitor

@@ -17,23 +17,14 @@ const User = ({ user }) => {
       setState(state)
 
       console.log(state.userState)
-      axios
-        .post(
-          "http://" +
-            process.env.NEXT_PUBLIC_APIHOST +
-            ":" +
-            process.env.NEXT_PUBLIC_APIPORT +
-            "/api/manage/deleteuser",
-          idUser
-        )
-        .then(
-          (result) => {
-            alert("User has been deleted")
-          },
-          (error) => {
-            console.log(error)
-          }
-        )
+      axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/deleteuser", idUser).then(
+        (result) => {
+          alert("User has been deleted")
+        },
+        (error) => {
+          console.log(error)
+        }
+      )
     }
   }
 
@@ -46,11 +37,7 @@ const User = ({ user }) => {
         <button className="btn btn-primary btn-sm" type="button">
           Edit
         </button>
-        <button
-          className="btn btn-warning btn-sm"
-          type="button"
-          onClick={handleDelete}
-        >
+        <button className="btn btn-warning btn-sm" type="button" onClick={handleDelete}>
           Delete
         </button>
       </td>

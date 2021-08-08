@@ -32,16 +32,8 @@ export const login = (loginDetails) => {
   return async (dispatch) => {
     try {
       dispatch(deAuthenticateAction())
-      const result = await axios.post(
-        "http://" +
-          process.env.NEXT_PUBLIC_APIHOST +
-          ":" +
-          process.env.NEXT_PUBLIC_APIPORT +
-          "/api/auth/postLogin",
-        loginDetails
-      )
-      if (result.data.email === loginDetails.email)
-        dispatch(authenticateAction(result))
+      const result = await axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/auth/postLogin", loginDetails)
+      if (result.data.email === loginDetails.email) dispatch(authenticateAction(result))
     } catch (e) {
       dispatch(deAuthenticateAction())
     }

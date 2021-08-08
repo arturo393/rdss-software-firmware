@@ -17,33 +17,24 @@ const ManageUser = (props) => {
 
   useEffect(() => {
     const rolId = { rolId: window.location.href.split("/").reverse()[0] }
-    axios
-      .post(
-        "http://" +
-          process.env.NEXT_PUBLIC_APIHOST +
-          ":" +
-          process.env.NEXT_PUBLIC_APIPORT +
-          "/api/manage/rolid",
-        rolId
-      )
-      .then(
-        (result) => {
-          const objRol = result.data[0]
+    axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/rolid", rolId).then(
+      (result) => {
+        const objRol = result.data[0]
 
-          setState((prevState) => ({
-            ...prevState,
-            rol: objRol,
-          }))
+        setState((prevState) => ({
+          ...prevState,
+          rol: objRol,
+        }))
 
-          setState((prevState) => ({
-            ...prevState,
-            userRol: objRol.users,
-          }))
-        },
-        (error) => {
-          console.log(error)
-        }
-      )
+        setState((prevState) => ({
+          ...prevState,
+          userRol: objRol.users,
+        }))
+      },
+      (error) => {
+        console.log(error)
+      }
+    )
   }, [])
 
   const handleChange = (e) => {
@@ -65,23 +56,14 @@ const ManageUser = (props) => {
   const onSubmit = (e) => {
     e.preventDefault()
     const rolUser = { id: state.rol._id, users: state.userRol }
-    axios
-      .post(
-        "http://" +
-          process.env.NEXT_PUBLIC_APIHOST +
-          ":" +
-          process.env.NEXT_PUBLIC_APIPORT +
-          "/api/manage/editRolUser",
-        rolUser
-      )
-      .then(
-        (result) => {
-          alert("Rol has been edited")
-        },
-        (error) => {
-          console.log(error)
-        }
-      )
+    axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/editRolUser", rolUser).then(
+      (result) => {
+        alert("Rol has been edited")
+      },
+      (error) => {
+        console.log(error)
+      }
+    )
   }
 
   return (
@@ -93,24 +75,9 @@ const ManageUser = (props) => {
             <blockquote className="blockquote mb-0">
               {state.users?.map((user) => {
                 if (state.userRol?.some((i) => i.name === user.name)) {
-                  return (
-                    <Form.Check
-                      type="checkbox"
-                      name={user.name}
-                      label={user.name}
-                      checked={true}
-                      onChange={handleChange}
-                    />
-                  )
+                  return <Form.Check type="checkbox" name={user.name} label={user.name} checked={true} onChange={handleChange} />
                 } else {
-                  return (
-                    <Form.Check
-                      type="checkbox"
-                      name={user.name}
-                      label={user.name}
-                      onChange={handleChange}
-                    />
-                  )
+                  return <Form.Check type="checkbox" name={user.name} label={user.name} onChange={handleChange} />
                 }
               })}
             </blockquote>
@@ -143,17 +110,9 @@ const mapDispatchToProps = {
 }
 
 export async function getServerSideProps() {
-  const users = await axios
-    .get(
-      "http://" +
-        process.env.NEXT_PUBLIC_APIHOST +
-        ":" +
-        process.env.NEXT_PUBLIC_APIPORT +
-        "/api/manage/users"
-    )
-    .then((res) => {
-      return res.data
-    })
+  const users = await axios.get(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/users").then((res) => {
+    return res.data
+  })
 
   return {
     props: {

@@ -27,23 +27,14 @@ const NetworkUpload = () => {
     e.preventDefault()
     const photo = { photo: state.base64 }
 
-    axios
-      .post(
-        "http://" +
-          process.env.NEXT_PUBLIC_APIHOST +
-          ":" +
-          process.env.NEXT_PUBLIC_APIPORT +
-          "/api/manage/editConfigPhoto",
-        photo
-      )
-      .then(
-        (result) => {
-          alert("Photo updated successfully")
-        },
-        (error) => {
-          console.log(error)
-        }
-      )
+    axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/editConfigPhoto", photo).then(
+      (result) => {
+        alert("Photo updated successfully")
+      },
+      (error) => {
+        console.log(error)
+      }
+    )
   }
 
   return (

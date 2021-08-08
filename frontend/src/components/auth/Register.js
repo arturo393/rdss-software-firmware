@@ -18,23 +18,14 @@ function Register(props) {
       password: state.password,
     }
 
-    axios
-      .post(
-        "http://" +
-          process.env.NEXT_PUBLIC_APIHOST +
-          ":" +
-          process.env.NEXT_PUBLIC_APIPORT +
-          "/api/auth/postUser",
-        user
-      )
-      .then(
-        (result) => {
-          alert("User created successfully")
-        },
-        (error) => {
-          console.log(error)
-        }
-      )
+    axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/auth/postUser", user).then(
+      (result) => {
+        alert("User created successfully")
+      },
+      (error) => {
+        console.log(error)
+      }
+    )
   }
 
   const handleChange = (e) => {
@@ -55,11 +46,7 @@ function Register(props) {
                   Email
                 </Form.Label>
                 <Col sm="10">
-                  <Form.Control
-                    type="text"
-                    placeholder="example@example.com"
-                    onChange={handleChange}
-                  />
+                  <Form.Control type="text" placeholder="example@example.com" onChange={handleChange} />
                 </Col>
               </Form.Group>
 
@@ -68,11 +55,7 @@ function Register(props) {
                   Company
                 </Form.Label>
                 <Col sm="10">
-                  <Form.Control
-                    type="text"
-                    placeholder="Company"
-                    onChange={handleChange}
-                  />
+                  <Form.Control type="text" placeholder="Company" onChange={handleChange} />
                 </Col>
               </Form.Group>
 

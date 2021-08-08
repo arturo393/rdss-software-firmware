@@ -10,24 +10,15 @@ const Edit = () => {
 
   useEffect(() => {
     const userId = { userId: window.location.href.split("/").reverse()[0] }
-    axios
-      .post(
-        "http://" +
-          process.env.NEXT_PUBLIC_APIHOST +
-          ":" +
-          process.env.NEXT_PUBLIC_APIPORT +
-          "/api/manage/userid",
-        userId
-      )
-      .then(
-        (result) => {
-          const user = result.data[0]
-          setState({ user })
-        },
-        (error) => {
-          console.log(error)
-        }
-      )
+    axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/userid", userId).then(
+      (result) => {
+        const user = result.data[0]
+        setState({ user })
+      },
+      (error) => {
+        console.log(error)
+      }
+    )
   }, [])
 
   const handleChange = (e) => {
@@ -56,23 +47,14 @@ const Edit = () => {
       company: state.user.company,
     }
 
-    axios
-      .post(
-        "http://" +
-          process.env.NEXT_PUBLIC_APIHOST +
-          ":" +
-          process.env.NEXT_PUBLIC_APIPORT +
-          "/api/manage/editUser",
-        user
-      )
-      .then(
-        (result) => {
-          alert("User updated successfully")
-        },
-        (error) => {
-          console.log(error)
-        }
-      )
+    axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/editUser", user).then(
+      (result) => {
+        alert("User updated successfully")
+      },
+      (error) => {
+        console.log(error)
+      }
+    )
   }
 
   return (
@@ -87,12 +69,7 @@ const Edit = () => {
                   Email
                 </Form.Label>
                 <Col sm="10">
-                  <Form.Control
-                    type="email"
-                    placeholder="example@example.com"
-                    value={state.user.name}
-                    onChange={handleChange}
-                  />
+                  <Form.Control type="email" placeholder="example@example.com" value={state.user.name} onChange={handleChange} />
                 </Col>
               </Form.Group>
               <Form.Group as={Row} controlId="company">
@@ -100,12 +77,7 @@ const Edit = () => {
                   Company
                 </Form.Label>
                 <Col sm="10">
-                  <Form.Control
-                    type="text"
-                    placeholder="Company"
-                    value={state.user.company}
-                    onChange={handleChange}
-                  />
+                  <Form.Control type="text" placeholder="Company" value={state.user.company} onChange={handleChange} />
                 </Col>
               </Form.Group>
               <Button variant="primary" type="submit">

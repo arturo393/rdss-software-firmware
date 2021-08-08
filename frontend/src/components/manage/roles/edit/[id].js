@@ -11,24 +11,15 @@ const Edit = () => {
 
   useEffect(() => {
     const rolId = { rolId: window.location.href.split("/").reverse()[0] }
-    axios
-      .post(
-        "http://" +
-          process.env.NEXT_PUBLIC_APIHOST +
-          ":" +
-          process.env.NEXT_PUBLIC_APIPORT +
-          "/api/manage/rolid",
-        rolId
-      )
-      .then(
-        (result) => {
-          const rol = result.data[0]
-          setState({ rol })
-        },
-        (error) => {
-          console.log(error)
-        }
-      )
+    axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/rolid", rolId).then(
+      (result) => {
+        const rol = result.data[0]
+        setState({ rol })
+      },
+      (error) => {
+        console.log(error)
+      }
+    )
   }, [])
 
   return (

@@ -11,17 +11,9 @@ const Users = (props) => {
   const [editStatus, setEditStatus] = useState(false)
 
   async function getUsers() {
-    const usrs = await axios
-      .get(
-        "http://" +
-          process.env.NEXT_PUBLIC_APIHOST +
-          ":" +
-          process.env.NEXT_PUBLIC_APIPORT +
-          "/api/manage/users"
-      )
-      .then((res) => {
-        return res.data
-      })
+    const usrs = await axios.get(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/users").then((res) => {
+      return res.data
+    })
 
     return usrs
   }
@@ -51,23 +43,14 @@ const Users = (props) => {
       return false
     }
 
-    axios
-      .post(
-        "http://" +
-          process.env.NEXT_PUBLIC_APIHOST +
-          ":" +
-          process.env.NEXT_PUBLIC_APIPORT +
-          "/api/manage/addUser",
-        user
-      )
-      .then(
-        (result) => {
-          alert("User has been Registered")
-        },
-        (error) => {
-          console.log(error)
-        }
-      )
+    axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/addUser", user).then(
+      (result) => {
+        alert("User has been Registered")
+      },
+      (error) => {
+        console.log(error)
+      }
+    )
 
     getUsers().then((usrs) => {
       setUsers(usrs)
@@ -90,23 +73,14 @@ const Users = (props) => {
       usersArray = users.filter(function (el) {
         return el._id != selectedUserId
       })
-      axios
-        .post(
-          "http://" +
-            process.env.NEXT_PUBLIC_APIHOST +
-            ":" +
-            process.env.NEXT_PUBLIC_APIPORT +
-            "/api/manage/deleteuser",
-          { id: selectedUserId }
-        )
-        .then(
-          (result) => {
-            alert("User has been deleted")
-          },
-          (error) => {
-            console.log(error)
-          }
-        )
+      axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/deleteuser", { id: selectedUserId }).then(
+        (result) => {
+          alert("User has been deleted")
+        },
+        (error) => {
+          console.log(error)
+        }
+      )
     }
     setUsers(usersArray)
   }
@@ -154,20 +128,10 @@ const Users = (props) => {
                       {user?.name} ({user?.email})
                     </td>
                     <td>
-                      <button
-                        className="btn btn-primary btn-sm"
-                        type="button"
-                        onClick={handleEdit}
-                        id={user._id}
-                      >
+                      <button className="btn btn-primary btn-sm" type="button" onClick={handleEdit} id={user._id}>
                         Edit
                       </button>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        type="button"
-                        onClick={handleDelete}
-                        id={user._id}
-                      >
+                      <button className="btn btn-danger btn-sm" type="button" onClick={handleDelete} id={user._id}>
                         Delete
                       </button>
                     </td>
@@ -189,37 +153,19 @@ const Users = (props) => {
             <div className="row">
               <div className="col-md-12">
                 <div className="form-floating input-group mb-3">
-                  <input
-                    type="name"
-                    className="form-control"
-                    id="name"
-                    placeholder={0}
-                    required
-                  />
+                  <input type="name" className="form-control" id="name" placeholder={0} required />
                   <label for="name">name</label>
                 </div>
               </div>
               <div className="col-md-12">
                 <div className="form-floating input-group mb-3">
-                  <input
-                    type="email"
-                    className="form-control"
-                    id="email"
-                    placeholder={0}
-                    required
-                  />
+                  <input type="email" className="form-control" id="email" placeholder={0} required />
                   <label for="email">email</label>
                 </div>
               </div>
               <div className="col-md-12">
                 <div className="form-floating input-group mb-3">
-                  <input
-                    type="password"
-                    className="form-control"
-                    id="password"
-                    placeholder={0}
-                    required
-                  />
+                  <input type="password" className="form-control" id="password" placeholder={0} required />
                   <label for="passsword">password</label>
                 </div>
               </div>
@@ -237,11 +183,7 @@ const Users = (props) => {
             <div className="container">
               <div className="row">
                 <div className="col text-center">
-                  <button
-                    className="btn btn-secondary"
-                    type="button"
-                    onClick={closeForm}
-                  >
+                  <button className="btn btn-secondary" type="button" onClick={closeForm}>
                     Cancel
                   </button>
                 </div>

@@ -10,18 +10,10 @@ const Rtdata = (props) => {
   const [deviceName, setDeviceName] = useState("=== Select a Device ===")
 
   useEffect(() => {
-    axios
-      .get(
-        "http://" +
-          process.env.NEXT_PUBLIC_APIHOST +
-          ":" +
-          process.env.NEXT_PUBLIC_APIPORT +
-          "/api/devices/devices"
-      )
-      .then((res) => {
-        const devices = res.data
-        setDevices(devices)
-      })
+    axios.get(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/devices").then((res) => {
+      const devices = res.data
+      setDevices(devices)
+    })
 
     if (activeDeviceId != undefined) {
       document.getElementById("device").value = activeDeviceId
@@ -67,11 +59,7 @@ const Rtdata = (props) => {
                 )
               })}
             </select>
-            <button
-              id="searchDevice"
-              onClick={setSelectedDevice}
-              className="btn btn-primary"
-            >
+            <button id="searchDevice" onClick={setSelectedDevice} className="btn btn-primary">
               Search
             </button>
           </div>

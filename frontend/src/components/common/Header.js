@@ -15,35 +15,17 @@ const Header = (props) => {
   }, [isLoggedIn])
 
   return (
-    <Navbar
-      collapseOnSelect
-      expand="lg"
-      className="navbar navbar-expand-lg  sticky-top   custom-navbar"
-      variant="dark"
-    >
+    <Navbar collapseOnSelect expand="lg" className="navbar navbar-expand-lg  sticky-top   custom-navbar" variant="dark">
       <a className="navbar-brand">
-        <img
-          src="/images/logoSigma.png"
-          alt="Sigma Telecom"
-          height="37px"
-          width="160px"
-          onClick={() => setActiveComponent("alerts")}
-        />
+        <img src="/images/logoSigma.png" alt="Sigma Telecom" height="37px" width="160px" onClick={() => setActiveComponent("alerts")} />
       </a>
       <Navbar.Toggle aria-controls="responsive-navbar-nav" />
 
-      <Navbar.Collapse
-        id="responsive-navbar-nav"
-        className="collapse navbar-collapse"
-      >
+      <Navbar.Collapse id="responsive-navbar-nav" className="collapse navbar-collapse">
         <Nav className="mr-auto">
           {isLoggedIn && (
             <>
-              <a
-                className="nav-link"
-                id="mapMenuItem"
-                onClick={() => setActiveComponent("map")}
-              >
+              <a className="nav-link" id="mapMenuItem" onClick={() => setActiveComponent("map")}>
                 Map
               </a>
               <a className="nav-link" onClick={() => setActiveComponent("alerts")}>
@@ -58,25 +40,16 @@ const Header = (props) => {
           {user && (user.data?.rol === "admin" || user.data?.rol === "sadmin") && (
             <NavDropdown title="Manage" id="collasible-nav-dropdown">
               {user && user.data?.rol === "sadmin" && (
-                <a
-                  className="dropdown-item"
-                  onClick={() => setActiveComponent("usersadmin")}
-                >
+                <a className="dropdown-item" onClick={() => setActiveComponent("usersadmin")}>
                   Users
                 </a>
               )}
 
               <>
-                <a
-                  className="dropdown-item"
-                  onClick={() => setActiveComponent("diagramedit")}
-                >
+                <a className="dropdown-item" onClick={() => setActiveComponent("diagramedit")}>
                   Diagram Edit
                 </a>
-                <a
-                  className="dropdown-item"
-                  onClick={() => setActiveComponent("networkParameters")}
-                >
+                <a className="dropdown-item" onClick={() => setActiveComponent("networkParameters")}>
                   Network Parameters
                 </a>
               </>
