@@ -24,11 +24,11 @@ const Home = (props) => {
         <div className="col-md-12">
           <div className="row">
             <div className="col-md-7" id="myMap">
-              <div className="row bg-dark">
+              <div className="row bg-dark" style={{ zIndex: -10 }}>
                 <Schema />
               </div>
             </div>
-            <div className="col-md-5" id="myStatus">
+            <div className="col-md-5" id="myStatus" style={{ zIndex: 100 }}>
               <div className="row">
                 <Status />
               </div>
