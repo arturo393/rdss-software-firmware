@@ -4,14 +4,7 @@ import { Chart, Line, Bar } from "react-chartjs-2"
 
 import { connect } from "react-redux"
 import { Button } from "react-bootstrap"
-import {
-  convertISODateToTimeFormat,
-  initConfig,
-  setGraficoData,
-  addGraficoData,
-  initOptions,
-  setBorderColor
-} from "../lib/Utils"
+import { convertISODateToTimeFormat, initConfig, setGraficoData, addGraficoData, initOptions, setBorderColor } from "../lib/Utils"
 //import RtChart from "../components/common/RtChart"
 import zoomPlugin from "chartjs-plugin-zoom"
 Chart.register(zoomPlugin) // REGISTER PLUGIN
@@ -23,20 +16,13 @@ const DeviceGraphs = (props) => {
   const [current, setCurrent] = useState()
 
   const [device, setDevice] = useState({})
-  const [graficoVoltaje, setGraficoVoltaje] = useState(
-    initConfig("rgba(75,192,192,1)", "rgba(0,0,0,1)", "Voltaje")
-  )
-  const [graficoCurrent, setGraficoCurrent] = useState(
-    initConfig("rgba(75,192,192,1)", "rgba(0,0,0,1)", "Current")
-  )
-  const [graficoPower, setGraficoPower] = useState(
-    initConfig("rgba(75,192,192,1)", "rgba(0,0,0,1)", "Power")
-  )
+  const [graficoVoltaje, setGraficoVoltaje] = useState(initConfig("rgba(75,192,192,1)", "rgba(75,192,255,0.8)", "Voltaje"))
+  const [graficoCurrent, setGraficoCurrent] = useState(initConfig("rgba(75,192,192,1)", "rgba(75,192,255,0.8)", "Current"))
+  const [graficoPower, setGraficoPower] = useState(initConfig("rgba(75,192,192,1)", "rgba(75,192,255,0.8)", "Power"))
 
   const valorLecturasNull = -9999
 
   useEffect(() => {}, [])
-
 
   /* Actualizacion por BD*/
   useEffect(() => {
@@ -49,58 +35,34 @@ const DeviceGraphs = (props) => {
       const yesterday = new Date(today)
       yesterday.setDate(yesterday.getDate() - 1)
 
-
       let device = {}
       const deviceReq = { id: parseInt(deviceId), fechaHaciaAdelante: yesterday.toISOString() }
-      axios
-        .post(
-          "http://" +
-            process.env.NEXT_PUBLIC_APIHOST +
-            ":" +
-            process.env.NEXT_PUBLIC_APIPORT +
-            "/api/devices/deviceId",
-          deviceReq
-        )
-        .then((res) => {
-          device = res.data.find((data) => data.id == deviceId)
+      axios.post("http://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/deviceId", deviceReq).then((res) => {
+        device = res.data.find((data) => data.id == deviceId)
 
-          setDevice(device)
-          let labelGraphVoltaje = []
-          let labelGraphCurrent = []
-          let labelGraphPower = []
+        setDevice(device)
+        let labelGraphVoltaje = []
+        let labelGraphCurrent = []
+        let labelGraphPower = []
 
-          let dataGraphVoltaje = []
-          let dataGraphCurrent = []
-          let dataGraphPower = []
+        let dataGraphVoltaje = []
+        let dataGraphCurrent = []
+        let dataGraphPower = []
 
-          device.rtData?.map((obj) => {
-            labelGraphVoltaje.push(convertISODateToTimeFormat(obj.sampleTime))
-            labelGraphCurrent.push(convertISODateToTimeFormat(obj.sampleTime))
-            labelGraphPower.push(convertISODateToTimeFormat(obj.sampleTime))
+        device.rtData?.map((obj) => {
+          labelGraphVoltaje.push(convertISODateToTimeFormat(obj.sampleTime))
+          labelGraphCurrent.push(convertISODateToTimeFormat(obj.sampleTime))
+          labelGraphPower.push(convertISODateToTimeFormat(obj.sampleTime))
 
-            dataGraphCurrent.push(obj.current)
-            dataGraphPower.push(obj.power)
-            dataGraphVoltaje.push(obj.voltage)
-          })
-
-          setGraficoVoltaje(
-            setGraficoData(
-              { ...graficoVoltaje },
-              labelGraphVoltaje,
-              dataGraphVoltaje
-            )
-          )
-          setGraficoCurrent(
-            setGraficoData(
-              { ...graficoCurrent },
-              labelGraphCurrent,
-              dataGraphCurrent
-            )
-          )
-          setGraficoPower(
-            setGraficoData({ ...graficoPower }, labelGraphPower, dataGraphPower)
-          )
+          dataGraphCurrent.push(obj.current)
+          dataGraphPower.push(obj.power)
+          dataGraphVoltaje.push(obj.voltage)
         })
+
+        setGraficoVoltaje(setGraficoData({ ...graficoVoltaje }, labelGraphVoltaje, dataGraphVoltaje))
+        setGraficoCurrent(setGraficoData({ ...graficoCurrent }, labelGraphCurrent, dataGraphCurrent))
+        setGraficoPower(setGraficoData({ ...graficoPower }, labelGraphPower, dataGraphPower))
+      })
     }
   }, [deviceId])
 
@@ -119,33 +81,17 @@ const DeviceGraphs = (props) => {
         setVoltaje(dataDevice.rtData.voltage)
         setPower(dataDevice.rtData.power)
         setCurrent(dataDevice.rtData.current)
-        
-        if(dataDevice.rtData.gdwl > 0){
-          setBorderColor({ ...graficoPower }, 'rgb(255, 99, 132)')
+
+        if (dataDevice.rtData.gdwl > 0) {
+          setBorderColor({ ...graficoPower }, "rgba(255, 99, 132,0.8)")
         } else {
-          setBorderColor({ ...graficoPower }, 'rgba(0,0,0,1)')
+          setBorderColor({ ...graficoPower }, "rgba(75,192,255,0.8)")
         }
 
-          addGraficoData(
-            { ...graficoVoltaje },
-            dataDevice.rtData.sampleTime,
-            dataDevice.rtData.voltage
-          )
+        addGraficoData({ ...graficoVoltaje }, dataDevice.rtData.sampleTime, dataDevice.rtData.voltage)
 
-        setGraficoCurrent(
-          addGraficoData(
-            { ...graficoCurrent },
-            dataDevice.rtData.sampleTime,
-            dataDevice.rtData.current
-          )
-        )
-        setGraficoPower(
-          addGraficoData(
-            { ...graficoPower },
-            dataDevice.rtData.sampleTime,
-            dataDevice.rtData.power
-          )
-        )
+        setGraficoCurrent(addGraficoData({ ...graficoCurrent }, dataDevice.rtData.sampleTime, dataDevice.rtData.current))
+        setGraficoPower(addGraficoData({ ...graficoPower }, dataDevice.rtData.sampleTime, dataDevice.rtData.power))
       } else {
         setVoltaje(valorLecturasNull)
         setPower(valorLecturasNull)
@@ -161,53 +107,32 @@ const DeviceGraphs = (props) => {
       var date = new Date()
       date.setDate(date.getDate() - dias)
 
-      const deviceReq = { id: parseInt(deviceId) , fechaHaciaAdelante : date.toISOString() }
-      axios
-        .post(
-          "http://" +
-            process.env.NEXT_PUBLIC_APIHOST +
-            ":" +
-            process.env.NEXT_PUBLIC_APIPORT +
-            "/api/devices/deviceId",
-          deviceReq
-        )
-        .then((res) => {
-          device = res.data.find((data) => data.id == deviceId)
+      const deviceReq = { id: parseInt(deviceId), fechaHaciaAdelante: date.toISOString() }
+      axios.post("http://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/deviceId", deviceReq).then((res) => {
+        device = res.data.find((data) => data.id == deviceId)
 
-          let labelGraphVoltaje = []
-          let labelGraphCurrent = []
-          let labelGraphPower = []
+        let labelGraphVoltaje = []
+        let labelGraphCurrent = []
+        let labelGraphPower = []
 
-          let dataGraphVoltaje = []
-          let dataGraphCurrent = []
-          let dataGraphPower = []
+        let dataGraphVoltaje = []
+        let dataGraphCurrent = []
+        let dataGraphPower = []
 
-          device.rtData?.map((obj) => {
+        device.rtData?.map((obj) => {
+          labelGraphVoltaje.push(convertISODateToTimeFormat(obj.sampleTime))
+          labelGraphCurrent.push(convertISODateToTimeFormat(obj.sampleTime))
+          labelGraphPower.push(convertISODateToTimeFormat(obj.sampleTime))
 
-              labelGraphVoltaje.push(convertISODateToTimeFormat(obj.sampleTime))
-              labelGraphCurrent.push(convertISODateToTimeFormat(obj.sampleTime))
-              labelGraphPower.push(convertISODateToTimeFormat(obj.sampleTime))
-
-              dataGraphVoltaje.push(obj.voltage)
-              dataGraphCurrent.push(obj.current)
-              dataGraphPower.push(obj.power)
-
-          })
-
-          setGraficoVoltaje(
-            setGraficoData(
-              { ...graficoVoltaje },
-              labelGraphVoltaje,
-              dataGraphVoltaje
-            )
-          )
-          setGraficoCurrent(
-            setGraficoData({ ...graficoCurrent }, dataGraphCurrent, dataGraphCurrent)
-          )
-          setGraficoPower(
-            setGraficoData({ ...graficoPower }, dataGraphPower, dataGraphPower)
-          )
+          dataGraphVoltaje.push(obj.voltage)
+          dataGraphCurrent.push(obj.current)
+          dataGraphPower.push(obj.power)
         })
+
+        setGraficoVoltaje(setGraficoData({ ...graficoVoltaje }, labelGraphVoltaje, dataGraphVoltaje))
+        setGraficoCurrent(setGraficoData({ ...graficoCurrent }, dataGraphCurrent, dataGraphCurrent))
+        setGraficoPower(setGraficoData({ ...graficoPower }, dataGraphPower, dataGraphPower))
+      })
     }
   }
 
@@ -215,46 +140,23 @@ const DeviceGraphs = (props) => {
     <>
       {deviceId > 0 && (
         <div>
-          <button
-            className="col-md-4 text-center btn btn-primary"
-            type="button"
-            id="dia"
-            onClick={() => Filtro(1)}
-          >
+          <button className="col-md-4 text-center btn btn-primary" type="button" id="dia" onClick={() => Filtro(1)}>
             Day
           </button>
-          <button
-            className="col-md-4 text-center  btn btn-secondary "
-            variant="primary"
-            type="button"
-            id="mes"
-            onClick={() => Filtro(30)}
-          >
+          <button className="col-md-4 text-center  btn btn-secondary " variant="primary" type="button" id="mes" onClick={() => Filtro(30)}>
             Month
           </button>
-          <button
-            className="col-md-4 text-center btn btn-dark"
-            variant="primary"
-            type="button"
-            id="ano"
-            onClick={() => Filtro(365)}
-          >
+          <button className="col-md-4 text-center btn btn-dark" variant="primary" type="button" id="ano" onClick={() => Filtro(365)}>
             Year
           </button>
 
           {/* <RtChart title="hola" labels={graficoVoltaje.labels} datasets={graficoVoltaje.datasets} options={initOptions('Voltaje')} /> */}
 
-          <h5>
-            Voltage: {voltaje != valorLecturasNull ? voltaje : "Waiting signal"} [V]{" "}
-          </h5>
+          <h5>Voltage: {voltaje != valorLecturasNull ? voltaje : "Waiting signal"} [V] </h5>
           <Line data={graficoVoltaje} options={initOptions("Voltage")} />
-          <h5>
-            Power: {power != valorLecturasNull ? power : "Waiting signal"} [dBm]{" "}
-          </h5>
+          <h5>Power: {power != valorLecturasNull ? power : "Waiting signal"} [dBm] </h5>
           <Line data={graficoPower} options={initOptions("Power")} />
-          <h5>
-            Current : {current != valorLecturasNull ? current : "Waiting signal"} [A]{" "}
-          </h5>
+          <h5>Current : {current != valorLecturasNull ? current : "Waiting signal"} [A] </h5>
           <Line data={graficoCurrent} options={initOptions("Current")} />
         </div>
       )}
