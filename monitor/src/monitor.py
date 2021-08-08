@@ -141,7 +141,7 @@ def getChecksum(cmd):
     return checksum
 
 
-def c(response):
+def evaluateAlerts(response):
     """
     Check if the data collected is within the parameters configured in the DB
     """
