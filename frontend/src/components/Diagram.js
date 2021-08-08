@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react"
 import { Container, Card, Button } from "react-bootstrap"
 import axios from "axios"
-import dynamic from "next/dynamic"
+// import dynamic from "next/dynamic"
+import { Stage, Layer, Image, Group, Text, Circle } from "react-konva"
+
 import { setDevices } from "../redux/actions/main"
 import { connect } from "react-redux"
 
@@ -26,31 +28,31 @@ const Diagram = (props) => {
 
   const [image] = useImage(config.image)
 
-  const Stage = dynamic(() => import("react-konva").then((module) => module.Stage), {
-    ssr: false,
-  })
-  const Layer = dynamic(() => import("react-konva").then((module) => module.Layer), {
-    ssr: false,
-  })
-  const Image = dynamic(() => import("react-konva").then((module) => module.Image), {
-    ssr: false,
-  })
-  const Rect = dynamic(() => import("react-konva").then((module) => module.Rect), {
-    ssr: false,
-  })
+  // const Stage = dynamic(() => import("react-konva").then((module) => module.Stage), {
+  //   ssr: false,
+  // })
+  // const Layer = dynamic(() => import("react-konva").then((module) => module.Layer), {
+  //   ssr: false,
+  // })
+  // const Image = dynamic(() => import("react-konva").then((module) => module.Image), {
+  //   ssr: false,
+  // })
+  // const Rect = dynamic(() => import("react-konva").then((module) => module.Rect), {
+  //   ssr: false,
+  // })
 
-  const Circle = dynamic(
-    () => import("react-konva").then((module) => module.Circle),
-    {
-      ssr: false,
-    }
-  )
-  const Text = dynamic(() => import("react-konva").then((module) => module.Text), {
-    ssr: false,
-  })
-  const Group = dynamic(() => import("react-konva").then((module) => module.Group), {
-    ssr: false,
-  })
+  // const Circle = dynamic(
+  //   () => import("react-konva").then((module) => module.Circle),
+  //   {
+  //     ssr: false,
+  //   }
+  // )
+  // const Text = dynamic(() => import("react-konva").then((module) => module.Text), {
+  //   ssr: false,
+  // })
+  // const Group = dynamic(() => import("react-konva").then((module) => module.Group), {
+  //   ssr: false,
+  // })
 
   function removeDuplicates(data, key) {
     return [...new Map(data.map((item) => [key(item), item])).values()]

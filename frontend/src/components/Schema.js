@@ -1,34 +1,37 @@
 import { useEffect, useState } from "react"
-import { Container, Card } from "react-bootstrap"
 import dynamic from "next/dynamic"
+
+import { render } from "react-dom"
+import { Stage, Layer, Image, Group, Text, Circle } from "react-konva"
+
 import { connect } from "react-redux"
 import { setActiveComponent, setActiveDeviceId } from "../redux/actions/main"
 
 const Schema = (props) => {
-  const Stage = dynamic(() => import("react-konva").then((module) => module.Stage), {
-    ssr: false,
-  })
-  const Layer = dynamic(() => import("react-konva").then((module) => module.Layer), {
-    ssr: false,
-  })
-  const Image = dynamic(() => import("react-konva").then((module) => module.Image), {
-    ssr: false,
-  })
-  const Rect = dynamic(() => import("react-konva").then((module) => module.Rect), {
-    ssr: false,
-  })
-  const Circle = dynamic(
-    () => import("react-konva").then((module) => module.Circle),
-    {
-      ssr: false,
-    }
-  )
-  const Text = dynamic(() => import("react-konva").then((module) => module.Text), {
-    ssr: false,
-  })
-  const Group = dynamic(() => import("react-konva").then((module) => module.Group), {
-    ssr: false,
-  })
+  // const Stage = dynamic(() => import("react-konva").then((module) => module.Stage), {
+  //   ssr: false,
+  // })
+  // const Layer = dynamic(() => import("react-konva").then((module) => module.Layer), {
+  //   ssr: false,
+  // })
+  // const Image = dynamic(() => import("react-konva").then((module) => module.Image), {
+  //   ssr: false,
+  // })
+  // const Rect = dynamic(() => import("react-konva").then((module) => module.Rect), {
+  //   ssr: false,
+  // })
+  // const Circle = dynamic(
+  //   () => import("react-konva").then((module) => module.Circle),
+  //   {
+  //     ssr: false,
+  //   }
+  // )
+  // const Text = dynamic(() => import("react-konva").then((module) => module.Text), {
+  //   ssr: false,
+  // })
+  // const Group = dynamic(() => import("react-konva").then((module) => module.Group), {
+  //   ssr: false,
+  // })
 
   const { monitorData, config, devices, setActiveComponent, setActiveDeviceId } =
     props
@@ -258,29 +261,27 @@ const Schema = (props) => {
           >
             <Layer>
               <Image image={image} layout="fill" />
-              {squares.map((square) => {
-                return (
-                  <Group>
-                    <Text
-                      text={square.name}
-                      x={square.x + 20}
-                      y={square.y + 5}
-                      fill="#000000"
-                      stroke="#ffffff"
-                      fillAfterStrokeEnabled="true"
-                    />
-                    <Circle
-                      radius={10}
-                      x={square.x}
-                      y={square.y}
-                      fill={square.fill}
-                      id={square.id.toString()}
-                      onClick={() => selectDevice(square.id.toString())}
-                      onTap={() => selectDevice(square.id.toString())}
-                    />
-                  </Group>
-                )
-              })}
+              {squares.map((square) => (
+                <Group>
+                  <Text
+                    text={square.name}
+                    x={square.x + 20}
+                    y={square.y + 5}
+                    fill="#000000"
+                    stroke="#ffffff"
+                    fillAfterStrokeEnabled="true"
+                  />
+                  <Circle
+                    radius={10}
+                    x={square.x}
+                    y={square.y}
+                    fill={square.fill}
+                    id={square.id.toString()}
+                    onClick={() => selectDevice(square.id.toString())}
+                    onTap={() => selectDevice(square.id.toString())}
+                  />
+                </Group>
+              ))}
             </Layer>
           </Stage>
         </div>
