@@ -150,10 +150,10 @@ const Diagram = (props) => {
     } else if (!squares.some((s) => s.id == parseInt(vlad.id))) {
       alert("Vlad - " + vlad.id + " is not on the map.")
     } else {
-      let newSquares = squares
-      let square = squares.find((square) => square.id == vlad.id)
-      newSquares.pop(square)
-      setSquares(removeDuplicates(newSquares, (square) => square.id))
+      let newSquares = squares.filter((square) => square.id != vlad.id)
+      // let square = squares.find((square) => square.id == vlad.id)
+      // newSquares.pop(square)
+      setSquares(newSquares)
 
       const device = { id: parseInt(vlad.id) }
       axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/delDevice", device).then(
@@ -183,16 +183,16 @@ const Diagram = (props) => {
         dev.status.y = data.y
       }
 
-      let newDevicesList = devices || newDevices
+      let newDevicesList = devices
       newDevicesList[objIndex] = dev
       setNewDevices(newDevicesList)
-      setDevices(newDevicesList)
     } else {
       console.log("THERE IS NO DATA ID")
     }
   }
 
   useEffect(() => {
+    console.log("SETTING NEW DEVICES STATUS")
     setDevices(newDevices)
   }, [newDevices])
 
@@ -215,6 +215,11 @@ const Diagram = (props) => {
     setStageY((stage.getPointerPosition().y / newScale - mousePointTo.y) * newScale)
 
     // saveConfig({ x: stageX, y: stageY, image: config.image })
+  }
+
+  const selectDevice = (deviceId) => {
+    document.getElementById("device").value = deviceId
+    setVlad({ id: deviceId })
   }
 
   return (
@@ -260,7 +265,17 @@ const Diagram = (props) => {
                 return (
                   <Group>
                     <Text text={square.name} x={square.x + 20} y={square.y + 5} fill="#000000" stroke="#ffffff" fillAfterStrokeEnabled="true" />
-                    <Circle x={square.x} y={square.y} radius={10} fill={square.fill} onDragEnd={onDragEndSquare} draggable id={square.id.toString()} />
+                    <Circle
+                      x={square.x}
+                      y={square.y}
+                      radius={10}
+                      fill={square.fill}
+                      onDragEnd={onDragEndSquare}
+                      draggable
+                      id={square.id.toString()}
+                      onClick={() => selectDevice(square.id.toString())}
+                      onTap={() => selectDevice(square.id.toString())}
+                    />
                   </Group>
                 )
               })}

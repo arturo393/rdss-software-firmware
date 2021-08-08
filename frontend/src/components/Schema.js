@@ -16,6 +16,7 @@ const Schema = (props) => {
   // const Group = dynamic(() => import("react-konva").then((module) => module.Group), { ssr: false })
 
   const { monitorData, config, devices, setActiveComponent, setActiveDeviceId } = props
+  const [provisioned, setProvisioned] = useState([])
   const [image, setImage] = useState(null)
   const [scale, setScale] = useState(1)
   const [stageX, setStageX] = useState(0)
@@ -37,6 +38,10 @@ const Schema = (props) => {
       setWidth((window.innerWidth / 100) * 80)
     }
     setHeight(window.innerHeight)
+
+    let prov = devices.filter((device) => device.status.provisioned === true)
+    setProvisioned(prov)
+    console.log(prov)
   }, [])
 
   useEffect(() => {
@@ -58,52 +63,50 @@ const Schema = (props) => {
 
   useEffect(() => {
     console.log("===RECIBIENDO DATOS DESDE MONITOR===")
+
+    let newSquares = []
     monitorData.map((monitor) => {
-      const data = JSON.parse(monitor)
-      let fill = data.connected ? "green" : "red"
-      if (data.connected && Object.entries(data.alerts).length != 0) {
+      const mdevice = JSON.parse(monitor)
+      let fill = mdevice.connected ? "green" : "red"
+      if (mdevice.connected && Object.entries(mdevice.alerts).length != 0) {
         fill = "yellow"
       }
 
-      let newSquares = squares
-      let square = devices.find((square) => square.id == data.id)
-      square = {
-        ...square,
-        x: square.status.x,
-        y: square.status.y,
+      let device = devices.find((square) => square.id == mdevice.id)
+      device = {
+        ...device,
+        x: device.status.x,
+        y: device.status.y,
         fill: fill,
-        name: square.type + "-" + square.id,
-        id: square.id,
-        key: square.status.x * square.status.y,
+        name: device.type + "-" + device.id,
+        id: device.id,
+        key: device.status.x * device.status.y,
       }
-      if (square.status.provisioned) newSquares.push(square)
-      setSquares(removeDuplicates(newSquares, (square) => square.id))
-
-      // setStageX(config.x)
-      // setStageY(config.y)
+      newSquares.push(device)
     })
+    setSquares(newSquares)
   }, [monitorData])
 
   useEffect(() => {
-    console.log("===RECIBIENDO DATOS DESDE DEVICES===")
+    let prov = devices.filter((device) => device.status.provisioned === true)
+    setProvisioned(prov)
+    let newSquares = []
+    prov.map((device) => {
+      if (device.status.provisioned) {
+        const fill = device.status.connected ? "green" : "red"
 
-    if (devices) {
-      devices.map((device) => {
-        if (device.status.provisioned) {
-          const fill = device.status.connected ? "green" : "red"
-          let newSquares = squares
-          const square = {
-            x: device.status.x,
-            y: device.status.y,
-            fill: fill,
-            name: device.type + "-" + device.id,
-            id: device.id,
-          }
-          newSquares.push(square)
-          setSquares(removeDuplicates(newSquares, (square) => square.id))
+        const square = {
+          x: device.status.x,
+          y: device.status.y,
+          fill: fill,
+          name: device.type + "-" + device.id,
+          id: device.id,
         }
-      })
-    }
+        newSquares.push(square)
+      }
+    })
+    setSquares(newSquares)
+    console.log("NEW DEVICES STATUS")
   }, [devices])
 
   function removeDuplicates(data, key) {
