@@ -40,8 +40,12 @@ const Diagram = (props) => {
   }
 
   useEffect(() => {
-    setWidth((window.innerWidth / 100) * 80)
-    setHeight(window.innerHeight / 2)
+    const aspectRatio = 16 / 9
+    const width = window.innerWidth * 0.87
+    const height = width / aspectRatio
+    setWidth(width)
+    setHeight(height)
+
     if (devices.length > 0) {
       let squaresArr = []
 
@@ -256,7 +260,16 @@ const Diagram = (props) => {
           <div className="col-2"></div>
         </div>
       </div>
-      <Container className="sigmaDarkBg">
+      <div
+        style={{
+          width: "100%",
+          border: "1px solid grey",
+          backgroundColor: "#212529",
+        }}
+        ref={(node) => {
+          const container = node
+        }}
+      >
         <Stage width={width} height={height} onWheel={handleWheel} scaleX={scale} scaleY={scale} onDragStart={handleDragStart} onDragEnd={handleDragEnd} x={stageX} y={stageY} draggable>
           <Layer>
             <Image image={image} />
@@ -281,7 +294,7 @@ const Diagram = (props) => {
               })}
           </Layer>
         </Stage>
-      </Container>
+      </div>
     </>
   )
 }

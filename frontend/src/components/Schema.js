@@ -31,13 +31,18 @@ const Schema = (props) => {
       newImage.src = config.image
       setImage(config.image)
     }
+    const aspectRatio = 16 / 9
+    const width = window.innerWidth * 0.87
+    const height = width / aspectRatio
+    setWidth(width)
+    setHeight(height)
 
-    if (window.innerWidth > 600) {
-      setWidth((window.innerWidth / 100) * 55)
-    } else {
-      setWidth((window.innerWidth / 100) * 80)
-    }
-    setHeight(window.innerHeight)
+    // if (window.innerWidth > 600) {
+    //   setWidth((window.innerWidth / 100) * 55)
+    // } else {
+    //   setWidth((window.innerWidth / 100) * 80)
+    // }
+    // setHeight(window.innerHeight)
 
     let prov = devices.filter((device) => device.status.provisioned === true)
     setProvisioned(prov)
@@ -224,47 +229,52 @@ const Schema = (props) => {
   }
   // return <>Schema </>
   return (
-    <div className="container-fluid">
-      <div className="row">
-        <div className="col">
-          <Stage
-            ref={stageRef}
-            width={width}
-            height={height}
-            onWheel={handleWheel}
-            scaleX={scale}
-            scaleY={scale}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            x={stageX}
-            y={stageY}
-            draggable
-            id="myStage"
-            onTouchMove={handleMultiTouch}
-            onTouchEnd={() => {
-              multiTouchEnd()
-            }}
-          >
-            <Layer>
-              <Image image={image} layout="fill" />
-              {squares.map((square) => (
-                <Group>
-                  <Text text={square.name} x={square.x + 20} y={square.y + 5} fill="#000000" stroke="#ffffff" fillAfterStrokeEnabled="true" />
-                  <Circle
-                    radius={10}
-                    x={square.x}
-                    y={square.y}
-                    fill={square.fill}
-                    id={square.id.toString()}
-                    onClick={() => selectDevice(square.id.toString())}
-                    onTap={() => selectDevice(square.id.toString())}
-                  />
-                </Group>
-              ))}
-            </Layer>
-          </Stage>
-        </div>
-      </div>
+    <div
+      style={{
+        width: "100%",
+        border: "1px solid grey",
+        backgroundColor: "#212529",
+      }}
+      ref={(node) => {
+        const container = node
+      }}
+    >
+      <Stage
+        ref={stageRef}
+        width={width}
+        height={height}
+        onWheel={handleWheel}
+        scaleX={scale}
+        scaleY={scale}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        x={stageX}
+        y={stageY}
+        draggable
+        id="myStage"
+        onTouchMove={handleMultiTouch}
+        onTouchEnd={() => {
+          multiTouchEnd()
+        }}
+      >
+        <Layer>
+          <Image image={image} layout="fill" />
+          {squares.map((square) => (
+            <Group>
+              <Text text={square.name} x={square.x + 20} y={square.y + 5} fill="#000000" stroke="#ffffff" fillAfterStrokeEnabled="true" />
+              <Circle
+                radius={10}
+                x={square.x}
+                y={square.y}
+                fill={square.fill}
+                id={square.id.toString()}
+                onClick={() => selectDevice(square.id.toString())}
+                onTap={() => selectDevice(square.id.toString())}
+              />
+            </Group>
+          ))}
+        </Layer>
+      </Stage>
     </div>
   )
 }
