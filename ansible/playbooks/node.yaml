@@ -17,10 +17,10 @@
       update_cache: yes
       name: nodejs
       state: present
-  - name: "Install NPM-distributed command-line tools"
-    npm:
-      global: yes
-      name: "{{ item }}"
-    with_items:
-      - npx
+  # - name: "Install NPM-distributed command-line tools"
+  #   npm:
+  #     global: yes
+  #     name: "{{ item }}"
+  #   with_items:
+  #     - npx
  
