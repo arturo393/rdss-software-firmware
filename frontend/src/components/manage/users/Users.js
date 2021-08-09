@@ -10,6 +10,9 @@ const Users = (props) => {
   const [user, setUser] = useState({})
   const [editStatus, setEditStatus] = useState(false)
 
+  const [password, setPassword] = useState("")
+  const [passwordStrength, setPasswordStrength] = useState("Very Weak")
+
   async function getUsers() {
     const usrs = await axios.get(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/users").then((res) => {
       return res.data
@@ -97,19 +100,53 @@ const Users = (props) => {
     showForm()
   }
 
+  const handleAdd = () => {
+    setEditStatus(false)
+    clearForm()
+    showForm()
+  }
+
   const showForm = () => {
     document.getElementById("userForm").style.display = "block"
     document.getElementById("userForm").style.visibility = "visible"
   }
   const closeForm = () => {
     setEditStatus(false)
+    clearForm()
     document.getElementById("userForm").style.display = "none"
     document.getElementById("userForm").style.visibility = "hidden"
+  }
+
+  const clearForm = () => {
     document.getElementById("name").value = ""
     document.getElementById("email").value = ""
     document.getElementById("email").readOnly = false
     document.getElementById("password").value = ""
     document.getElementById("rol").value = "user"
+    setPasswordStrength("Very Weak")
+    setPassword("")
+  }
+
+  useEffect(() => {
+    let strongPassword = new RegExp("(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])(?=.{8,})")
+    let veryStrongPassword = new RegExp("((?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])(?=.{8,}))|((?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9])(?=.{12,}))")
+
+    if (password.length <= 4) {
+      setPasswordStrength("Very Weak")
+    } else if (password.length <= 6) {
+      setPasswordStrength("Weak")
+    } else if (password.length <= 8) {
+      setPasswordStrength("Medium")
+    } else if (strongPassword.test(password)) {
+      setPasswordStrength("Strong")
+    } else if (veryStrongPassword.test(password)) {
+      setPasswordStrength("Very Strong")
+    }
+  }, [password])
+
+  const strengthChecker = (event) => {
+    const enteredValue = event.target.value.trim()
+    setPassword(enteredValue)
   }
 
   return (
@@ -142,7 +179,7 @@ const Users = (props) => {
           </div>
           <div className="row">
             <div className="col text-center">
-              <button className="btn btn-primary" type="button" onClick={showForm}>
+              <button className="btn btn-primary" type="button" onClick={handleAdd}>
                 Create New User
               </button>
             </div>
@@ -165,9 +202,21 @@ const Users = (props) => {
               </div>
               <div className="col-md-12">
                 <div className="form-floating input-group mb-3">
-                  <input type="password" className="form-control" id="password" placeholder={0} required />
-                  <label for="passsword">password</label>
+                  <input type="password" className="form-control" id="password" placeholder={0} required onChange={strengthChecker} />
+                  <label for="password">password</label>
+                  <div style={styles.statusBar}>
+                    <div
+                      id="strengthBar"
+                      style={{
+                        ...styles.strength,
+                        width: `${(password.length / 16) * 100}%`,
+                      }}
+                    ></div>
+                    <span style={styles.message}>{passwordStrength}</span>
+                  </div>
                 </div>
+
+                {/* Password strength message */}
               </div>
 
               <div className="col-md-12">
@@ -205,6 +254,58 @@ const mapStateToProps = (state) => {
   return {
     currentUser: state.user.user,
   }
+}
+
+const styles = {
+  // container: {
+  //   width: 400,
+  //   padding: "30px 90px",
+  //   margin: "50px auto",
+  //   backgroundColor: "#f4ff81",
+  //   borderRadius: "10px",
+  //   display: "flex",
+  //   flexDirection: "column",
+  //   alignItems: "center",
+  // },
+  password: {
+    width: 300,
+    padding: "8px 10px",
+    border: "1px solid #444",
+    borderRadius: "10px",
+    outline: "none",
+  },
+  statusBar: {
+    width: 100,
+    height: 10,
+    marginTop: 20,
+    marginLeft: 5,
+    background: "#fff",
+    border: "1px solid #444",
+    borderRadius: "5px",
+  },
+  strength: {
+    height: "100%",
+    maxWidth: "100%",
+    backgroundColor: "#0000ff",
+  },
+  message: {
+    padding: "20px 0",
+    fontSize: 15,
+    marginTop: 5,
+  },
+  button: {
+    padding: "15px 30px",
+    cursor: "pointer",
+    background: "purple",
+    color: "#fff",
+    fontWeight: "bold",
+    border: "none",
+    borderRadius: "30px",
+  },
+  disabledButton: {
+    cursor: "not-allowed",
+    opacity: 0.3,
+  },
 }
 
 export default connect(mapStateToProps)(Users)

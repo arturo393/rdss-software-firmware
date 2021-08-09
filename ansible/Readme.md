@@ -38,3 +38,15 @@ Just execute:
 `ansible-playbook --ask-pass -K main.yaml`
 
 (will be prompted miniPC user password and sudo password)
+
+## Post Installation
+
+Check `monitor` and `frontend` configuration in case you need to adjust them to your specific system needs:
+
+### monitor configuration file
+
+Is located at: `/opt/rdss/monitor/config.py`
+
+### frontend configuration file
+
+Is located at: `/opt/rdss/frontend/.env.local`
