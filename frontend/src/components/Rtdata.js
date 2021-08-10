@@ -65,7 +65,7 @@ const Rtdata = (props) => {
               Search
             </button>
           </div>
-          <Chart />
+          <Chart deviceId={device}  />
           {/* <DeviceGraphs deviceId={device} /> */}
         </div>
       </div>
