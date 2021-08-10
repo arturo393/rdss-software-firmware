@@ -33,12 +33,10 @@ const Chart = (props) => {
     onzoomend: function (domain) {
       //Con esto se almacena el nuevo estado del zoom dentro de la referencia en memoria de la gráfica
       chartRef.current.chart.zoom(domain)
-      console.log(domain)
     },
   }
   const resetChart = () => {
     chartRef.current.chart.zoom([0, 0])
-    // chartRef.current.chart.flush()
   }
 
   return (
