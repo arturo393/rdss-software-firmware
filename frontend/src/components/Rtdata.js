@@ -3,6 +3,8 @@ import axios from "axios"
 import { connect } from "react-redux"
 import DeviceGraphs from "./DeviceGraphs"
 
+import Chart from "./Chart"
+
 const Rtdata = (props) => {
   const { activeDeviceId } = props
   const [devices, setDevices] = useState([])
@@ -63,7 +65,8 @@ const Rtdata = (props) => {
               Search
             </button>
           </div>
-          <DeviceGraphs deviceId={device} />
+          <Chart />
+          {/* <DeviceGraphs deviceId={device} /> */}
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ import "bootstrap/dist/css/bootstrap.css"
 import "../styles/global.css"
 import "../styles/common/Header.css"
 import "../styles/common/Footer.css"
+import "../styles/c3.min.css"
 
 class MyApp extends App {
   render() {
