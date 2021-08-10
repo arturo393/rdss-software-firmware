@@ -16,7 +16,8 @@ const Chart = (props) => {
   useEffect(() => {
     const number = Math.floor(Math.random() * 100 + 1)
     let arr = data.columns[0]
-    arr.push(number)
+    arr.push(number) //Agrega el nuevo valor al final del arreglo
+    arr.splice(1) //Remueve el primer dato (después del label) para mantener la misma cantidad en el gráfico y dar el efecto de desplazamiento hacia la derecha
     setData({ ...data, arr })
   }, [monitorData])
 
