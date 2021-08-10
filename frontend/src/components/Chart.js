@@ -9,15 +9,25 @@ const Chart = (props) => {
   //Configuración inicial de la gráfica
   //para más información revisar:https://c3js.org/
   const [data, setData] = useState({
-    columns: [["sample"]],
+    columns: [["sample", 1]],
   })
+
+  //Precarga 50 datos
+  useEffect(() => {
+    let arr = data.columns[0]
+    for (var i = 0; i <= 50; i++) {
+      const number = Math.floor(Math.random() * 100 + 1)
+      arr.push(number)
+    }
+    setData({ ...data, arr })
+  }, [])
 
   //Acá va la lógica de conversión de datos que vienen desde monitorData
   useEffect(() => {
     const number = Math.floor(Math.random() * 100 + 1)
     let arr = data.columns[0]
     arr.push(number) //Agrega el nuevo valor al final del arreglo
-    arr.splice(1) //Remueve el primer dato (después del label) para mantener la misma cantidad en el gráfico y dar el efecto de desplazamiento hacia la derecha
+    arr.splice(1, 1) //Remueve el primer dato (después del label) para mantener la misma cantidad en el gráfico y dar el efecto de desplazamiento hacia la derecha
     setData({ ...data, arr })
   }, [monitorData])
 
