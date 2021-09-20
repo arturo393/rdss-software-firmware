@@ -47,23 +47,34 @@ function Chart(props) {
     const voltageAlert = alerts?.voltage ? true : false
     const currentAlert = alerts?.current ? true : false
     const powerAlert = alerts?.power ? true : false
+    const guplAlert = alerts?.gupl ? true : false
+    const gdwlAlert = alerts?.gdwl ? true : false
 
     let alerted = false
-    let t = "Device: " + deviceId + "\n"
+
+    let t = "<b>Device: " + deviceId + "</b><br><br>\n"
     if (connectionAlert) {
-      t += "Connection Alert\n"
+      t += " * Connection Alert<br>\n"
       alerted = true
     }
     if (voltageAlert) {
-      t += "Voltage Alert\n"
+      t += " * Voltage Alert<br>\n"
       alerted = true
     }
     if (currentAlert) {
-      t += "Current Alert\n"
+      t += " * Current Alert<br>\n"
       alerted = true
     }
     if (powerAlert) {
-      t += "Power Alert\n"
+      t += " * Power Alert<br>\n"
+      alerted = true
+    }
+    if (guplAlert) {
+      t += " * Gupl Alert<br>\n"
+      alerted = true
+    }
+    if (gdwlAlert) {
+      t += "Gdwl Alert\n"
       alerted = true
     }
 
@@ -140,7 +151,7 @@ function Chart(props) {
             // font: { size: 10 },
             // paper_bgcolor: "#000000",
             // plot_bgcolor: "#c7c7c7",
-            // // hovermode: "y",
+            hovermode: "y",
             // title: label,
             height: 220,
             width: "100%",

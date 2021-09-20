@@ -96,18 +96,24 @@ const Rtdata = (props) => {
           let voltageAlert = false
           let currentAlert = false
           let powerAlert = false
+          let guplAlert = false
+          let gdwlAlert = false
           d.alerts?.map((alert) => {
             connectionAlert |= alert.connection
             voltageAlert |= alert.voltage
             currentAlert |= alert.current
             powerAlert |= alert.power
+            guplAlert |= alert.gupl
+            gdwlAlert |= alert.gdwl
           })
-          let t = "Device: " + device + "\n"
-          if (connectionAlert) t += "Connection Alert\n"
-          if (voltageAlert) t += "Voltage Alert\n"
-          if (currentAlert) t += "Current Alert\n"
-          if (powerAlert) t += "Power Alert\n"
-          if (connectionAlert || voltageAlert || currentAlert || powerAlert) marker.color.push("red")
+          let t = "<b>Device: " + device + "</b><br>\n"
+          if (connectionAlert) t += " * Connection Alert<br>\n"
+          if (voltageAlert) t += " * Voltage Alert<br>\n"
+          if (currentAlert) t += " * Current Alert<br>\n"
+          if (powerAlert) t += " * Power Alert<br>\n"
+          if (guplAlert) t += " * Gupl Alert<br>\n"
+          if (gdwlAlert) t += " * Gdwl Alert<br>\n"
+          if (connectionAlert || voltageAlert || currentAlert || powerAlert || guplAlert || gdwlAlert) marker.color.push("red")
           else marker.color.push("lightblue") //default color
 
           text.push(t)
