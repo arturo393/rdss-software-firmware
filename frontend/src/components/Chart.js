@@ -119,6 +119,7 @@ function Chart(props) {
             {
               type: "scatter",
               mode: "lines+markers",
+              // name: label,
 
               ...d,
               marker: { color: colorArray },
@@ -126,10 +127,23 @@ function Chart(props) {
           ],
 
           layout: {
-            title: label,
-            font: { size: 12 },
-            height: 320,
-            width: "550",
+            yaxis: {
+              title: label,
+              // ticktext: ["long label", "Very long label", "3", "label"],
+              // tickvals: [1, 2, 3, 4],
+              tickmode: "array",
+              automargin: true,
+              titlefont: { size: 20 },
+            },
+            // title: { text: label, x: 0, font: { size: 12, color: "white" } },
+            margin: { l: 10, r: 10, t: 30, b: 30 },
+            // font: { size: 10 },
+            // paper_bgcolor: "#000000",
+            // plot_bgcolor: "#c7c7c7",
+            // // hovermode: "y",
+            // title: label,
+            height: 220,
+            width: "100%",
             datarevision: revision + 1,
           },
           revision: revision,
