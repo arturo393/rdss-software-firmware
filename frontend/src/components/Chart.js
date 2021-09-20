@@ -74,7 +74,7 @@ function Chart(props) {
       alerted = true
     }
     if (gdwlAlert) {
-      t += "Gdwl Alert\n"
+      t += " * Gdwl Alert\n"
       alerted = true
     }
 
