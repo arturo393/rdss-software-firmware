@@ -113,7 +113,7 @@ def openSerialPort(port=""):
     logging.debug("Open Serial port %s" % port)
     try:
         ser = serial.Serial(
-            port=cfg.serial["port"],
+            port=port,
             baudrate=cfg.serial["baudrate"],
             parity=cfg.serial["parity"],
             stopbits=cfg.serial["stopbits"],
