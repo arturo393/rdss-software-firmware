@@ -86,7 +86,6 @@ function Chart(props) {
 
       if (Object.entries(plotData).length !== 0) {
         let data = plotData
-        console.log(data)
 
         const alertStatus = getPointText(currentDeviceData.rtData.alerts)
 
@@ -108,13 +107,11 @@ function Chart(props) {
     if (Object.entries(plotData).length !== 0 && autoArrange) {
       let d = plotData
 
-      console.log("RENDERING: " + deviceId + " chart: " + filter + " Revision:" + revision + " color:" + color)
       let colorArray = []
       d.marker.color.map((c) => {
         colorArray.push(c == "red" ? c : color)
       })
 
-      console.log(colorArray)
       const plotOptions = { responsive: true, displaylogo: false }
       setPlot(
         {
@@ -148,7 +145,6 @@ function Chart(props) {
       onUpdate={(figure) => {
         setPlot(figure)
         setAutoArrange(figure.layout.xaxis.autorange)
-        console.log(figure)
       }}
       revision={revision}
       data={plot.data}
