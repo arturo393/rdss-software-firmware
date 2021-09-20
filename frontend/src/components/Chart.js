@@ -151,7 +151,7 @@ function Chart(props) {
             // font: { size: 10 },
             // paper_bgcolor: "#000000",
             // plot_bgcolor: "#c7c7c7",
-            hovermode: "y",
+            hovermode: "x",
             // title: label,
             height: 220,
             width: "100%",
