@@ -91,14 +91,18 @@ def insertDevicesDataIntoDB(rtData):
         d = json.loads(device)
         if "rtData" in d:
             logging.debug("Data written to DB: {}".format(d))
+
             # Patches
-            if(d["rtData"]["voltage"] > cfg.MAX_VOLTAGE):
-                d["rtData"]["voltage"] = cfg.MAX_VOLTAGE
+            if "voltage" in d["rtData"]:
+                if(d["rtData"]["voltage"] > cfg.MAX_VOLTAGE):
+                    d["rtData"]["voltage"] = cfg.MAX_VOLTAGE
+
             try:
                 if "alerts" in d:
                     database.devices.update_one(
                         {"id": d["id"]}, {"$set": {"alerts": d["alerts"]}})
-                database.devices.update(
+
+                database.devices.update_one(
                     {"id": d["id"]}, {"$addToSet": {"rtData": d["rtData"]}})
             except Exception as e:
                 logging.exception(e)
@@ -119,8 +123,7 @@ def openSerialPort(port=""):
         )
     except serial.SerialException as msg:
         logging.exception("Error opening serial port %s" % msg)
-        logging.exception("Trying to open /dev/ttyUSB1")
-        openSerialPort("/dev/ttyUSB1")
+        logging.exception("Trying to open " + port)
     except:
         exctype, errorMsg = sys.exc_info()[:2]
         logging.exception("%s  %s" % (errorMsg, exctype))
@@ -369,6 +372,7 @@ def run_monitor():
         for x in provisionedDevicesArr:
             device = int(x["id"])
             deviceData = {}
+            deviceData["rtData"] = {}
             logging.debug("ID: %s", device)
 
             response = sendCmd(ser, device, False)
@@ -379,12 +383,15 @@ def run_monitor():
                 connectedDevices += 1
                 deviceData["connected"] = True
                 deviceData["rtData"] = response
-                deviceData["alerts"] = evaluateAlerts(response)
-
+                alerts = evaluateAlerts(response)
+                deviceData["rtData"]["alerts"] = alerts
+                deviceData["alerts"] = alerts
                 updateDeviceConnectionStatus(device, True)
             else:
                 logging.debug("No response from device")
                 deviceData["connected"] = False
+                deviceData["rtData"] = {"sampleTime": timeNow}
+                deviceData["rtData"]["alerts"] = {"connection": True}
                 updateDeviceConnectionStatus(device, False)
 
             rtData.append(json.dumps(deviceData, default=defaultJSONconverter))
@@ -405,7 +412,10 @@ def listen():
         if database is None:
             dbConnect()
         if ser is None:
-            openSerialPort()
+            try:
+                openSerialPort("/dev/ttyUSB0")
+            except:
+                openSerialPort("/dev/ttyUSB1")
 
         run_monitor()
         eventlet.sleep(cfg.POLLING_SLEEP)

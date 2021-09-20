@@ -71,6 +71,11 @@ body {
   font-size: calc(100% + 1vw + 1vh);
 }
 
+.js-plotly-plot .plotly .modebar {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 @media (min-width: 544px) {
   h1 {
     font-size: 1.5rem;
