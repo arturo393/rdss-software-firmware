@@ -35,7 +35,7 @@ function Chart(props) {
       setRevision(rtData.x.length + deviceId + Math.floor(Math.random() * 100 + 1))
       setPlotData(data)
     }
-  }, [rtData, deviceId])
+  }, [rtData])
 
   useEffect(() => {
     setAutoArrange(true)
