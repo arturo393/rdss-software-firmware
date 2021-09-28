@@ -35,7 +35,7 @@ function Chart(props) {
       setRevision(rtData.x.length + deviceId + Math.floor(Math.random() * 100 + 1))
       setPlotData(data)
     }
-  }, [rtData])
+  }, [rtData, deviceId])
 
   useEffect(() => {
     console.log("plotData changed")
@@ -100,6 +100,9 @@ function Chart(props) {
 
         const alertStatus = getPointText(currentDeviceData.rtData.alerts)
 
+        //Fixes power tolerane
+        if (filter == "power" && currentDeviceData.rtData[filter] < -5) currentDeviceData.rtData[filter] = -5
+
         data.y.push(currentDeviceData.rtData[filter] || data.y[data.y.length - 1])
         const currentIndex = data.y.length - 1
         data.x[currentIndex] = currentDeviceData.rtData.sampleTime
@@ -123,7 +126,7 @@ function Chart(props) {
         colorArray.push(c == "red" ? c : color)
       })
 
-      const plotOptions = { responsive: true, displaylogo: false }
+      const plotOptions = { responsive: true, displaylogo: false, scrollZoom: true }
       setPlot(
         {
           data: [
@@ -158,6 +161,7 @@ function Chart(props) {
             datarevision: revision + 1,
           },
           revision: revision,
+          config: plotOptions,
         },
         plotOptions
       )
@@ -176,6 +180,7 @@ function Chart(props) {
       ref={plotRef}
       layout={plot.layout}
       debug={true}
+      config={plot.config}
     />
   )
 }

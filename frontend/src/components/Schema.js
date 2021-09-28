@@ -118,6 +118,13 @@ const Schema = (props) => {
     return [...new Map(data.map((item) => [key(item), item])).values()]
   }
 
+  const reCenterMap = (e) => {
+    e.preventDefault()
+    setScale(1)
+    setStageX(0)
+    setStageY(0)
+  }
+
   const selectDevice = (id) => {
     setActiveComponent("rtdata")
     setActiveDeviceId(id)
@@ -239,6 +246,10 @@ const Schema = (props) => {
         const container = node
       }}
     >
+      <button className="btn btn-sm btn-secondary " onClick={reCenterMap}>
+        Reset Map Position/Size
+      </button>
+
       <Stage
         ref={stageRef}
         width={width}

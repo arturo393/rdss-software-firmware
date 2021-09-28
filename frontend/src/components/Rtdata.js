@@ -87,6 +87,8 @@ const Rtdata = (props) => {
 
           voltage.push(d.voltage?.toFixed(2) || lastValues.voltage)
           current.push(d.current?.toFixed(2) || lastValues.current)
+          //Fixes POWER tolerance
+          if (d.power?.toFixed(2) <= -5) d.power = null
           power.push(d.power?.toFixed(2) || lastValues.power)
           lastValues.voltage = voltage.at(-1)
           lastValues.current = current.at(-1)
@@ -131,15 +133,19 @@ const Rtdata = (props) => {
   const getDateTime = (obj) => {
     let dateString = obj.year
 
-    const hour = obj.hour || "00"
-    const minute = obj.minute || "00"
-    const second = obj.second || "00"
+    if (obj.hour === undefined) obj.hour = 0
+    if (obj.minute === undefined) obj.minute = 0
+    if (obj.second === undefined) obj.second = 0
+
+    obj.hour = ("0" + obj.hour).slice(-2) || "00"
+    obj.minute = ("0" + obj.minute).slice(-2) || "00"
+    obj.second = ("0" + obj.second).slice(-2) || "00"
 
     dateString += "-" + obj.month
     dateString += "-" + obj.day
-    dateString += " " + hour
-    dateString += ":" + minute
-    dateString += ":" + second
+    dateString += " " + obj.hour
+    dateString += ":" + obj.minute
+    dateString += ":" + obj.second
 
     return dateString
   }

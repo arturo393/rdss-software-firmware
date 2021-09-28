@@ -122,13 +122,13 @@ export default async function (req, res, next) {
       $group: {
         _id: dynId,
         voltage: {
-          $avg: { $round: ["$voltage", 2] },
+          $avg: "$voltage",
         },
         current: {
-          $avg: { $round: ["$current", 2] },
+          $avg: "$current",
         },
         power: {
-          $avg: { $round: ["$power", 2] },
+          $avg: "$power",
         },
         alerts: {
           $push: "$alerts",
