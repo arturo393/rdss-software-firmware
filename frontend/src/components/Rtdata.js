@@ -88,7 +88,7 @@ const Rtdata = (props) => {
           voltage.push(d.voltage?.toFixed(2) || lastValues.voltage)
           current.push(d.current?.toFixed(2) || lastValues.current)
           //Fixes POWER tolerance
-          if (d.power?.toFixed(2) <= -5) d.power = null
+          if (d.power?.toFixed(2) <= -5) d.power = -5
           power.push(d.power?.toFixed(2) || lastValues.power)
           lastValues.voltage = voltage.at(-1)
           lastValues.current = current.at(-1)
