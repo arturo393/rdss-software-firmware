@@ -38,6 +38,10 @@ function Chart(props) {
   }, [rtData, deviceId])
 
   useEffect(() => {
+    setAutoArrange(true)
+  }, [deviceId])
+
+  useEffect(() => {
     console.log("plotData changed")
     renderPlot()
   }, [revision])
