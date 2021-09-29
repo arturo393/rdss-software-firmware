@@ -46,7 +46,6 @@ const Schema = (props) => {
 
     let prov = devices.filter((device) => device.status.provisioned === true)
     setProvisioned(prov)
-    console.log(prov)
   }, [])
 
   useEffect(() => {

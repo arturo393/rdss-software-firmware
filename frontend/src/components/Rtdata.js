@@ -52,6 +52,8 @@ const Rtdata = (props) => {
       setDeviceName("vlad" + activeDeviceId)
       setDevice(activeDeviceId)
     }
+    handleDateFromChange(new Date(Date.now() - 3600 * 1000 * 6))
+    handleDateToChange(new Date())
   }, [activeDeviceId])
 
   useEffect(() => {
