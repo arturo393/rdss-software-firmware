@@ -162,14 +162,18 @@ const Rtdata = (props) => {
 
   const hiddeSpinner = () => {
     let spinner = document.getElementById("spinnerContainer")
-    spinner.style.visibility = "hidden"
-    spinner.style.opacity = 0
+    if (spinner) {
+      spinner.style.visibility = "hidden"
+      spinner.style.opacity = 0
+    }
   }
 
   const showSpinner = () => {
     let spinner = document.getElementById("spinnerContainer")
-    spinner.style.visibility = "visible"
-    spinner.style.opacity = 1
+    if (spinner) {
+      spinner.style.visibility = "visible"
+      spinner.style.opacity = 1
+    }
   }
 
   return (
