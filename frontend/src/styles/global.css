@@ -154,3 +154,20 @@ body {
 .btn-seconday {
   background-color: #636463;
 }
+
+.spinnerContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  transition: opacity 0.2s;
+}
+
+.spinnerContainer #spinner {
+  position: relative;
+  top: 50%;
+  right: 25%;
+}

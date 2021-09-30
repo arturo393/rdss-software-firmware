@@ -44,6 +44,7 @@ const Rtdata = (props) => {
       setDevice(activeDeviceId)
       getDeviceRTData(activeDeviceId)
     }
+    hiddeSpinner()
   }, [])
 
   useEffect(() => {
@@ -57,6 +58,7 @@ const Rtdata = (props) => {
   }, [activeDeviceId])
 
   useEffect(() => {
+    showSpinner()
     getDeviceRTData(device)
   }, [device, dateFrom, dateTo])
 
@@ -158,8 +160,26 @@ const Rtdata = (props) => {
     setDevice(deviceSelector.selectedIndex)
   }
 
+  const hiddeSpinner = () => {
+    let spinner = document.getElementById("spinnerContainer")
+    spinner.style.visibility = "hidden"
+    spinner.style.opacity = 0
+  }
+
+  const showSpinner = () => {
+    let spinner = document.getElementById("spinnerContainer")
+    spinner.style.visibility = "visible"
+    spinner.style.opacity = 1
+  }
+
   return (
     <div className="containers">
+      <span className="spinnerContainer" id="spinnerContainer">
+        <div className="spinner-border text-light" role="status" name="spinner" id="spinner" style={{ maxWidth: "50px", maxHeight: "50px" }}>
+          <span>Loading...</span>
+        </div>
+      </span>
+
       <div className="text-center mt-2 mb-2">
         <h5>RT-Data</h5>
       </div>
@@ -203,6 +223,7 @@ const Rtdata = (props) => {
           <Chart deviceId={device} rtData={rtData} label={"Voltage"} filter="voltage" color="lightblue" />
           <Chart deviceId={device} rtData={rtData} label={"Current"} filter="current" color="green" />
           <Chart deviceId={device} rtData={rtData} label={"Power"} filter="power" color="orange" />
+          {hiddeSpinner()}
 
           {/* <DeviceGraphs deviceId={device} /> */}
         </div>
