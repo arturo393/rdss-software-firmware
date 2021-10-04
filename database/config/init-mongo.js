@@ -10,12 +10,6 @@ db.createUser({
   roles: [{ role: 'readWrite', db: 'rdss' }],
 });
 
-db.users.insert({
-  name: 'test3@test3.cl',
-  company: 'test3',
-  password: '123',
-  rolname: 'user',
-});
 
 db.users.insert({
   email: 'sigmadev@sigma-telecom.com',
