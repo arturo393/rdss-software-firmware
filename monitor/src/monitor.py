@@ -128,7 +128,7 @@ def openSerialPort(port=""):
     except:
         exctype, errorMsg = sys.exc_info()[:2]
         logging.exception("%s  %s" % (errorMsg, exctype))
-        openSerialPort("/dev/ttyUSB1")
+        openSerialPort("/dev/ttyUSB0")
 
 
 def getChecksum(cmd):
