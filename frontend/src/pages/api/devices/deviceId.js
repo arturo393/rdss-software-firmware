@@ -22,12 +22,12 @@ export default async function (req, res, next) {
     // second: "$second",
   }
 
-  if (diffInDays > 7 && diffInDays <= 31) {
+  if (diffInDays > 4 && diffInDays <= 31) {
     dynId.hour = "$hour"
-  } else if (diffInDays > 0.5 && diffInDays <= 7) {
+  } else if (diffInDays > 0.25 && diffInDays <= 4) {
     dynId.hour = "$hour"
     dynId.minute = "$minute"
-  } else if (diffInDays <= 0.5) {
+  } else if (diffInDays <= 0.25) {
     dynId.hour = "$hour"
     dynId.minute = "$minute"
     dynId.second = "$second"
