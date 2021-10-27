@@ -318,6 +318,7 @@ def sendCmd(ser, cmd, createdevice):
 
     except Exception as e:
         logging.error(e)
+        sys.exit()
 
     return finalData
 
