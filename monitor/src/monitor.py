@@ -11,6 +11,7 @@ from struct import *
 from sympy import *
 
 import json
+import base64
 
 from flask_socketio import SocketIO
 from flask import Flask
@@ -20,11 +21,10 @@ import eventlet
 logging.basicConfig(filename=cfg.LOGGING_FILE, level=logging.DEBUG)
 
 
-# eventlet.monkey_patch()
-
-
 app = Flask(__name__)
 
+# socket = SocketIO(app, cors_allowed_origins='*',
+#                   logger=True, engineio_logger=True)
 socket = SocketIO(app, cors_allowed_origins='*')
 
 database = None
@@ -329,13 +329,17 @@ def sendStatusToFrontEnd(rtData):
     This updates frontend interface
     """
     logging.debug("Emiting event...")
-    data = {
+
+    eventMessage = {
         "event": 'set_rtdata_event',
         "leave": False,
         "handle": 'SET_MONITOR_DATA_EVENT',
         "data": rtData
     }
-    socket.emit('set_rtdata_event', data)
+    socket.emit('set_rtdata_event', base64.b64encode(
+        json.dumps(eventMessage).encode('utf-8')))
+    eventlet.monkey_patch()
+    socket.emit('set_rtdata_event', eventMessage)
 
 
 def defaultJSONconverter(o):

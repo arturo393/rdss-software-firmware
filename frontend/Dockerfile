@@ -1,4 +1,4 @@
-FROM node
+FROM node:16.12.0
 # RUN apt -y update & apt -y upgrade
 # RUN apt -y install xsel
 WORKDIR /opt/rdss/frontend

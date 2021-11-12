@@ -12,12 +12,8 @@ export default function socketMiddleware() {
   //     // transports: ["websocket", "polling"],
   //   }
   // )
-  const socket = io(
-    "http://" +
-      process.env.NEXT_PUBLIC_SOCKETSHOST +
-      ":" +
-      process.env.NEXT_PUBLIC_SOCKETSPORT
-  )
+  // const socket = io("http://" + process.env.NEXT_PUBLIC_SOCKETSHOST + ":" + process.env.NEXT_PUBLIC_SOCKETSPORT, { forceBase64: true, preMessageDeflate: true })
+  const socket = io("http://" + process.env.NEXT_PUBLIC_SOCKETSHOST + ":" + process.env.NEXT_PUBLIC_SOCKETSPORT, { forceBase64: true })
 
   console.log("=== INICIANDO SOCKETS MIDDLEWARE ===")
 
