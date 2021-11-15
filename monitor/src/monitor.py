@@ -207,7 +207,7 @@ def sendCmd(ser, cmd, createdevice):
             ser.write(bytes.fromhex(hex_byte))
 
         # ---- Read from serial
-        hexResponse = ser.readline()
+        hexResponse = ser.read(21)
 
         logging.debug("GET: "+hexResponse.hex('-'))
 
