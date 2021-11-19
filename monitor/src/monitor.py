@@ -289,7 +289,7 @@ def sendCmd(ser, cmd, createdevice):
             solutionAgcDwl = 0
         else:
             solutionAGCDWL = solveset(
-                Eq(-0.8728*x**6 + 14.702*x**5 - 99.306*x**4 + 341.63*x**3 - 624.11*x**2 + 561.72*x - 180.8, tranformData[4]), x)
+                Eq(-0.8728*x**6 + 14.702*x**5 - 99.306*x**4 + 341.63*x**3 - 624.11*x**2 + 561.72*x - 180.8, tranformData[6]), x)
             solutionAgcDwl = str(solutionAGCDWL.args[1])
             solutionAgcDwl = float(solutionAgcDwl[:6])
 
