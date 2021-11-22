@@ -277,7 +277,7 @@ def sendCmd(ser, cmd, createdevice):
         # -----------------------------------------------------
 
         x, y = symbols('x y')
-        if (tranformData[4] >= 3.8):
+        if (tranformData[4] >= 3.8 || transformData[4] < 1.1):
             solutionAgcUpl = 0
         else:
             solutionAGCUPL = solveset(
@@ -285,7 +285,7 @@ def sendCmd(ser, cmd, createdevice):
             solutionAgcUpl = str(solutionAGCUPL.args[1])
             solutionAgcUpl = float(solutionAgcUpl[:6])
 
-        if(tranformData[6] >= 3.8):
+        if(tranformData[6] >= 3.8  || transformData[4] < 1.1):
             solutionAgcDwl = 0
         else:
             solutionAGCDWL = solveset(
