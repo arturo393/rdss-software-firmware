@@ -285,7 +285,7 @@ def sendCmd(ser, cmd, createdevice):
             solutionAgcUpl = str(solutionAGCUPL.args[1])
             solutionAgcUpl = float(solutionAgcUpl[:6])
 
-        if(tranformData[6] >= 3.8  or tranformData[4] < 1.1):
+        if(tranformData[6] >= 3.8  or tranformData[6] < 1.1):
             solutionAgcDwl = 0
         else:
             solutionAGCDWL = solveset(

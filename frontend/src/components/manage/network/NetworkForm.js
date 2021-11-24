@@ -131,7 +131,7 @@ const NetworkForm = (props) => {
               <div className="row">
                 <div className="col-md-6">
                   <label for="minUplink" className="form-label">
-                    <h6>Min Uplink</h6>
+                    <h6>Min Uplink AGC</h6>
                   </label>
                   <div className="input-group mb-3">
                     <input type="number" value={newConfig.minUplink} className="form-control" id="minUplink" placeholder={newConfig.minUplink} onChange={handleChange} />
@@ -153,7 +153,7 @@ const NetworkForm = (props) => {
               <div className="row">
                 <div className="col-md-6">
                   <label for="minDownlink" className="form-label">
-                    <h6>Min Downlink</h6>
+                    <h6>Min Downlink AGC</h6>
                   </label>
                   <div className="input-group mb-3">
                     <input type="number" value={newConfig.minDownlink} className="form-control" id="minDownlink" placeholder={newConfig.minDownlink} onChange={handleChange} />
@@ -163,7 +163,7 @@ const NetworkForm = (props) => {
                 </div>
                 <div className="col-md-6">
                   <label for="maxDownlink" className="form-label">
-                    <h6>Max Downlink</h6>
+                    <h6>Max Downlink AGC</h6>
                   </label>
                   <div className="input-group mb-3">
                     <input type="number" value={newConfig.maxDownlink} className="form-control" id="maxDownlink" placeholder={newConfig.maxDownlink} onChange={handleChange} />
@@ -175,7 +175,7 @@ const NetworkForm = (props) => {
               <div className="row">
                 <div className="col-md-6">
                   <label for="minDownlinkOut" className="form-label">
-                    <h6>Min DL Output Power</h6>
+                    <h6>Min Downlink Output Power</h6>
                   </label>
                   <div className="input-group mb-3">
                     <input type="number" value={newConfig.minDownlinkOut} className="form-control" id="minDownlinkOut" placeholder={newConfig.minDownlinkOut} onChange={handleChange} />
@@ -186,7 +186,7 @@ const NetworkForm = (props) => {
                 <div className="col-md-6">
                   <div className="input-group mb-3">
                     <label for="maxDownlinkOut" className="form-label">
-                      <h6>Max DL Output Power</h6>
+                      <h6>Max Downlink Output Power</h6>
                     </label>
                     <div class="input-group mb-3">
                       <input type="number" value={newConfig.maxDownlinkOut} className="form-control" id="maxDownlinkOut" placeholder={newConfig.maxDownlinkOut} onChange={handleChange} />
