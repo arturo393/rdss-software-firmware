@@ -27,7 +27,7 @@ const Alerts = (props) => {
         a_voltage = data.alerts.voltage ? red.src : green.src
         a_current = data.alerts.current ? red.src : green.src
         a_agcup = data.alerts.gupl ? red.src : green.src
-        a_agcdown = data.alerts.guwl ? red.src : green.src
+        a_agcdown = data.alerts.gdwl ? red.src : green.src
         a_ptx = data.alerts.power ? red.src : green.src
       } else {
         a_connected = red.src
