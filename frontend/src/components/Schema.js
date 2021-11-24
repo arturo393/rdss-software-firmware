@@ -49,11 +49,12 @@ const Schema = (props) => {
   }, [])
 
   useEffect(() => {
-    if (window.innerWidth > 600) {
-      setWidth((window.innerWidth / 100) * 55)
-    } else {
-      setWidth((window.innerWidth / 100) * 80)
-    }
+    setWidth(window.innerWidth)
+    // if (window.innerWidth > 600) {
+    //   setWidth((window.innerWidth / 100) * 99)
+    // } else {
+    //   setWidth((window.innerWidth / 100) * 99)
+    // }
     setHeight(window.innerHeight)
   }, [window])
 
@@ -245,7 +246,7 @@ const Schema = (props) => {
         const container = node
       }}
     >
-      <button className="btn btn-sm btn-secondary " onClick={reCenterMap}>
+      <button className="btn btn-sm btn-secondary position-absolute bottom-0 start-50 translate-middle-x" style={{ zIndex: 1000 }} onClick={reCenterMap}>
         Reset Map Position/Size
       </button>
 

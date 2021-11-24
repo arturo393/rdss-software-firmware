@@ -3,10 +3,10 @@ import { Modal } from "react-bootstrap"
 
 import Diagram from "./Diagram"
 const DiagramEdit = () => {
-  const [show, setShow] = useState(true)
+  // const [show, setShow] = useState(true)
 
-  const handleClose = () => setShow(false)
-  const handleShow = () => setShow(true)
+  // const handleClose = () => setShow(false)
+  // const handleShow = () => setShow(true)
 
   useEffect(() => {}, [])
 
@@ -24,13 +24,7 @@ const DiagramEdit = () => {
           </button>
         </div>
       </div>
-      <Modal
-        aria-labelledby="contained-modal-title-vcenter"
-        centered
-        show={show}
-        onHide={handleClose}
-        dialogClassName="sigma-modal"
-      >
+      <Modal aria-labelledby="contained-modal-title-vcenter" centered show={show} onHide={handleClose} dialogClassName="sigma-modal">
         <Modal.Header className="sigmaDarkBg">
           <Modal.Title>Diagram Edit</Modal.Title>
           <div>

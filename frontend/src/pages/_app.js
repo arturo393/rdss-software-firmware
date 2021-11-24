@@ -19,7 +19,7 @@ class MyApp extends App {
       <>
         <Header />
         <Component {...pageProps} />
-        <Footer />
+        {/* <Footer /> */}
       </>
     )
   }

@@ -11,13 +11,13 @@ const Header = (props) => {
   const { user, isLoggedIn, setActiveComponent, logout } = props
 
   useEffect(() => {
-    if (isLoggedIn) setActiveComponent("alerts")
+    if (isLoggedIn) setActiveComponent("map")
   }, [isLoggedIn])
 
   return (
     <Navbar collapseOnSelect expand="lg" className="navbar navbar-expand-lg  sticky-top   custom-navbar" variant="dark">
       <a className="navbar-brand">
-        <img src="/images/logoSigma.png" alt="Sigma Telecom" height="37px" width="160px" onClick={() => setActiveComponent("alerts")} />
+        <img src="/images/logoSigma.png" alt="Sigma Telecom" height="37px" width="160px" onClick={() => setActiveComponent("map")} />
       </a>
       <Navbar.Toggle aria-controls="responsive-navbar-nav" />
 
@@ -33,6 +33,9 @@ const Header = (props) => {
               </a>
               <a className="nav-link" onClick={() => setActiveComponent("rtdata")}>
                 RT-Data
+              </a>
+              <a className="nav-link" onClick={() => setActiveComponent("contact")}>
+                Contact
               </a>
             </>
           )}

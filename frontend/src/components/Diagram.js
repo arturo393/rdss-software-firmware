@@ -41,7 +41,7 @@ const Diagram = (props) => {
 
   useEffect(() => {
     const aspectRatio = 16 / 9
-    const width = window.innerWidth * 0.87
+    const width = window.innerWidth * 1
     const height = width / aspectRatio
     setWidth(width)
     setHeight(height)

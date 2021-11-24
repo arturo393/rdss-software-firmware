@@ -55,7 +55,7 @@
 }
 
 .sigmaStatusBar {
-  border-radius: 0 0 0 5px;
+  border-radius: 0 0 0 0;
   box-shadow: 0 2px 4px 0 rgba(150, 150, 150, 0.5);
 }
 
@@ -104,9 +104,9 @@ body {
 }
 
 @media only screen and (min-width: 480px) {
-  #mapMenuItem {
+  /* #mapMenuItem {
     display: none;
-  }
+  } */
 }
 
 @media only screen and (max-width: 1110px) {
@@ -122,12 +122,12 @@ body {
 }
 
 @media only screen and (max-width: 480px) {
-  #myMap {
+  /* #myMap {
     display: none;
-  }
-  #mapMenuItem {
+  } */
+  /* #mapMenuItem {
     display: block;
-  }
+  } */
   .sigmaStatusBar {
     border-radius: 0 0 5px 5px;
   }
