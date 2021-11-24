@@ -6,6 +6,7 @@ import NextLink from "next/link"
 import { connect } from "react-redux"
 import { setActiveComponent } from "../../redux/actions/main"
 import { logout } from "../../redux/actions/auth/user"
+import Status from "../common/Status"
 
 const Header = (props) => {
   const { user, isLoggedIn, setActiveComponent, logout } = props
@@ -15,7 +16,7 @@ const Header = (props) => {
   }, [isLoggedIn])
 
   return (
-    <Navbar collapseOnSelect expand="lg" className="navbar navbar-expand-lg  sticky-top   custom-navbar" variant="dark">
+    <Navbar collapseOnSelect expand="lg" className="navbar navbar-expand-lg sticky-top custom-navbar" variant="dark">
       <a className="navbar-brand">
         <img src="/images/logoSigma.png" alt="Sigma Telecom" height="37px" width="160px" onClick={() => setActiveComponent("map")} />
       </a>
@@ -62,10 +63,10 @@ const Header = (props) => {
       </Navbar.Collapse>
       {isLoggedIn && (
         <Nav className="ml-auto">
-          <a className="nav-link">
+          <Status />
+          <a className="nav-link" style={{ marginLeft: 10 }}>
             {user.data?.name} ({user.data?.rol})
           </a>
-
           <a className="nav-link btn sigmaDarkBg" onClick={() => logout()}>
             Logout
           </a>

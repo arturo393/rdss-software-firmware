@@ -90,7 +90,7 @@ const NetworkForm = (props) => {
                     <h6>Min Voltage</h6>
                   </label>
                   <div className="input-group mb-3">
-                    <input type="number" value={newConfig.minVoltage} className="form-control" id="minVoltage" placeholder={newConfig.minVoltage} onChange={handleChange} />
+                    <input type="number" step="any" value={newConfig.minVoltage} className="form-control" id="minVoltage" placeholder={newConfig.minVoltage} onChange={handleChange} />
 
                     <span className="input-group-text">[Volts]</span>
                   </div>
@@ -100,7 +100,7 @@ const NetworkForm = (props) => {
                     <h6>Max Voltage</h6>
                   </label>
                   <div className="input-group mb-3">
-                    <input type="number" value={newConfig.maxVoltage} className="form-control" id="maxVoltage" placeholder={newConfig.maxVoltage} onChange={handleChange} />
+                    <input type="number" step="any" value={newConfig.maxVoltage} className="form-control" id="maxVoltage" placeholder={newConfig.maxVoltage} onChange={handleChange} />
 
                     <span className="input-group-text">[Volts]</span>
                   </div>
@@ -112,7 +112,7 @@ const NetworkForm = (props) => {
                     <h6>Min Current</h6>
                   </label>
                   <div className="input-group mb-3">
-                    <input type="number" value={newConfig.minCurrent} className="form-control" id="minCurrent" placeholder={newConfig.minCurrent} onChange={handleChange} />
+                    <input type="number" step="any" value={newConfig.minCurrent} className="form-control" id="minCurrent" placeholder={newConfig.minCurrent} onChange={handleChange} />
 
                     <span className="input-group-text">[A]</span>
                   </div>
@@ -122,7 +122,7 @@ const NetworkForm = (props) => {
                     <h6>Max Current</h6>
                   </label>
                   <div className="input-group mb-3">
-                    <input type="number" value={newConfig.maxCurrent} className="form-control" id="maxCurrent" placeholder={newConfig.maxCurrent} onChange={handleChange} />
+                    <input type="number" step="any" value={newConfig.maxCurrent} className="form-control" id="maxCurrent" placeholder={newConfig.maxCurrent} onChange={handleChange} />
 
                     <span className="input-group-text">[A]</span>
                   </div>
@@ -134,7 +134,7 @@ const NetworkForm = (props) => {
                     <h6>Min Uplink AGC</h6>
                   </label>
                   <div className="input-group mb-3">
-                    <input type="number" value={newConfig.minUplink} className="form-control" id="minUplink" placeholder={newConfig.minUplink} onChange={handleChange} />
+                    <input type="number" step="any" value={newConfig.minUplink} className="form-control" id="minUplink" placeholder={newConfig.minUplink} onChange={handleChange} />
 
                     <span className="input-group-text">[dB]</span>
                   </div>
@@ -144,7 +144,7 @@ const NetworkForm = (props) => {
                     <h6>Max Uplink AGC</h6>
                   </label>
                   <div className="input-group mb-3">
-                    <input type="number" value={newConfig.maxUplink} className="form-control" id="maxUplink" placeholder={newConfig.maxUplink} onChange={handleChange} />
+                    <input type="number" step="any" value={newConfig.maxUplink} className="form-control" id="maxUplink" placeholder={newConfig.maxUplink} onChange={handleChange} />
 
                     <span className="input-group-text">[dB]</span>
                   </div>
@@ -156,7 +156,7 @@ const NetworkForm = (props) => {
                     <h6>Min Downlink AGC</h6>
                   </label>
                   <div className="input-group mb-3">
-                    <input type="number" value={newConfig.minDownlink} className="form-control" id="minDownlink" placeholder={newConfig.minDownlink} onChange={handleChange} />
+                    <input type="number" step="any" value={newConfig.minDownlink} className="form-control" id="minDownlink" placeholder={newConfig.minDownlink} onChange={handleChange} />
 
                     <span className="input-group-text">[dB]</span>
                   </div>
@@ -166,7 +166,7 @@ const NetworkForm = (props) => {
                     <h6>Max Downlink AGC</h6>
                   </label>
                   <div className="input-group mb-3">
-                    <input type="number" value={newConfig.maxDownlink} className="form-control" id="maxDownlink" placeholder={newConfig.maxDownlink} onChange={handleChange} />
+                    <input type="number" step="any" value={newConfig.maxDownlink} className="form-control" id="maxDownlink" placeholder={newConfig.maxDownlink} onChange={handleChange} />
 
                     <span className="input-group-text">[dB]</span>
                   </div>
@@ -178,7 +178,7 @@ const NetworkForm = (props) => {
                     <h6>Min Downlink Output Power</h6>
                   </label>
                   <div className="input-group mb-3">
-                    <input type="number" value={newConfig.minDownlinkOut} className="form-control" id="minDownlinkOut" placeholder={newConfig.minDownlinkOut} onChange={handleChange} />
+                    <input type="number" step="any" value={newConfig.minDownlinkOut} className="form-control" id="minDownlinkOut" placeholder={newConfig.minDownlinkOut} onChange={handleChange} />
 
                     <span className="input-group-text">[dBm]</span>
                   </div>
@@ -189,7 +189,7 @@ const NetworkForm = (props) => {
                       <h6>Max Downlink Output Power</h6>
                     </label>
                     <div class="input-group mb-3">
-                      <input type="number" value={newConfig.maxDownlinkOut} className="form-control" id="maxDownlinkOut" placeholder={newConfig.maxDownlinkOut} onChange={handleChange} />
+                      <input type="number" step="any" value={newConfig.maxDownlinkOut} className="form-control" id="maxDownlinkOut" placeholder={newConfig.maxDownlinkOut} onChange={handleChange} />
 
                       <span className="input-group-text">[dBm]</span>
                     </div>

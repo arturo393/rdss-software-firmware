@@ -55,8 +55,10 @@
 }
 
 .sigmaStatusBar {
-  border-radius: 0 0 0 0;
-  box-shadow: 0 2px 4px 0 rgba(150, 150, 150, 0.5);
+  border-radius: 15px 15px 15px 15px;
+  padding-top: 10px;
+  /* margin-right: 20px; */
+  /* box-shadow: 0 2px 4px 0 rgba(150, 150, 150, 0.5); */
 }
 
 .hidden {
@@ -129,7 +131,7 @@ body {
     display: block;
   } */
   .sigmaStatusBar {
-    border-radius: 0 0 5px 5px;
+    border-radius: 15px 15px 15px 15px;
   }
   .sigmaStatusBar > div > div > h5 {
     max-width: 90vw;
@@ -169,5 +171,5 @@ body {
 .spinnerContainer #spinner {
   position: relative;
   top: 50%;
-  right: 25%;
+  right: 0%;
 }

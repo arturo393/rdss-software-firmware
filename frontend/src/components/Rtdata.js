@@ -49,17 +49,21 @@ const Rtdata = (props) => {
 
   useEffect(() => {
     document.getElementById("device").value = activeDeviceId
+
     if (activeDeviceId) {
       setDeviceName("vlad" + activeDeviceId)
       setDevice(activeDeviceId)
     }
     handleDateFromChange(new Date(Date.now() - 3600 * 1000 * 6))
     handleDateToChange(new Date())
+    hiddeSpinner()
   }, [activeDeviceId])
 
   useEffect(() => {
     showSpinner()
-    getDeviceRTData(device)
+    if (device > 0) {
+      getDeviceRTData(device)
+    }
   }, [device, dateFrom, dateTo])
 
   const getDeviceRTData = () => {
@@ -157,7 +161,7 @@ const Rtdata = (props) => {
   const handleSearch = (e) => {
     e.preventDefault()
     const deviceSelector = document.getElementById("device")
-    setDevice(deviceSelector.selectedIndex)
+    if (deviceSelector.value > 0) setDevice(deviceSelector.selectedIndex)
   }
 
   const hiddeSpinner = () => {
@@ -177,21 +181,18 @@ const Rtdata = (props) => {
   }
 
   return (
-    <div className="containers">
+    <div className="containers text-center">
       <span className="spinnerContainer" id="spinnerContainer">
-        <div className="spinner-border text-light" role="status" name="spinner" id="spinner" style={{ maxWidth: "50px", maxHeight: "50px" }}>
-          <span>Loading...</span>
-        </div>
+        <span>Loading...</span>
+        <div className="spinner-border text-light" role="status" name="spinner" id="spinner" style={{ maxWidth: "50px", maxHeight: "50px" }}></div>
       </span>
 
-      <div className="text-center mt-2 mb-2">
-        <h5>RT-Data</h5>
-      </div>
       <div className="card h-100">
         <div className="card-body text-center">
-          <ThemeProvider theme={theme}>
-            <MuiPickersUtilsProvider utils={LuxonUtils}>
-              <div class="input-group mb-3">
+          <div className="input-group mb-3">
+            <ThemeProvider theme={theme}>
+              <MuiPickersUtilsProvider utils={LuxonUtils}>
+                {/* <div class="input-group mb-3"> */}
                 <span class="input-group-text" id="datetime1">
                   From:
                 </span>
@@ -201,10 +202,10 @@ const Rtdata = (props) => {
                   To:
                 </span>
                 <DateTimePicker class="form-control" aria-label="dateTo" aria-describedby="datetime2" variant="inline" value={dateTo} onChange={handleDateToChange} />
-              </div>
-            </MuiPickersUtilsProvider>
-          </ThemeProvider>
-          <div className="input-group mb-3">
+                {/* </div> */}
+              </MuiPickersUtilsProvider>
+            </ThemeProvider>
+
             <span className="input-group-text" id="device-label">
               Device
             </span>
@@ -224,12 +225,19 @@ const Rtdata = (props) => {
               Search
             </button>
           </div>
-          <Chart deviceId={device} rtData={rtData} label={"Voltage"} filter="voltage" color="lightblue" />
-          <Chart deviceId={device} rtData={rtData} label={"Current"} filter="current" color="green" />
-          <Chart deviceId={device} rtData={rtData} label={"Power"} filter="power" color="orange" />
           {hiddeSpinner()}
-
-          {/* <DeviceGraphs deviceId={device} /> */}
+          {device > 0 && (
+            <>
+              <div className="text-center mt-2 mb-2">
+                <h5>RT-Data - Vlad{device}</h5>
+              </div>
+              <Chart deviceId={device} rtData={rtData} label={"Voltage"} filter="voltage" color="lightblue" />
+              <br />
+              <Chart deviceId={device} rtData={rtData} label={"Current"} filter="current" color="green" />
+              <br />
+              <Chart deviceId={device} rtData={rtData} label={"Power"} filter="power" color="orange" />
+            </>
+          )}
         </div>
       </div>
     </div>

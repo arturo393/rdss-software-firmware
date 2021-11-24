@@ -43,62 +43,39 @@ const Status = (props) => {
   }, [monitorData])
 
   return (
-    <div className="container-fluid sigmaDarkBg sigmaStatusBar">
-      <div className="row justify-content-md-center text-center mb-3 mt-3">
-        <div className="col-md-auto">
-          <h5 className="text-nowrap">
-            <span className="badge rounded-ltlb-pill bg-light text-dark">
-              In Network
-            </span>
-            <span className="badge rounded-rtrb-pill sigmaBlue">
-              <div
-                className="spinner-border text-light"
-                role="status"
-                name="spinner"
-                style={{ maxWidth: "10px", maxHeight: "10px" }}
-              >
-                <span className="visually-hidden">Loading...</span>
-              </div>
-              {status.network}
-            </span>
-          </h5>
-        </div>
-        <div className="col-md-auto">
-          <h5 className="text-nowrap">
-            <span className="badge rounded-ltlb-pill bg-light text-dark ">
-              Connected
-            </span>
-            <span className="badge rounded-rtrb-pill sigmaBlue">
-              <div
-                className="spinner-border text-light"
-                role="status"
-                name="spinner"
-                style={{ maxWidth: "10px", maxHeight: "10px" }}
-              >
-                <span className="visually-hidden">Loading...</span>
-              </div>
-              {status.connected}
-            </span>
-          </h5>
-        </div>
-        <div className="col-md-auto">
-          <h5 className="text-nowrap">
-            <span className="badge rounded-ltlb-pill bg-light text-dark ">
-              With Alerts
-            </span>
-            <span className="badge rounded-rtrb-pill sigmaRed">
-              <div
-                className="spinner-border text-light"
-                role="status"
-                name="spinner"
-                style={{ maxWidth: "10px", maxHeight: "10px" }}
-              >
-                <span className="visually-hidden">Loading...</span>
-              </div>
-              {status.alert}
-            </span>
-          </h5>
-        </div>
+    <div className="row sigmaDarkBg sigmaStatusBar justify-content-md-center text-center">
+      <div className="col-md-auto">
+        <h5 className="text-nowrap">
+          <span className="badge rounded-ltlb-pill bg-light text-dark">In Network</span>
+          <span className="badge rounded-rtrb-pill sigmaBlue">
+            <div className="spinner-border text-light" role="status" name="spinner" style={{ maxWidth: "10px", maxHeight: "10px" }}>
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            {status.network}
+          </span>
+        </h5>
+      </div>
+      <div className="col-md-auto">
+        <h5 className="text-nowrap">
+          <span className="badge rounded-ltlb-pill bg-light text-dark ">Connected</span>
+          <span className="badge rounded-rtrb-pill sigmaBlue">
+            <div className="spinner-border text-light" role="status" name="spinner" style={{ maxWidth: "10px", maxHeight: "10px" }}>
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            {status.connected}
+          </span>
+        </h5>
+      </div>
+      <div className="col-md-auto">
+        <h5 className="text-nowrap">
+          <span className="badge rounded-ltlb-pill bg-light text-dark ">With Alerts</span>
+          <span className="badge rounded-rtrb-pill sigmaRed">
+            <div className="spinner-border text-light" role="status" name="spinner" style={{ maxWidth: "10px", maxHeight: "10px" }}>
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            {status.alert}
+          </span>
+        </h5>
       </div>
     </div>
   )

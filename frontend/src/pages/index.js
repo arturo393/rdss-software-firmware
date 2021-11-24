@@ -3,7 +3,7 @@ import axios from "axios"
 import { useEffect } from "react"
 
 import Schema from "../components/Schema"
-import Status from "../components/common/Status"
+// import Status from "../components/common/Status"
 import Login from "../components/auth/Login"
 import { connect } from "react-redux"
 import { setConfig, setDevices, setMonitorDataEvent } from "../redux/actions/main"
@@ -21,13 +21,8 @@ const Home = (props) => {
   if (isLoggedIn) {
     return (
       <main className="container-fluid">
-        <div className="col-md-12">
-          <div className="row">
-            <Status />
-          </div>
-          <div className="row">
-            <DynamicComponent activeComponent="map" />
-          </div>
+        <div className="row">
+          <DynamicComponent activeComponent="map" />
         </div>
       </main>
     )

@@ -105,7 +105,7 @@ function Chart(props) {
         const alertStatus = getPointText(currentDeviceData.rtData.alerts)
 
         //Fixes power tolerane
-       // if (filter == "power" && currentDeviceData.rtData[filter] < -5) currentDeviceData.rtData[filter] = -5
+        // if (filter == "power" && currentDeviceData.rtData[filter] < -5) currentDeviceData.rtData[filter] = -5
 
         data.y.push(currentDeviceData.rtData[filter] || data.y[data.y.length - 1])
         const currentIndex = data.y.length - 1
@@ -154,14 +154,15 @@ function Chart(props) {
               titlefont: { size: 20 },
             },
             // title: { text: label, x: 0, font: { size: 12, color: "white" } },
-            margin: { l: 10, r: 10, t: 30, b: 30 },
+            margin: { l: 10, r: 10, t: 50, b: 50 },
             // font: { size: 10 },
             // paper_bgcolor: "#000000",
             // plot_bgcolor: "#c7c7c7",
             hovermode: "x",
             // title: label,
-            height: 220,
-            width: "100%",
+            height: 300,
+            width: 800,
+            autosize: true,
             datarevision: revision + 1,
           },
           revision: revision,
