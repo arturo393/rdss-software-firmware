@@ -161,7 +161,7 @@ function Chart(props) {
             hovermode: "x",
             // title: label,
             height: 300,
-            width: 800,
+            width: 1500,
             autosize: true,
             datarevision: revision + 1,
           },
