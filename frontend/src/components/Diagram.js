@@ -4,14 +4,20 @@ import axios from "axios"
 // import dynamic from "next/dynamic"
 import { Stage, Layer, Image, Group, Text, Circle } from "react-konva"
 
-import { setDevices } from "../redux/actions/main"
+import { setDevices, setConfig } from "../redux/actions/main"
 import { connect } from "react-redux"
 
 import useImage from "use-image"
 import { alert } from "react-bootstrap-confirmation"
 
 const Diagram = (props) => {
-  const { config, devices, setDevices } = props
+  const { config, devices, setDevices, setConfig } = props
+
+  const [file, setFile] = useState()
+  const [base64, setBase64] = useState()
+  const [saving, setSaving] = useState(false)
+  const [newConfig, setNewConfig] = useState({})
+  const [status, setStatus] = useState()
 
   const [newDevices, setNewDevices] = useState([])
   const [squares, setSquares] = useState([])
@@ -40,6 +46,7 @@ const Diagram = (props) => {
   }
 
   useEffect(() => {
+    document.getElementById("status").style.display = "none"
     const aspectRatio = 16 / 9
     const width = window.innerWidth * 1
     const height = width / aspectRatio
@@ -226,40 +233,96 @@ const Diagram = (props) => {
     setVlad({ id: deviceId })
   }
 
+  const handleImageChange = (e) => {
+    document.getElementById("status").style.display = "none"
+    const file = e.target.files[0]
+    if (file) {
+      let reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onloadend = () => {
+        setFile(file)
+        setBase64(reader.result)
+      }
+    }
+  }
+
+  const saveConfig = (e) => {
+    e.preventDefault()
+    setConfig(newConfig)
+    setSaving(true)
+  }
+
+  useEffect(() => {
+    if (base64) setNewConfig({ ...config, image: base64 })
+  }, [base64])
+
+  useEffect(() => {
+    if (config) {
+      setNewConfig(config)
+      if (saving) {
+        axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/editConfig", config).then(
+          (result) => {
+            document.getElementById("status").style.display = "block"
+            result ? setStatus("Map image updated successfully") : setStatus("Error when try to save config")
+          },
+          (error) => {
+            console.log(error)
+          }
+        )
+        setSaving(false)
+      }
+    }
+  }, [config])
+
   return (
     <>
-      <div className="container-fluid">
-        <div className="row">
-          <div className="col-2"></div>
-          <div className="col-7">
-            <div className="card-body text-center">
-              <div className="input-group mb-3">
-                <span className="input-group-text" id="device-label">
-                  Device
-                </span>
-                <select className="form-control" id="device" onChange={onChangeVlad}>
-                  <option value={0}>=== Select a Device ===</option>
-                  {devices.map((device) => {
-                    return (
-                      <option value={device.id}>
-                        {device.type}
-                        {device.id}
-                      </option>
-                    )
-                  })}
-                </select>
-                <button className="btn btn-primary" type="button" onClick={onClickAdd}>
-                  Add
-                </button>
-                <button className="btn btn-danger" type="button" onClick={onClickDel}>
-                  Del
-                </button>
-              </div>
+      <div class="container-fuid">
+        <div class="row text-center">
+          <div class="col-2"></div>
+          <div class="col-7">
+            <label for="image" className="form-label">
+              Map image
+            </label>
+            <div class="input-group mb-3">
+              <input className="form-control" type="file" id="image" name="image" onChange={handleImageChange} />
+              <button className="btn btn-primary" type="button" onClick={saveConfig}>
+                Update
+              </button>
+            </div>
+            <div class="input-group mb-3">
+              <span className="input-group-text" id="device-label">
+                Device
+              </span>
+              <select className="form-control" id="device" onChange={onChangeVlad}>
+                <option value={0}>=== Select a Device ===</option>
+                {devices.map((device) => {
+                  return (
+                    <option value={device.id}>
+                      {device.type}
+                      {device.id}
+                    </option>
+                  )
+                })}
+              </select>
+              <button className="btn btn-primary" type="button" onClick={onClickAdd}>
+                Add
+              </button>
+              <button className="btn btn-danger" type="button" onClick={onClickDel}>
+                Del
+              </button>
             </div>
           </div>
-          <div className="col-2"></div>
+          <div class="col-2"></div>
         </div>
       </div>
+      <div className="row">
+        <div className="col-md-12 text-center">
+          <div className="alert alert-success" role="alert" id="status">
+            {status}
+          </div>
+        </div>
+      </div>
+
       <div
         style={{
           width: "100%",
@@ -308,6 +371,7 @@ const mapStateToProps = (state) => {
 
 const mapDispatchToProps = {
   setDevices,
+  setConfig,
   // saveConfig,
 }
 

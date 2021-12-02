@@ -42,9 +42,9 @@ const NetworkForm = (props) => {
       [e.target.id]: e.target.value,
     })
   }
-  useEffect(() => {
-    if (base64) setNewConfig({ ...newConfig, image: base64 })
-  }, [base64])
+  // useEffect(() => {
+  //   if (base64) setNewConfig({ ...newConfig, image: base64 })
+  // }, [base64])
 
   const saveConfig = (e) => {
     e.preventDefault()
@@ -57,18 +57,18 @@ const NetworkForm = (props) => {
     setNewConfig(config)
   }
 
-  const handleImageChange = (e) => {
-    document.getElementById("status").style.display = "none"
-    const file = e.target.files[0]
-    if (file) {
-      let reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onloadend = () => {
-        setFile(file)
-        setBase64(reader.result)
-      }
-    }
-  }
+  // const handleImageChange = (e) => {
+  //   document.getElementById("status").style.display = "none"
+  //   const file = e.target.files[0]
+  //   if (file) {
+  //     let reader = new FileReader()
+  //     reader.readAsDataURL(file)
+  //     reader.onloadend = () => {
+  //       setFile(file)
+  //       setBase64(reader.result)
+  //     }
+  //   }
+  // }
 
   return (
     <>
@@ -76,14 +76,14 @@ const NetworkForm = (props) => {
         <div className="container-fluid">
           <div className="row">
             <div className="col-md-12">
-              <div className="row">
+              {/* <div className="row">
                 <div className="col-md-12 mb-3">
                   <label for="image" className="form-label">
                     Map image
                   </label>
                   <input className="form-control" type="file" id="image" name="image" onChange={handleImageChange} />
                 </div>
-              </div>
+              </div> */}
               <div className="row">
                 <div className="col-md-6">
                   <label for="minVoltage" className="form-label">
