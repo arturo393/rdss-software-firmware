@@ -24,8 +24,8 @@ const Chart = dynamic(import("./Chart"), {
 
 const Rtdata = (props) => {
   const defaultNullValue = 0
-  const { activeDeviceId } = props
-  const [devices, setDevices] = useState([])
+  const { activeDeviceId, devices } = props
+  // const [devices, setDevices] = useState([])
   const [device, setDevice] = useState(0)
   const [deviceData, setDeviceData] = useState({})
   const [deviceName, setDeviceName] = useState("=== Select a Device ===")
@@ -35,11 +35,10 @@ const Rtdata = (props) => {
   const [rtData, setRtData] = useState({})
 
   useEffect(() => {
-    axios.get(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/devices").then((res) => {
-      const devices = res.data
-      setDevices(devices)
-    })
-
+    // axios.get(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/devices").then((res) => {
+    //   const devices = res.data
+    //   setDevices(devices)
+    // })
     if (activeDeviceId) {
       document.getElementById("device").value = activeDeviceId
       setDevice(activeDeviceId)
@@ -50,10 +49,9 @@ const Rtdata = (props) => {
 
   useEffect(() => {
     document.getElementById("device").value = activeDeviceId
-
     if (activeDeviceId) {
-      setDeviceName("vlad" + activeDeviceId)
-      setDevice(activeDeviceId)
+      const dev = devices.find((d) => Number(d.id) === Number(activeDeviceId))
+      setDeviceName(dev.name ? dev.name + "(" + dev.type + "-" + dev.id + ")" : dev.type + "-" + dev.id)
     }
     handleDateFromChange(new Date(Date.now() - 3600 * 1000 * 6))
     handleDateToChange(new Date())
@@ -69,7 +67,7 @@ const Rtdata = (props) => {
 
   const getDeviceRTData = () => {
     if (device) {
-      console.log("OBTENIENDO DATOS DE:" + device)
+      console.log("Getting device data, ID=" + device)
       let x = []
       let rtd = {}
       let voltage = []
@@ -164,6 +162,8 @@ const Rtdata = (props) => {
     const deviceSelector = document.getElementById("device")
     if (deviceSelector.value > 0) {
       setDevice(deviceSelector.selectedIndex)
+      const dev = devices.find((d) => Number(d.id) === Number(deviceSelector.value))
+      setDeviceName(dev.name ? dev.name + "(" + dev.type + "-" + dev.id + ")" : dev.type + "-" + dev.id)
       setDeviceData(devices.find((d) => d.id === deviceSelector.selectedIndex))
     }
   }
@@ -232,9 +232,7 @@ const Rtdata = (props) => {
           {device > 0 && (
             <>
               <div className="text-center mt-2 mb-2">
-                <h5>
-                  RT-Data: {deviceData.name} ({deviceData.type}-{device})
-                </h5>
+                <h5>RT-Data: {deviceName}</h5>
               </div>
               <Chart deviceId={device} rtData={rtData} label={"Voltage"} filter="voltage" color="lightblue" />
               <br />
@@ -252,6 +250,7 @@ const Rtdata = (props) => {
 const mapStateToProps = (state) => {
   return {
     activeDeviceId: state.main.activeDeviceId,
+    devices: state.main.devices,
   }
 }
 
