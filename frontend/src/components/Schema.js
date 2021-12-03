@@ -78,12 +78,13 @@ const Schema = (props) => {
       }
 
       let device = devices.find((square) => square.id == mdevice.id)
+      const label = device.name ? device.name + " (" + device.type + "-" + device.id + ")" : device.type + "-" + device.id
       device = {
         ...device,
         x: device.status.x,
         y: device.status.y,
         fill: fill,
-        name: device.type + "-" + device.id,
+        name: label,
         id: device.id,
         key: device.status.x * device.status.y,
       }
