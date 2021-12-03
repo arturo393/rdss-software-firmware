@@ -56,7 +56,7 @@ def getProvisionedDevices():
     try:
         collection_name = database["devices"]
         devices = list(collection_name.find(
-            {"status.provisioned": True}, {"id": 1, "type": 1, "_id": 0}).limit(cfg.MAX_DEVICES))
+            {"status.provisioned": True}, {"id": 1, "type": 1, "name": 1, "_id": 0}).limit(cfg.MAX_DEVICES))
     except Exception as e:
         logging.exception(e)
     return devices
@@ -285,7 +285,7 @@ def sendCmd(ser, cmd, createdevice):
             solutionAgcUpl = str(solutionAGCUPL.args[1])
             solutionAgcUpl = float(solutionAgcUpl[:6])
 
-        if(tranformData[6] >= 3.8  or tranformData[6] < 1.1):
+        if(tranformData[6] >= 3.8 or tranformData[6] < 1.1):
             solutionAgcDwl = 0
         else:
             solutionAGCDWL = solveset(
@@ -385,6 +385,7 @@ def run_monitor():
             response = sendCmd(ser, device, False)
             deviceData["id"] = device
             deviceData["type"] = x["type"]
+            deviceData["name"] = x["name"]
 
             if (response):
                 connectedDevices += 1
