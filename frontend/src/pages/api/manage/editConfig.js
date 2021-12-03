@@ -1,5 +1,13 @@
 import { connectToDatabase } from "../../../components/db/util/mongodb"
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "5mb",
+    },
+  },
+}
+
 export default async function (req, res, next) {
   const { db } = await connectToDatabase()
   if (req.body) {
