@@ -60,11 +60,14 @@ const Diagram = (props) => {
         let square = {}
         if (device.status.provisioned) {
           const fill = device.status.connected ? "green" : "red"
+          // const label = device.name ? device.name : device.type + "-" + device.id
+          const label = device.name ? device.name + " (" + device.type + "-" + device.id + ")" : device.type + "-" + device.id
+
           square = {
             x: device.status.x,
             y: device.status.y,
             fill: fill,
-            name: device.type + "-" + device.id,
+            name: label,
             id: device.id,
           }
           squaresArr.push(square)
@@ -128,17 +131,21 @@ const Diagram = (props) => {
   }
 
   const onClickAdd = (e) => {
+    const device = devices.find((d) => d.id == parseInt(vlad.id))
+    const label = device?.name ? device?.name : device?.type + "-" + device?.id
+
     if (vlad.id == 0) {
       alert("You must select an option.")
     } else if (squares.some((s) => s.id == parseInt(vlad.id))) {
-      alert("Vlad-" + vlad.id + " is already on the map.")
+      alert("(" + label + ") is already on the map.")
     } else {
       let newSquares = squares
+
       const square = {
         x: 100,
         y: 100,
         fill: "red",
-        name: "Vlad - " + vlad.id,
+        name: label,
         id: vlad.id,
       }
       newSquares.push(square)
@@ -298,8 +305,7 @@ const Diagram = (props) => {
                 {devices.map((device) => {
                   return (
                     <option value={device.id}>
-                      {device.type}
-                      {device.id}
+                      {device.name} ({device.type}-{device.id})
                     </option>
                   )
                 })}

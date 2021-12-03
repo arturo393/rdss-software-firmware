@@ -8,6 +8,7 @@ export default async function (req, res) {
       id: 1,
       status: 1,
       type: 1,
+      name: 1,
     },
   }
   const pipeline = [filterRtdata]

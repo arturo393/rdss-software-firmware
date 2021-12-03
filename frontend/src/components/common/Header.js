@@ -56,6 +56,9 @@ const Header = (props) => {
                 <a className="dropdown-item" onClick={() => setActiveComponent("networkParameters")}>
                   Network Parameters
                 </a>
+                <a className="dropdown-item" onClick={() => setActiveComponent("devicesEdit")}>
+                  Devices Management
+                </a>
               </>
             </NavDropdown>
           )}

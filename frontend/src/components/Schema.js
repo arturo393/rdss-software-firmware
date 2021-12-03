@@ -100,11 +100,14 @@ const Schema = (props) => {
       if (device.status.provisioned) {
         const fill = device.status.connected ? "green" : "red"
 
+        // const label = device.name ? device.name : device.type + "-" + device.id
+        const label = device.name ? device.name + " (" + device.type + "-" + device.id + ")" : device.type + "-" + device.id
+
         const square = {
           x: device.status.x,
           y: device.status.y,
           fill: fill,
-          name: device.type + "-" + device.id,
+          name: label,
           id: device.id,
         }
         newSquares.push(square)

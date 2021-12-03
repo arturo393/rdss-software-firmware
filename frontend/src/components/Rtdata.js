@@ -27,6 +27,7 @@ const Rtdata = (props) => {
   const { activeDeviceId } = props
   const [devices, setDevices] = useState([])
   const [device, setDevice] = useState(0)
+  const [deviceData, setDeviceData] = useState({})
   const [deviceName, setDeviceName] = useState("=== Select a Device ===")
 
   const [dateFrom, handleDateFromChange] = useState(new Date(Date.now() - 3600 * 1000 * 6))
@@ -161,7 +162,10 @@ const Rtdata = (props) => {
   const handleSearch = (e) => {
     e.preventDefault()
     const deviceSelector = document.getElementById("device")
-    if (deviceSelector.value > 0) setDevice(deviceSelector.selectedIndex)
+    if (deviceSelector.value > 0) {
+      setDevice(deviceSelector.selectedIndex)
+      setDeviceData(devices.find((d) => d.id === deviceSelector.selectedIndex))
+    }
   }
 
   const hiddeSpinner = () => {
@@ -214,8 +218,7 @@ const Rtdata = (props) => {
               {devices.map((device) => {
                 return (
                   <option value={device.id}>
-                    {device.type}
-                    {device.id}
+                    {device.name} ({device.type}-{device.id})
                   </option>
                 )
               })}
@@ -229,7 +232,9 @@ const Rtdata = (props) => {
           {device > 0 && (
             <>
               <div className="text-center mt-2 mb-2">
-                <h5>RT-Data - Vlad{device}</h5>
+                <h5>
+                  RT-Data: {deviceData.name} ({deviceData.type}-{device})
+                </h5>
               </div>
               <Chart deviceId={device} rtData={rtData} label={"Voltage"} filter="voltage" color="lightblue" />
               <br />
