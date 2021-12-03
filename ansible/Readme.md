@@ -2,7 +2,7 @@
 
 ## Local Dependencies
 
-Install sshpass `apt get install sshpass`
+Install sshpass `apt get install git sshpass`
 
 Install ansible locally
 
