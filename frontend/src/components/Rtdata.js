@@ -42,7 +42,6 @@ const Rtdata = (props) => {
     if (activeDeviceId) {
       document.getElementById("device").value = activeDeviceId
       setDevice(activeDeviceId)
-      getDeviceRTData(activeDeviceId)
     }
     hiddeSpinner()
   }, [])
@@ -50,13 +49,13 @@ const Rtdata = (props) => {
   useEffect(() => {
     document.getElementById("device").value = activeDeviceId
     if (activeDeviceId) {
+      setDevice(activeDeviceId)
+      // getDeviceRTData(activeDeviceId)
       const dev = devices.find((d) => Number(d.id) === Number(activeDeviceId))
       setDeviceName(dev.name ? dev.name + "(" + dev.type + "-" + dev.id + ")" : dev.type + "-" + dev.id)
     }
     handleDateFromChange(new Date(Date.now() - 3600 * 1000 * 6))
     handleDateToChange(new Date())
-    // console.log("HOLA")
-    // hiddeSpinner()
   }, [activeDeviceId])
 
   useEffect(() => {
@@ -66,7 +65,7 @@ const Rtdata = (props) => {
     }
   }, [device, dateFrom, dateTo])
 
-  const getDeviceRTData = () => {
+  const getDeviceRTData = (device = 0) => {
     if (device) {
       console.log("Getting device data, ID=" + device)
       let x = []
