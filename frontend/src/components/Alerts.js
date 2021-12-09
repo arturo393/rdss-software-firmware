@@ -54,8 +54,6 @@ const Alerts = (props) => {
     setAlerts(currentAlerts)
   }, [monitorData])
 
-  console.log(alerts)
-
   return (
     <>
       <h5 className="text-center">Vlad Status</h5>
