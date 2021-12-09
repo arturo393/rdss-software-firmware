@@ -55,12 +55,13 @@ const Rtdata = (props) => {
     }
     handleDateFromChange(new Date(Date.now() - 3600 * 1000 * 6))
     handleDateToChange(new Date())
-    hiddeSpinner()
+    // console.log("HOLA")
+    // hiddeSpinner()
   }, [activeDeviceId])
 
   useEffect(() => {
-    showSpinner()
     if (device > 0) {
+      showSpinner()
       getDeviceRTData(device)
     }
   }, [device, dateFrom, dateTo])
@@ -133,6 +134,7 @@ const Rtdata = (props) => {
         rtd.power = power || []
 
         setRtData({ x, rtd, marker, text })
+        hiddeSpinner()
       })
     }
   }

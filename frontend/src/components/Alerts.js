@@ -40,6 +40,8 @@ const Alerts = (props) => {
 
       const device = {
         id: data.id,
+        name: data.name,
+        type: data.type,
         connected: a_connected,
         voltage: a_voltage,
         current: a_current,
@@ -52,6 +54,8 @@ const Alerts = (props) => {
     setAlerts(currentAlerts)
   }, [monitorData])
 
+  console.log(alerts)
+
   return (
     <>
       <h5 className="text-center">Vlad Status</h5>
@@ -62,7 +66,7 @@ const Alerts = (props) => {
             <thead>
               <tr>
                 <th>
-                  <h6>ID</h6>
+                  <h6>Device</h6>
                 </th>
                 <th>
                   <h6>Connection</h6>
@@ -88,7 +92,7 @@ const Alerts = (props) => {
               {alerts?.map((data) => {
                 return (
                   <tr>
-                    <td>{data.id}</td>
+                    <td>{data.name + "(" + data.type + "-" + data.id + ")"}</td>
                     <td>
                       <img alt="" src={data.connected} width={20} height={20} />
                     </td>

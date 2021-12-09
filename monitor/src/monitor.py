@@ -383,9 +383,18 @@ def run_monitor():
             logging.debug("ID: %s", device)
 
             response = sendCmd(ser, device, False)
+
             deviceData["id"] = device
-            deviceData["type"] = x["type"]
-            deviceData["name"] = x["name"]
+            # deviceData["type"] = x["type"]
+            # deviceData["name"] = x["name"]
+            if ('type' in x):
+                deviceData["type"] = x["type"]
+            else:
+                deviceData["type"] = ''
+            if ('name' in x):
+                deviceData["name"] = x["name"]
+            else:
+                deviceData["name"] = ''
 
             if (response):
                 connectedDevices += 1
