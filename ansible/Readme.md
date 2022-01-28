@@ -1,6 +1,10 @@
 # RDSS Ansible miniPC installation
 
+
+
 ## Local Dependencies
+
+
 
 Install sshpass `apt get install git sshpass`
 
@@ -9,7 +13,13 @@ Install ansible locally
 Please refer to:
 [Installing Ansible on specific operating systems](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-on-specific-operating-systems)
 
+
+# Get repository
+Download repository from Git `git clone https://gitlab.com/itaum/rdss2.git`
+
+
 ## Setting up deploy environment
+Enter ansible folder ``cd ./rdss2/ansible``
 
 Edit `vars.yaml` file and change variables with yours
 
@@ -51,7 +61,6 @@ Is located at: `/opt/rdss/monitor/config.py`
 
 Is located at: `/opt/rdss/frontend/.env.local`
 
-### System update
-
+### Update the software
 
 `ansible-playbook --ask-pass -K update.yaml`
