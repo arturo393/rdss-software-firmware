@@ -50,3 +50,8 @@ Is located at: `/opt/rdss/monitor/config.py`
 ### frontend configuration file
 
 Is located at: `/opt/rdss/frontend/.env.local`
+
+### System update
+
+
+`ansible-playbook --ask-pass -K update.yaml`
