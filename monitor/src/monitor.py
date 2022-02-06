@@ -102,8 +102,16 @@ def insertDevicesDataIntoDB(rtData):
                     database.devices.update_one(
                         {"id": d["id"]}, {"$set": {"alerts": d["alerts"]}})
 
-                database.devices.update_one(
-                    {"id": d["id"]}, {"$addToSet": {"rtData": d["rtData"]}})
+                # DELETEME
+                # database.devices.update_one(
+                #     {"id": d["id"]}, {"$addToSet": {"rtData": d["rtData"]}})
+                # END OF DELETEME
+
+                d["rtData"]["metaData"] = {"deviceId": d["id"]}
+                d["rtData"]["sampleTime"] = datetime.datetime.now().replace(
+                    microsecond=0)
+                database.rtData.insert_one(d["rtData"])
+
             except Exception as e:
                 logging.exception(e)
 
@@ -407,11 +415,12 @@ def run_monitor():
             else:
                 logging.debug("No response from device")
                 deviceData["connected"] = False
-                deviceData["rtData"] = {"sampleTime": timeNow}
+                deviceData["rtData"]["sampleTime"] = {"$date": SampleTime}
                 deviceData["rtData"]["alerts"] = {"connection": True}
                 updateDeviceConnectionStatus(device, False)
 
-            rtData.append(json.dumps(deviceData, default=defaultJSONconverter))
+            # rtData.append(json.dumps(deviceData, default=defaultJSONconverter))
+            rtData.append(json.dumps(deviceData))
             # END FOR X
         logging.debug("Connected devices: %s", connectedDevices)
         insertDevicesDataIntoDB(rtData)

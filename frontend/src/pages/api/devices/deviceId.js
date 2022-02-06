@@ -33,106 +33,143 @@ export default async function (req, res, next) {
     dynId.second = "$second"
   }
 
+  // const pipeline = [
+  //   {
+  //     $match: {
+  //       id: req.body.id,
+  //     },
+  //   },
+  //   {
+  //     $project: {
+  //       rtData: {
+  //         $filter: {
+  //           input: "$rtData",
+  //           as: "item",
+  //           cond: {
+  //             $and: [
+  //               {
+  //                 $gte: ["$$item.sampleTime", dateFrom],
+  //               },
+  //               {
+  //                 $lte: ["$$item.sampleTime", dateTo],
+  //               },
+  //             ],
+  //           },
+  //         },
+  //       },
+  //       id: 1,
+  //       status: 1,
+  //       type: 1,
+  //     },
+  //   },
+  //   {
+  //     $unwind: {
+  //       path: "$rtData",
+  //     },
+  //   },
+  //   {
+  //     $project: {
+  //       year: {
+  //         $year: {
+  //           $dateFromString: {
+  //             dateString: "$rtData.sampleTime",
+  //           },
+  //         },
+  //       },
+  //       month: {
+  //         $month: {
+  //           $dateFromString: {
+  //             dateString: "$rtData.sampleTime",
+  //           },
+  //         },
+  //       },
+  //       day: {
+  //         $dayOfMonth: {
+  //           $dateFromString: {
+  //             dateString: "$rtData.sampleTime",
+  //           },
+  //         },
+  //       },
+  //       hour: {
+  //         $hour: {
+  //           $dateFromString: {
+  //             dateString: "$rtData.sampleTime",
+  //           },
+  //         },
+  //       },
+  //       minute: {
+  //         $minute: {
+  //           $dateFromString: {
+  //             dateString: "$rtData.sampleTime",
+  //           },
+  //         },
+  //       },
+  //       second: {
+  //         $second: {
+  //           $dateFromString: {
+  //             dateString: "$rtData.sampleTime",
+  //           },
+  //         },
+  //       },
+  //       voltage: "$rtData.voltage",
+  //       current: "$rtData.current",
+  //       power: "$rtData.power",
+  //       alerts: "$rtData.alerts",
+  //       id: "$id",
+  //     },
+  //   },
+  //   {
+  //     $group: {
+  //       _id: dynId,
+  //       voltage: {
+  //         $avg: "$voltage",
+  //       },
+  //       current: {
+  //         $avg: "$current",
+  //       },
+  //       power: {
+  //         $avg: "$power",
+  //       },
+  //       alerts: {
+  //         $push: "$alerts",
+  //       },
+  //     },
+  //   },
+  //   {
+  //     $sort: {
+  //       _id: 1,
+  //     },
+  //   },
+  // ]
+
   const pipeline = [
     {
       $match: {
-        id: req.body.id,
+        $and: [{ "metaData.deviceId": req.body.id }, { sampleTime: { $gte: new Date(end) } }, { sampleTime: { $lte: new Date(start) } }],
       },
     },
     {
       $project: {
-        rtData: {
-          $filter: {
-            input: "$rtData",
-            as: "item",
-            cond: {
-              $and: [
-                {
-                  $gte: ["$$item.sampleTime", dateFrom],
-                },
-                {
-                  $lte: ["$$item.sampleTime", dateTo],
-                },
-              ],
-            },
-          },
-        },
-        id: 1,
-        status: 1,
-        type: 1,
-      },
-    },
-    {
-      $unwind: {
-        path: "$rtData",
-      },
-    },
-    {
-      $project: {
-        year: {
-          $year: {
-            $dateFromString: {
-              dateString: "$rtData.sampleTime",
-            },
-          },
-        },
-        month: {
-          $month: {
-            $dateFromString: {
-              dateString: "$rtData.sampleTime",
-            },
-          },
-        },
-        day: {
-          $dayOfMonth: {
-            $dateFromString: {
-              dateString: "$rtData.sampleTime",
-            },
-          },
-        },
-        hour: {
-          $hour: {
-            $dateFromString: {
-              dateString: "$rtData.sampleTime",
-            },
-          },
-        },
-        minute: {
-          $minute: {
-            $dateFromString: {
-              dateString: "$rtData.sampleTime",
-            },
-          },
-        },
-        second: {
-          $second: {
-            $dateFromString: {
-              dateString: "$rtData.sampleTime",
-            },
-          },
-        },
-        voltage: "$rtData.voltage",
-        current: "$rtData.current",
-        power: "$rtData.power",
-        alerts: "$rtData.alerts",
         id: "$id",
+        year: { $year: "$sampleTime" },
+        month: { $month: "$sampleTime" },
+        day: { $dayOfMonth: "$sampleTime" },
+        hour: { $hour: "$sampleTime" },
+        minute: { $minute: "$sampleTime" },
+        seconds: { $second: "$sampleTime" },
+        voltage: "$voltage",
+        current: "$current",
+        power: "$power",
+        alerts: "$alerts",
       },
     },
     {
       $group: {
         _id: dynId,
-        voltage: {
-          $avg: "$voltage",
-        },
-        current: {
-          $avg: "$current",
-        },
-        power: {
-          $avg: "$power",
-        },
-        alerts: {
-          $push: "$alerts",
-        },
+        voltage: { $avg: "$voltage" },
+        current: { $avg: "$current" },
+        power: { $avg: "$power" },
+        alerts: { $push: "$alerts" },
       },
     },
     {
@@ -142,7 +179,7 @@ export default async function (req, res, next) {
     },
   ]
 
-  const devices = await db.collection("devices").aggregate(pipeline).toArray()
+  const devices = await db.collection("rtData").aggregate(pipeline).toArray()
 
   res.json(devices)
 }
