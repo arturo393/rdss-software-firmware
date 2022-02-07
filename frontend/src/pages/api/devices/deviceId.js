@@ -157,9 +157,9 @@ export default async function (req, res, next) {
         hour: { $hour: "$sampleTime" },
         minute: { $minute: "$sampleTime" },
         seconds: { $second: "$sampleTime" },
-        voltage: "$voltage",
-        current: "$current",
-        power: "$power",
+        voltage: { $toDecimal: "$voltage" },
+        current: { $toDecimal: "$current" },
+        power: { $toDecimal: "$power" },
         alerts: "$alerts",
       },
     },
@@ -178,6 +178,8 @@ export default async function (req, res, next) {
       },
     },
   ]
+
+  console.log(JSON.stringify(pipeline))
 
   const devices = await db.collection("rtData").aggregate(pipeline).toArray()
 

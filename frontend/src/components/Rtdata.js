@@ -92,6 +92,12 @@ const Rtdata = (props) => {
           const datetime = getDateTime(d._id)
           x.push(datetime)
 
+          // Fix numberDecimal issue
+          const tmp = JSON.stringify(d).replace(/\$numberDecimal/g, "numberDecimal")
+          d.voltage = parseFloat(JSON.parse(tmp).voltage?.numberDecimal)
+          d.current = parseFloat(JSON.parse(tmp).current?.numberDecimal)
+          d.power = parseFloat(JSON.parse(tmp).power?.numberDecimal)
+
           voltage.push(d.voltage?.toFixed(2) || lastValues.voltage)
           current.push(d.current?.toFixed(2) || lastValues.current)
           //Fixes POWER tolerance
