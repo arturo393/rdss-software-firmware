@@ -57,7 +57,7 @@ Example, if you want to migrate `deviceId = 1` data go to:
 
 http://localhost:3000/api/devices/migrateRTData?deviceId=1
 
-**Note:** If installation is not in your local host, reeplace `localhost` with the IP address of your installation.
+**Note:** If installation is not in your local host, replace `localhost` with the IP address of your installation.
 
 # Check migration status
 
