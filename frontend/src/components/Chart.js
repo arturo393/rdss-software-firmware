@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react"
 import plotly from "plotly.js/dist/plotly"
 import createPlotComponent from "react-plotly.js/factory"
 
+import { DateTime } from "luxon"
+
 import { alpha } from "@material-ui/core/styles"
 
 const Plot = createPlotComponent(plotly)
@@ -94,6 +96,7 @@ function Chart(props) {
       let currentDeviceData = { rtData: {} }
       monitorData?.map((monitor) => {
         const data = JSON.parse(monitor)
+
         if (data.id == deviceId) {
           currentDeviceData = data
         }
@@ -109,7 +112,14 @@ function Chart(props) {
 
         data.y.push(currentDeviceData.rtData[filter] || data.y[data.y.length - 1])
         const currentIndex = data.y.length - 1
-        data.x[currentIndex] = currentDeviceData.rtData.sampleTime
+
+        let tmpTS = ""
+        let TS = {}
+        if (currentDeviceData.rtData.sampleTime !== undefined) tmpTS = JSON.stringify(currentDeviceData.rtData.sampleTime).replace("$date", "date").replace("T", " ").replace("Z", "")
+        if (tmpTS) TS = JSON.parse(tmpTS)
+        // console.log(TS.date)
+        data.x[currentIndex] = TS.date
+        // data.x[currentIndex] = currentDeviceData.rtData.sampleTime
 
         if (!data.text[currentIndex]) {
           data.text[currentIndex] = alertStatus.text
