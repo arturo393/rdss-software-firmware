@@ -63,3 +63,9 @@ http://localhost:3000/api/devices/migrateRTData?deviceId=1
 
 Check migration on `npm run dev` console output
 Loggin into RDSS frontend application and check RTData graphics
+
+# Removing old data
+
+open mongodb console an execute:
+
+`db.devices.updateOne({id: DEVICEID},{$unset: {rtData: 1}})`
