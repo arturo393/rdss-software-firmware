@@ -179,7 +179,7 @@ export default async function (req, res, next) {
     },
   ]
 
-  console.log(JSON.stringify(pipeline))
+  // console.log(JSON.stringify(pipeline))
 
   const devices = await db.collection("rtData").aggregate(pipeline).toArray()
 
