@@ -28,18 +28,11 @@ go to MongoDb shell
 and execute the following commands:
 
 ```
-db.adminCommand({ setFeatureCompatibilityVersion: '5.0' });
 
-db.createCollection('rtData', {
-  timeseries: {
-    metaField: 'metaData',
-    timeField: 'sampleTime',
-    granularity: 'seconds',
-  },
-  expireAfterSeconds: 86400 * 365, // 1 year
-});
-
+db.createCollection('rtData');
 db.rtData.createIndex({ 'metaData.deviceId': 1 });
+db.rtData.createIndex({ sampleTime: -1 }, { expireAfterSeconds: 31536000 });
+db.rtData.createIndex({ 'metaData.deviceId': 1, sampleTime: -1 });
 ```
 
 # Migration Data

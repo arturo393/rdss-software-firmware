@@ -28,7 +28,7 @@ for (i = 1; i <= 255; i++) {
 
 db.createCollection('rtData');
 db.rtData.createIndex({ 'metaData.deviceId': 1 });
-db.rtData.createIndex({ sampleTime: 1 }, { expireAfterSeconds: 31536000 });
+db.rtData.createIndex({ sampleTime: -1 }, { expireAfterSeconds: 31536000 });
 db.rtData.createIndex({ 'metaData.deviceId': 1, sampleTime: -1 });
 
 db.config.insert({
