@@ -47,21 +47,23 @@ This procedure should be executed for each deviceId:
 
 Open a browser and for each device visit:
 
-http://localhost:3000/api/devices/migrateRTData?deviceId=&lt;DEVICEID&gt;
+http://RDSS-FRONTEND-IP/api/devices/migrateRTData?deviceId=&lt;DEVICEID&gt;
 
 Example, if you want to migrate `deviceId = 1` data go to:
 
-http://localhost:3000/api/devices/migrateRTData?deviceId=1
+http://RDSS-FRONTEND-IP/api/devices/migrateRTData?deviceId=1
 
-**Note:** If installation is not in your local host, replace `localhost` with the IP address of your installation.
+**Note:** If installation is not in your local host, replace `localhost` with the IP address (`RDSS-FRONTEND-IP`) of your installation.
 
 # Check migration status
 
-Check migration on `npm run dev` console output
-Loggin into RDSS frontend application and check RTData graphics
+Login into RDSS frontend application and check RTData graphics
 
 # Removing old data
 
 open mongodb console an execute:
 
 `db.devices.updateOne({id: DEVICEID},{$unset: {rtData: 1}})`
+
+example for device ID `5`:
+`db.devices.updateOne({id: 5},{$unset: {rtData: 1}})`

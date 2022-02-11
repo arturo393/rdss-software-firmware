@@ -419,8 +419,8 @@ def run_monitor():
                 deviceData["rtData"]["alerts"] = {"connection": True}
                 updateDeviceConnectionStatus(device, False)
 
-            # rtData.append(json.dumps(deviceData, default=defaultJSONconverter))
-            rtData.append(json.dumps(deviceData))
+            rtData.append(json.dumps(deviceData, default=defaultJSONconverter))
+            # rtData.append(json.dumps(deviceData))
             # END FOR X
         logging.debug("Connected devices: %s", connectedDevices)
         insertDevicesDataIntoDB(rtData)
