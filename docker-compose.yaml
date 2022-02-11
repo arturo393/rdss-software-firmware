@@ -28,7 +28,7 @@ services:
     depends_on:
       - database
   database:
-    image: mongo
+    image: mongo:4.4
     volumes:
       - ./database/config/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
       - ./database/data:/data/db:rw

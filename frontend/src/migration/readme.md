@@ -12,7 +12,20 @@ npm run dev
 
 ## Create new time series collection
 
-go to MongoDb shell and execute the following commands:
+create a new installation of version >= 5.0 from sources
+
+```
+https://github.com/mongodb/mongo/blob/master/docs/building.md
+```
+
+go to MongoDb shell
+
+```
+# mongo
+> use rdss
+```
+
+and execute the following commands:
 
 ```
 db.adminCommand({ setFeatureCompatibilityVersion: '5.0' });

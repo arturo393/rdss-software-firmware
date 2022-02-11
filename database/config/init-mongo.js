@@ -10,7 +10,7 @@ db.createUser({
   roles: [{ role: 'readWrite', db: 'rdss' }],
 });
 
-db.users.insert({
+db.users.insertOne({
   email: 'sigmadev@sigma-telecom.com',
   name: 'Sigma Dev',
   password: 'Admin.123',
@@ -26,17 +26,10 @@ for (i = 1; i <= 255; i++) {
   });
 }
 
-db.adminCommand({ setFeatureCompatibilityVersion: '5.0' });
-db.createCollection('rtData', {
-  timeseries: {
-    metaField: 'metaData',
-    timeField: 'sampleTime',
-    granularity: 'seconds',
-  },
-  expireAfterSeconds: 86400 * 365, // 1 year
-});
-
+db.createCollection('rtData');
 db.rtData.createIndex({ 'metaData.deviceId': 1 });
+db.rtData.createIndex({ sampleTime: 1 }, { expireAfterSeconds: 31536000 });
+db.rtData.createIndex({ 'metaData.deviceId': 1, sampleTime: -1 });
 
 db.config.insert({
   minVoltage: 20,
