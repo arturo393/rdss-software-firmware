@@ -34,10 +34,8 @@ db.rtData.createIndex({ 'metaData.deviceId': 1, sampleTime: -1 });
 On linux console, execute the following commands:
 
 ```
-
 cd /opt/rdss/frontend/migration
-
-mongo_dump --host=localhost --port=27017 --db=rdss --collection=devices --out=data/devices.json
+mongoexport --db rdss --collection devices --out data/devices.json
 
 ```
 
