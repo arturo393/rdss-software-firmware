@@ -2,21 +2,13 @@
 
 Update monitor and frontend installation code
 
-Run frontend as development environment:
-
 ```
-cd /opt/rdss/frontend
-npm run dev
-
+cd /opt/frontend
+npm run build
+service frontendRDSS restart
 ```
 
-## Create new time series collection
-
-create a new installation of version >= 5.0 from sources
-
-```
-https://github.com/mongodb/mongo/blob/master/docs/building.md
-```
+## Create rtData collection
 
 go to MongoDb shell
 
