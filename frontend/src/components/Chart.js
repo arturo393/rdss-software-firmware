@@ -117,8 +117,7 @@ function Chart(props) {
         let TS = {}
         if (currentDeviceData.rtData.sampleTime !== undefined) tmpTS = JSON.stringify(currentDeviceData.rtData.sampleTime).replace("$date", "date").replace("T", " ").replace("Z", "")
         if (tmpTS) TS = JSON.parse(tmpTS)
-        // console.log(TS.date)
-        data.x[currentIndex] = TS.date
+        data.x[currentIndex] = TS
         // data.x[currentIndex] = currentDeviceData.rtData.sampleTime
 
         if (!data.text[currentIndex]) {
