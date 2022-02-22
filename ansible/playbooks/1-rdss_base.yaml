@@ -14,7 +14,7 @@
     git:
       repo: https://{{gitlabuser | urlencode}}:{{gitlabpassword | urlencode}}@gitlab.com/itaum/rdss2.git
       dest: /tmp/rdss2
-      single_branch: yes
+      # single_branch: yes
       version: development
       accept_hostkey: yes
   - name: "Create installation directory"
