@@ -288,7 +288,7 @@ const Diagram = (props) => {
           <div class="col-2"></div>
           <div class="col-7">
             <label for="image" className="form-label">
-              Map image
+            <h5 className="text-center">Diagram Edit</h5>
             </label>
             <div class="input-group mb-3">
               <input className="form-control" type="file" id="image" name="image" onChange={handleImageChange} />

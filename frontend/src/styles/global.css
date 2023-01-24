@@ -1,7 +1,13 @@
 .container {
-  margin-top: 2%;
-  padding-bottom: 7rem;
+  margin-top: 1%;
+  padding-bottom: 0rem;
+  background-color: #efefef;
 }
+
+.card{
+  background-color: #efefef;
+}
+
 
 .panel {
   box-shadow: 0 2px 4px 0 rgba(150, 150, 150, 0.5);
@@ -24,26 +30,26 @@
 } */
 
 .modal-header {
-  background-color: #337ab7;
-  padding: 16px 16px;
-  color: #fff;
-  border-bottom: 2px dashed #337ab7;
+  background-color: rgb(16, 38, 59);
+  padding: 1px 1px;
+  color: rgb(16, 38, 59);
+  border-bottom: 2px dashed rgb(16, 38, 59);
 }
 
 .sigmaDarkBg {
-  background-color: #636463;
+  background-color:rgb(16, 38, 59);
 }
 
 .lightBgColor {
-  background-color: #efefef;
+  background-color: rgb(16, 38, 59);
 }
 
 .sigmaBlue {
-  background-color: #006486;
+  background-color:rgb(255, 80, 0);
 }
 
 .sigmaRed {
-  background-color: #eb590a;
+  background-color: rgb(255, 80, 0);
 }
 
 .rounded-ltlb-pill {
@@ -66,8 +72,23 @@
 }
 
 body {
-  padding-bottom: 160px;
+  padding-bottom: 20px;
+  background-color: #efefef;
+  font-family: Century Gothic;
+  font-weight: 40 ;
+  
 }
+
+@font-face {
+  font-family: Avenir;
+  src: url(/opt/rdss/frontend/styles/Avenir.ttc);
+}
+
+@font-face {
+  font-family: Century Gothic;
+  src: url(/opt/rdss/frontend/styles/CenturyGothic.ttf);
+}
+
 
 .text-responsive {
   font-size: calc(100% + 1vw + 1vh);
@@ -90,7 +111,7 @@ body {
 }
 @media (min-width: 992px) {
   h1 {
-    font-size: 2.5rem;
+    font-size: 1rem;
   } /*1rem = 16px*/
 }
 @media (min-width: 1200px) {
@@ -122,14 +143,17 @@ body {
     font-size: x-small;
   }
 }
-
-@media only screen and (max-width: 480px) {
+@media only screen and (max-width: 1900px) {
   /* #myMap {
     display: none;
   } */
   /* #mapMenuItem {
     display: block;
   } */
+
+#form-control .form-control:lang(en)::after {
+    content: "Select file...";
+  }
   .sigmaStatusBar {
     border-radius: 15px 15px 15px 15px;
   }
@@ -146,11 +170,14 @@ body {
   }
 }
 
+
+
 .btn-primary {
-  background-color: #006486;
+  background-color: rgb(255, 80, 0);
+  border-color: #10263b;
 }
 .btn-primary:hover {
-  background-color: #006486;
+  background-color: #10263b;
 }
 
 .btn-seconday {

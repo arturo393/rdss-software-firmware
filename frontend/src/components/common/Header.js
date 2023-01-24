@@ -18,7 +18,7 @@ const Header = (props) => {
   return (
     <Navbar collapseOnSelect expand="lg" className="navbar navbar-expand-lg sticky-top custom-navbar" variant="dark">
       <a className="navbar-brand">
-        <img src="/images/logoSigma.png" alt="Sigma Telecom" height="37px" width="160px" onClick={() => setActiveComponent("map")} />
+        <img src="/images/logoSigma.png" alt="Sigma Telecom" height="67px" width="220px" onClick={() => setActiveComponent("map")} />
       </a>
       <Navbar.Toggle aria-controls="responsive-navbar-nav" />
 
@@ -35,13 +35,10 @@ const Header = (props) => {
               <a className="nav-link" onClick={() => setActiveComponent("rtdata")}>
                 RT-Data
               </a>
-              <a className="nav-link" onClick={() => setActiveComponent("contact")}>
+              {/* <a className="nav-link" onClick={() => setActiveComponent("contact")}>
                 Contact
-              </a>
-            </>
-          )}
-
-          {user && (user.data?.rol === "admin" || user.data?.rol === "sadmin") && (
+              </a> */}
+             {user && (user.data?.rol === "admin" || user.data?.rol === "sadmin") && (
             <NavDropdown title="Manage" id="collasible-nav-dropdown">
               {user && user.data?.rol === "sadmin" && (
                 <a className="dropdown-item" onClick={() => setActiveComponent("usersadmin")}>
@@ -61,27 +58,34 @@ const Header = (props) => {
                 </a>
               </>
             </NavDropdown>
+          )} <a className="nav-link btn sigmaDarkBg" onClick={() => logout()}>
+              Logout
+          </a>
+            </>
           )}
+
+          
+          
         </Nav>
       </Navbar.Collapse>
       {isLoggedIn && (
         <Nav className="ml-auto">
           <Status />
-          <a className="nav-link" style={{ marginLeft: 10 }}>
+          {/* <a className="nav-link" style={{ marginLeft: 10 }}>
             {user.data?.name} ({user.data?.rol})
-          </a>
-          <a className="nav-link btn sigmaDarkBg" onClick={() => logout()}>
-            Logout
+          </a> */}
+          <a className="btn sigmaDarkBg btn-lg">
+            
           </a>
         </Nav>
       )}
-      {!isLoggedIn && (
+      {/* {!isLoggedIn && (
         <Nav>
           <a className="nav-link" onClick={() => setActiveComponent("login")}>
             Login
           </a>
         </Nav>
-      )}
+      )} */}
     </Navbar>
   )
 }
