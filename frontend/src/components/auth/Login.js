@@ -25,10 +25,10 @@ const Login = (props) => {
           <div className="card-body ">
             <Row>
               <Col md={4}>
-                <img src="/images/login_sigma.png" alt="" width="100%" />
+                <img src="/images/login_sigma.png" alt="" width="140%" />
               </Col>
-              <Col md={1}></Col>
-              <Col md={6}>
+              <Col md={2}></Col>
+              <Col md={5}>
                 <Form onSubmit={handleLoginSubmit}>
                   <Form.Group controlId="email">
                     <Form.Label>Email address</Form.Label>
