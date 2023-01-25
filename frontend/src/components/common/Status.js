@@ -46,7 +46,7 @@ const Status = (props) => {
     <div className="row sigmaDarkBg sigmaStatusBar justify-content-md-center text-center">
       <div className="col-md-auto">
         <h5 className="text-nowrap">
-          <span className="badge rounded-ltlb-pill bg-light text-dark">In Network</span>
+          <span className="badge rounded-ltlb-pill bg-light text-dark">Network</span>
           <span className="badge rounded-rtrb-pill sigmaBlue">
             <div className="spinner-border text-light" role="status" name="spinner" style={{ maxWidth: "10px", maxHeight: "10px" }}>
               <span className="visually-hidden">Loading...</span>
@@ -68,7 +68,7 @@ const Status = (props) => {
       </div>
       <div className="col-md-auto">
         <h5 className="text-nowrap">
-          <span className="badge rounded-ltlb-pill bg-light text-dark ">With Alerts</span>
+          <span className="badge rounded-ltlb-pill bg-light text-dark ">Alerts</span>
           <span className="badge rounded-rtrb-pill sigmaRed">
             <div className="spinner-border text-light" role="status" name="spinner" style={{ maxWidth: "10px", maxHeight: "10px" }}>
               <span className="visually-hidden">Loading...</span>
