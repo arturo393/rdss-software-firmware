@@ -180,9 +180,6 @@ int main(void) {
 			printf("TimeOut!\r\n");
 	}
 
-	int rssi_lora = 0;
-	int rssi = 0;
-	int version;
 
 	/* USER CODE END 2 */
 
@@ -228,10 +225,7 @@ int main(void) {
 
 		}
 
-		rssi_lora = SX1278_RSSI_LoRa(&SX1278);
-		rssi = SX1278_RSSI(&SX1278);
-		//	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-		version = SX1278_SPIRead(&SX1278, REG_LR_VERSION);
+
 		version = lora_read_reg(REG_LR_VERSION);
 		printf("LoRa Version: %d \r\n", version);
 		//	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
