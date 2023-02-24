@@ -295,6 +295,7 @@ const Diagram = (props) => {
               <button className="btn btn-primary" type="button" onClick={saveConfig}>
                 Update
               </button>
+              *(use PNG or JPG)
             </div>
             <div class="input-group mb-3">
               <span className="input-group-text" id="device-label">

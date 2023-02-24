@@ -11,8 +11,8 @@ db.createUser({
 });
 
 db.users.insertOne({
-  email: 'sigmadev@sigma-telecom.com',
-  name: 'Sigma Dev',
+  email: 'admin@uqomm.com',
+  name: 'admin',
   password: 'Admin.123',
   rol: 'sadmin',
 });

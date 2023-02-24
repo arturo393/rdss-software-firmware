@@ -56,7 +56,7 @@ const Alerts = (props) => {
 
   return (
     <>
-      <h5 className="text-center">Vlad Status</h5>
+      <h5 className="text-center">Devices Status</h5>
       <div className="container table-responsive text-center ">
         {/* CONTENIDO */}
         <div className="row">
@@ -76,13 +76,13 @@ const Alerts = (props) => {
                   <h6>Current</h6>
                 </th>
                 <th>
-                  <h6>AGC Up</h6>
+                  <h6>AGC Uplink</h6>
                 </th>
                 <th>
-                  <h6>AGC Down</h6>
+                  <h6>AGC Downlink</h6>
                 </th>
                 <th>
-                  <h6>Ptx</h6>
+                  <h6>Downlink Power</h6>
                 </th>
               </tr>
             </thead>

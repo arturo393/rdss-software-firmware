@@ -8,7 +8,7 @@ const NetworkParameters = () => {
   return (
     <div className="containers">
       <div className="text-center mt-2 mb-2">
-        <h5>Network Parameters</h5>
+        <h5>Alerts Linits</h5>
       </div>
       <div className="card h-100">
         <div className="card-body">

@@ -51,10 +51,10 @@ const Header = (props) => {
                   Diagram Edit
                 </a>
                 <a className="dropdown-item" onClick={() => setActiveComponent("networkParameters")}>
-                  Network Parameters
+                  Alerts Limits
                 </a>
                 <a className="dropdown-item" onClick={() => setActiveComponent("devicesEdit")}>
-                  Devices Management
+                  Device Management
                 </a>
               </>
             </NavDropdown>
