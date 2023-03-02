@@ -122,12 +122,12 @@ const Rtdata = (props) => {
             gdwlAlert |= alert.gdwl
           })
           let t = "<b>Device: " + device + "</b><br>\n"
-          if (connectionAlert) t += " * Connection Alert<br>\n"
-          if (voltageAlert) t += " * Voltage Alert<br>\n"
-          if (currentAlert) t += " * Current Alert<br>\n"
-          if (powerAlert) t += " * Power Alert<br>\n"
-          if (guplAlert) t += " * Gupl Alert<br>\n"
-          if (gdwlAlert) t += " * Gdwl Alert<br>\n"
+          if (connectionAlert) t += " * Disconnect<br>\n"
+          if (voltageAlert) t += " * Voltage Out of Limits<br>\n"
+          if (currentAlert) t += " * Current Out of Limits<br>\n"
+          if (powerAlert) t += " * Downlink Power Out of Limits<br>\n"
+          if (guplAlert) t += " * AGC Uplink Out of Limits<br>\n"
+          if (gdwlAlert) t += " * AGC Downlink Out of Limits<br>\n"
           if (connectionAlert || voltageAlert || currentAlert || powerAlert || guplAlert || gdwlAlert) marker.color.push("red")
           else marker.color.push("lightblue") //default color
 
@@ -245,7 +245,7 @@ const Rtdata = (props) => {
               <br />
               <Chart deviceId={device} rtData={rtData} label={"Current"} filter="current" color="green" />
               <br />
-              <Chart deviceId={device} rtData={rtData} label={"Power"} filter="power" color="orange" />
+              <Chart deviceId={device} rtData={rtData} label={"Downlink Power"} filter="power" color="orange" />
             </>
           )}
         </div>

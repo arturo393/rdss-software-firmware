@@ -60,27 +60,27 @@ function Chart(props) {
 
     let t = "<b>Device: " + deviceId + "</b><br><br>\n"
     if (connectionAlert) {
-      t += " * Connection Alert<br>\n"
+      t += " * Disconnect<br>\n"
       alerted = true
     }
     if (voltageAlert) {
-      t += " * Voltage Alert<br>\n"
+      t += " * Voltage Out of Limits<br>\n"
       alerted = true
     }
     if (currentAlert) {
-      t += " * Current Alert<br>\n"
+      t += " * Current Out of Limits<br>\n"
       alerted = true
     }
     if (powerAlert) {
-      t += " * Power Alert<br>\n"
+      t += " * Downlink Power Out of Limits<br>\n"
       alerted = true
     }
     if (guplAlert) {
-      t += " * Gupl Alert<br>\n"
+      t += " * AGC Downlink Out of Limits<br>\n"
       alerted = true
     }
     if (gdwlAlert) {
-      t += " * Gdwl Alert\n"
+      t += " * AGC Uplink Out of Limits\n"
       alerted = true
     }
 
