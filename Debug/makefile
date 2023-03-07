@@ -34,34 +34,34 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := DRS_Server
+BUILD_ARTIFACT_NAME := rdss_server
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-DRS_Server.elf \
+rdss_server.elf \
 
 MAP_FILES += \
-DRS_Server.map \
+rdss_server.map \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-DRS_Server.list \
+rdss_server.list \
 
 
 # All Target
 all: main-build
 
 # Main-build Target
-main-build: DRS_Server.elf secondary-outputs
+main-build: rdss_server.elf secondary-outputs
 
 # Tool invocations
-DRS_Server.elf DRS_Server.map: $(OBJS) $(USER_OBJS) C:\Users\sigmadev\development\stm32\DRS_Sigma\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "DRS_Server.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\Users\sigmadev\development\stm32\DRS_Sigma\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="DRS_Server.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+rdss_server.elf rdss_server.map: $(OBJS) $(USER_OBJS) C:\Users\admin\RDSmaster\rdss_server\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "rdss_server.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\Users\admin\RDSmaster\rdss_server\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="rdss_server.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -70,14 +70,14 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-DRS_Server.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "DRS_Server.list"
+rdss_server.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "rdss_server.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) DRS_Server.elf DRS_Server.list DRS_Server.map default.size.stdout
+	-$(RM) default.size.stdout rdss_server.elf rdss_server.list rdss_server.map
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)
