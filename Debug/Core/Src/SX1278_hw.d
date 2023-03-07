@@ -25,6 +25,8 @@ Core/Src/SX1278_hw.o: ../Core/Src/SX1278_hw.c ../Core/Inc/SX1278_hw.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_ll_adc.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_adc_ex.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_adc_ex.h \
+ ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_crc.h \
+ ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_crc_ex.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_exti.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_flash.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_flash_ex.h \
@@ -33,8 +35,7 @@ Core/Src/SX1278_hw.o: ../Core/Src/SX1278_hw.c ../Core/Inc/SX1278_hw.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_spi.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_spi_ex.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart.h \
- ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart_ex.h \
- ../Core/Inc/spi.h
+ ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart_ex.h
 ../Core/Inc/SX1278_hw.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal.h:
@@ -63,6 +64,8 @@ Core/Src/SX1278_hw.o: ../Core/Src/SX1278_hw.c ../Core/Inc/SX1278_hw.h \
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_ll_adc.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_adc_ex.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_adc_ex.h:
+../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_crc.h:
+../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_crc_ex.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_exti.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_flash.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_flash_ex.h:
@@ -72,4 +75,3 @@ Core/Src/SX1278_hw.o: ../Core/Src/SX1278_hw.c ../Core/Inc/SX1278_hw.h \
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_spi_ex.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart_ex.h:
-../Core/Inc/spi.h:
