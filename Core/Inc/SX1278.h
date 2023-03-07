@@ -16,7 +16,8 @@
 
 #define FXOSC 32000000
 #define DOWNLINK_FREQ 150000000
-#define SX1278_MAX_PACKET	20
+#define UPLINK_FREQ 170000000
+#define SX1278_MAX_PACKET	256
 #define SX1278_DEFAULT_TIMEOUT		3000
 #define LORA_SEND_TIMEOUT 2000 //2000
 #define SX1278_POWER_20DBM  0xFF //20dbm
@@ -305,8 +306,8 @@ typedef struct {
 	uint8_t AgcAutoOn;
 	uint8_t symbTimeoutLsb;
 	uint8_t symbTimeoutMsb;
-	uint8_t PreambleLengthMsb;
-	uint8_t PreambleLengthLsb;
+	uint8_t preambleLengthMsb;
+	uint8_t preambleLengthLsb;
 	uint8_t fhssValue;
 	uint8_t dioConfig;
 	uint8_t flagsMode;
@@ -318,6 +319,7 @@ typedef struct {
 	SX1278_Status_t status;
 
 	uint8_t txBuffer[SX1278_MAX_PACKET];
+	uint8_t rxBuffer[SX1278_MAX_PACKET];
 	uint8_t readBytes;
 
 	SPI_HandleTypeDef *spi;

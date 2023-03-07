@@ -77,9 +77,9 @@ void setPreambleParameters(SX1278_t *module) {
 
 	writeRegister(module->spi, LR_RegSymbTimeoutLsb, &(module->symbTimeoutLsb),
 			1);
-	writeRegister(module->spi, LR_RegPreambleMsb, &(module->PreambleLengthMsb),
+	writeRegister(module->spi, LR_RegPreambleMsb, &(module->preambleLengthMsb),
 			1);
-	writeRegister(module->spi, LR_RegPreambleLsb, &(module->PreambleLengthLsb),
+	writeRegister(module->spi, LR_RegPreambleLsb, &(module->preambleLengthLsb),
 			1);
 	module->readBytes = 0;
 }
@@ -325,7 +325,7 @@ int configTxRegister(SX1278_t *module, SPI_HandleTypeDef *spi) {
 
 	SX1278_SPIWrite(module, REG_LR_PADAC, 0x87, spi);	//Tx for 20dBm
 	SX1278_SPIWrite(module, LR_RegHopPeriod, 0x00, spi); //RegHopPeriod NO FHSS
-	SX1278_SPIWrite(module, REG_LR_DIOMAPPING1, 0x41, spi); //DIO0=01, DIO1=00,DIO2=00, DIO3=01
+	SX1278_SPIWrite(module, LR_RegDioMapping1, 0x41, spi); //DIO0=01, DIO1=00,DIO2=00, DIO3=01
 	SX1278_clearLoRaIrq(module, spi);
 	SX1278_SPIWrite(module, LR_RegIrqFlagsMask, 0xF7, spi); //Open TxDone interrupt
 	SX1278_SPIWrite(module, LR_RegPayloadLength, module->packetLength, spi); //RegPayloadLength 21byte
