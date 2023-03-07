@@ -1,0 +1,44 @@
+# Install MiniPC Software 
+---
+- name: Install RDSS Frontend
+  hosts: all
+  become: true
+  vars_files:
+    - ../vars.yaml
+  tasks:
+  - name: "Installing frontend files"
+    copy:
+      remote_src: true
+      src: /tmp/rdss2/frontend/src/
+      dest: /opt/rdss/frontend
+  - name: "Installing dependencies"
+    shell: npm install --save --legacy-peer-deps && npm install @material-ui/core --save --legacy-peer-deps
+    args:
+      chdir: /opt/rdss/frontend
+  - name: "Patching hammerJS"
+    copy:
+      remote_src: true
+      src: /tmp/rdss2/frontend/src/lib/hammer.js
+      dest: /opt/rdss/frontend/node_modules/hammerjs/hammer.js
+      owner: root
+      group: root
+  - name: Apply Config Template
+    template:
+      src: frontend_config.j2
+      dest: /opt/rdss/frontend/.env.local
+  - name: "Build frontend dist"
+    shell: npm run build
+    args:
+      chdir: /opt/rdss/frontend
+  - name: "Installing frontend system service"
+    copy:
+      remote_src: true
+      src: /tmp/rdss2/frontend/frontendRDSS.service
+      dest: /etc/systemd/system
+      owner: root
+      group: root
+  - name: "Start frontend"
+    systemd:
+      name: frontendRDSS
+      state: started
+      enabled: yes

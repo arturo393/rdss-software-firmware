@@ -1,0 +1,21 @@
+---
+- name: Install RDSS Software
+  hosts: all
+  become: true
+  vars_files:
+    - ./vars.yaml
+
+- name: "Installing MongoDB Software"
+  import_playbook: playbooks/mongo.yaml
+- name: "Installing NodeJS Software"
+  import_playbook: playbooks/node.yaml 
+- name: "Installing Python Deps"
+  import_playbook: playbooks/python-deps.yaml
+- name: "Installing RDSS base"
+  import_playbook: playbooks/1-rdss_base.yaml
+- name: "Configuring and running RDSS database"
+  import_playbook: playbooks/2-rdss_database.yaml
+- name: "Installing and running RDSS monitor"
+  import_playbook: playbooks/3-rdss_monitor.yaml 
+- name: "Installing and running RDSS frontend"
+  import_playbook: playbooks/4-rdss_frontend.yaml 

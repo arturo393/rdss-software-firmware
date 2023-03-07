@@ -1,0 +1,9 @@
+---
+gitlabuser: ytannus@itaum.com
+gitlabpassword: L4DMzB4rwXMBUCWi1xYN
+api_port: 80
+db_host: localhost
+db_port: 27017
+db_name: rdss
+db_user: admin
+db_pass: Admin123

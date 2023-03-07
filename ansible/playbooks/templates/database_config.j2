@@ -1,0 +1,48 @@
+db.dropUser('admin');
+db.users.remove({});
+db.devices.remove({});
+db.config.remove({});
+db.roles.remove({});
+
+db.createUser({
+  user: '{{ db_user }}',
+  pwd: '{{ db_pass }}',
+  roles: [{ role: 'readWrite', db: 'rdss' }],
+});
+
+db.users.insert({
+  email: 'test3@test3.cl',
+  name: 'test3',
+  password: '123',
+  rol: 'user',
+});
+
+db.users.insert({
+  email: 'sigmadev@sigma-telecom.com',
+  name: 'Sigma Dev',
+  password: 'Admin.123',
+  rol: 'sadmin',
+});
+
+//loop
+for (i = 1; i <= 255; i++) {
+  db.devices.insert({
+    id: i,
+    status: { provisioned: false, connected: false, x: 100, y: 100 },
+    type: 'vlad',
+  });
+}
+
+db.config.insert({
+  minVoltage: 20,
+  maxVoltage: 50,
+  minCurrent: 0.01,
+  maxCurrent: 1.5,
+  minUplink: 0,
+  maxUplink: 30,
+  minDownlink: 0,
+  maxDownlink: 30,
+  minDownlinkOut: -100,
+  maxDownlinkOut: 100,
+  image: '',
+});

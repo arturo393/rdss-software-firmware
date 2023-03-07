@@ -1,0 +1,8 @@
+{
+  "root": false,
+  "parserOptions": {
+    "plugins": ["react"],
+    "ecmaVersion": 2017,
+  },
+  "sourceType": "module"
+}

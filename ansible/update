@@ -1,0 +1,13 @@
+---
+- name: Install RDSS Software
+  hosts: all
+  become: true
+  vars_files:
+    - ./vars.yaml
+
+- name: "Installing RDSS base"
+  import_playbook: playbooks/1-rdss_base.yaml
+- name: "Installing and running RDSS monitor"
+  import_playbook: playbooks/3-rdss_monitor.yaml 
+- name: "Installing and running RDSS frontend"
+  import_playbook: playbooks/4-rdss_frontend.yaml 
