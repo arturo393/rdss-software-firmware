@@ -14,9 +14,11 @@
 
 #include "SX1278_hw.h"
 
+#define FXOSC 32000000
 #define DOWNLINK_FREQ 150000000
 #define SX1278_MAX_PACKET	20
 #define SX1278_DEFAULT_TIMEOUT		3000
+#define LORA_SEND_TIMEOUT 2000 //2000
 #define SX1278_POWER_20DBM  0xFF //20dbm
 #define SX1278_POWER_17DBM  0xFC //17dbm
 #define SX1278_POWER_14DBM  0xF9 //14dbm
@@ -31,7 +33,6 @@
 #define HOPS_PERIOD 0x00
 #define DIO0_1_2_3_CONFIG 0x41
 #define FLAGS_VALUE 0xF7
-
 //RFM98 Internal registers Address
 /********************LoRa mode***************************/
 #define LR_RegFifo                                  0x00
@@ -78,8 +79,21 @@
 // I/O settings
 #define LR_RegDioMapping1                          0x40
 #define LR_RegDioMapping2                          0x41
+// I/O settings
+//#define REG_LR_DIOMAPPING1                          0x40
+//#define REG_LR_DIOMAPPING2                          0x41
 // Version
-#define REG_LR_VERSION                              0x42
+#define LR_RegVersion                              0x42
+// Additional settings
+#define LR_RegPllHop                               0x44
+#define LR_RegTCXO                                 0x4B
+#define LR_RegPaDac                                0x4D
+#define LR_RegFormerTemp                           0x5B
+#define LR_RegAgcRef                               0x61
+#define LR_RegAgcThresh1                           0x62
+#define LR_RegAgcThresh2                           0x63
+#define LR_RegAgcThresh3                           0x64
+
 // Additional settings
 #define REG_LR_PLLHOP                               0x44
 #define REG_LR_TCXO                                 0x4B
@@ -89,6 +103,16 @@
 #define REG_LR_AGCTHRESH1                           0x62
 #define REG_LR_AGCTHRESH2                           0x63
 #define REG_LR_AGCTHRESH3                           0x64
+
+///// Direcciones de prueba
+#define DIRECCION_0X80                              0x80
+#define DIRECCION_0X81                              0x81
+#define DIRECCION_0X82                              0x82
+#define DIRECCION_0X83                              0x83
+#define DIRECCION_0X84                              0x84
+#define DIRECCION_0X85                              0x85
+#define DIRECCION_0X86                              0x86
+#define DIRECCION_0X87                              0x87
 
 /********************FSK/ook mode***************************/
 #define  RegFIFO                0x00
@@ -163,29 +187,9 @@
 /**********************************************************
  **Parameter table define
  **********************************************************/
-
-/*#define SX1278_POWER_20DBM		0
-#define SX1278_POWER_17DBM		1
-#define SX1278_POWER_14DBM		2
-#define SX1278_POWER_11DBM		3
-
-static const uint8_t SX1278_Power[4] = { 0xFF, //20dbm
-		0xFC, //17dbm
-		0xF9, //14dbm
-		0xF6, //11dbm
-		};*/
 typedef enum SPREAD_FACTOR {
 	SF_6 = 6, SF_7, SF_8, SF_9, SF_10, SF_11, SF_12
 } SPREAD_FACTOR_t;
-
-#define SX1278_LORA_SF_6		0
-#define SX1278_LORA_SF_7		1
-#define SX1278_LORA_SF_8		2
-#define SX1278_LORA_SF_9		3
-#define SX1278_LORA_SF_10		4
-#define SX1278_LORA_SF_11		5
-#define SX1278_LORA_SF_12		6
-
 static const uint8_t SX1278_SpreadFactor[7] = { 6, 7, 8, 9, 10, 11, 12 };
 
 #define	SX1278_LORA_BW_7_8KHZ		0
@@ -244,15 +248,12 @@ static const uint8_t SX1278_CodingRate[4] = { 0x01, 0x02, 0x03, 0x04 };
 #define SX1278_LORA_CRC_EN              0
 #define SX1278_LORA_CRC_DIS             1
 
-//static const uint8_t SX1278_CRC_Sum[2] = { 0x01, 0x00 };
+static const uint8_t SX1278_CRC_Sum[2] = { 0x01, 0x00 };
 
 typedef enum CRC_SUM {
 	CRC_DISABLE, CRC_ENABLE
 } CRC_SUM_t;
 
-/*typedef enum _SX1278_STATUS {
-	SLEEP, STANDBY, TX, RX
-} SX1278_Status_t;*/
 typedef enum OPERATING_MODE {
 	SLEEP,
 	STANDBY,
@@ -287,26 +288,25 @@ typedef enum SX1278_STATUS {
 
 #define MASK_ENABLE 0
 #define MASK_DISABLE 1
-typedef struct {
 
+typedef struct {
 	SX1278_hw_t *hw;
 
 	uint64_t frequency;
 	uint8_t power;
-	uint8_t LoRa_SF;
+	SPREAD_FACTOR_t LoRa_SF;
 	uint8_t LoRa_BW;
-	uint8_t LoRa_CR;
-	uint8_t LoRa_CRC_sum;
+	CODING_RATE_t LoRa_CR;
+	CRC_SUM_t LoRa_CRC_sum;
 	uint8_t packetLength;
-
 	uint8_t syncWord;
 	uint8_t ocp;
 	uint8_t lnaGain;
 	uint8_t AgcAutoOn;
 	uint8_t symbTimeoutLsb;
 	uint8_t symbTimeoutMsb;
-	uint8_t PreambleLengthMsb;
-	uint8_t PreambleLengthLsb;
+	uint8_t preambleLengthMsb;
+	uint8_t preambleLengthLsb;
 	uint8_t fhssValue;
 	uint8_t dioConfig;
 	uint8_t flagsMode;
@@ -317,9 +317,8 @@ typedef struct {
 
 	SX1278_Status_t status;
 
-	uint8_t rxBuffer[SX1278_MAX_PACKET];
-	uint8_t rxBuffer2[SX1278_MAX_PACKET];
-	uint8_t readBytes;
+	uint8_t buffer[SX1278_MAX_PACKET];
+
 	SPI_HandleTypeDef *spi;
 } SX1278_t;
 
@@ -333,7 +332,7 @@ typedef struct {
  *
  * \return              Read data
  */
-uint8_t SX1278_SPIRead(SX1278_t *module, uint8_t addr);
+uint8_t SX1278_SPIRead(SX1278_t *module, uint8_t addr, SPI_HandleTypeDef *spi);
 
 /**
  * \brief Write byte to LoRa module
@@ -344,7 +343,8 @@ uint8_t SX1278_SPIRead(SX1278_t *module, uint8_t addr);
  * \param[in]  addr		Address under which data will be written
  * \param[in]  cmd 		Data to write
  */
-void SX1278_SPIWrite(SX1278_t *module, uint8_t addr, uint8_t cmd);
+void SX1278_SPIWrite(SX1278_t *module, uint8_t addr, uint8_t cmd,
+		SPI_HandleTypeDef *spi);
 
 /**
  * \brief Read data from LoRa module
@@ -357,7 +357,7 @@ void SX1278_SPIWrite(SX1278_t *module, uint8_t addr, uint8_t cmd);
  * \param[in]  length   Number of bytes to read
  */
 void SX1278_SPIBurstRead(SX1278_t *module, uint8_t addr, uint8_t *rxBuf,
-		uint8_t length);
+		uint8_t length, SPI_HandleTypeDef *spi);
 
 /**
  * \brief Write data to LoRa module
@@ -369,8 +369,9 @@ void SX1278_SPIBurstRead(SX1278_t *module, uint8_t addr, uint8_t *rxBuf,
  * \param[in]  txBuf    Pointer to data
  * \param[in]  length   Number of bytes to write
  */
-uint8_t SX1278_SPIBurstWrite(SX1278_t *module, uint8_t addr, uint8_t *txBuf,
-		uint8_t length);
+void SX1278_SPIBurstWrite(SX1278_t *module, uint8_t addr, uint8_t *txBuf,
+		uint8_t length, SPI_HandleTypeDef *spi);
+void SX1278_SPIBurstWrite2(SX1278_t *module);
 
 /**
  * \brief Configure LoRa module
@@ -380,7 +381,7 @@ uint8_t SX1278_SPIBurstWrite(SX1278_t *module, uint8_t addr, uint8_t *txBuf,
  *
  * \param[in]  module	Pointer to LoRa structure
  */
-void SX1278_config(SX1278_t *module);
+void configLoraMode(SX1278_t *module, SPI_HandleTypeDef *spi);
 
 /**
  * \brief Entry LoRa mode
@@ -392,16 +393,6 @@ void SX1278_config(SX1278_t *module);
  *
  * \param[in]  module	Pointer to LoRa structure
  */
-void sx1278_entry_LoRA_mode(SX1278_t *module);
-
-/**
- * \brief Clear IRQ
- *
- * Clears interrupt flags.
- *
- * \param[in]  module	Pointer to LoRa structure
- */
-void SX1278_clearLoRaIrq(SX1278_t *module);
 
 /**
  * \brief Entry reception mode
@@ -415,7 +406,8 @@ void SX1278_clearLoRaIrq(SX1278_t *module);
  * \return     1 if entering reception mode
  *             0 if timeout was exceeded
  */
-int SX1278_LoRaEntryRx(SX1278_t *module, uint8_t length, uint32_t timeout);
+int SX1278_LoRaEntryRx(SX1278_t *module, uint8_t length, uint32_t timeout,
+		SPI_HandleTypeDef *spi);
 
 /**
  * \brief Read data
@@ -426,7 +418,7 @@ int SX1278_LoRaEntryRx(SX1278_t *module, uint8_t length, uint32_t timeout);
  *
  * \return     returns number of read bytes
  */
-uint8_t SX1278_LoRaRxPacket(SX1278_t *module);
+uint8_t SX1278_LoRaRxPacket(SX1278_t *module, SPI_HandleTypeDef *spi);
 
 /**
  * \brief Entry transmitter mode
@@ -440,7 +432,7 @@ uint8_t SX1278_LoRaRxPacket(SX1278_t *module);
  * \return     1 if entering reception mode
  *             0 if timeout was exceeded
  */
-int SX1278_LoRaEntryTx(SX1278_t *module, uint8_t length, uint32_t timeout);
+int configTxRegister(SX1278_t *module, SPI_HandleTypeDef *spi);
 
 /**
  * \brief Send data
@@ -455,8 +447,7 @@ int SX1278_LoRaEntryTx(SX1278_t *module, uint8_t length, uint32_t timeout);
  * \return     1 if entering reception mode
  *             0 if timeout was exceeded
  */
-int SX1278_LoRaTxPacket(SX1278_t *module, uint8_t *txBuf, uint8_t length,
-		uint32_t timeout);
+SX1278_Status_t SX1278_LoRaTxPacket(SX1278_t *module, SPI_HandleTypeDef *spi);
 
 /**
  * \brief Initialize LoRa module
@@ -474,8 +465,8 @@ int SX1278_LoRaTxPacket(SX1278_t *module, uint8_t *txBuf, uint8_t length,
  * \param[in]  packetLength Package length, no more than 256 bytes
  */
 void SX1278_init(SX1278_t *module, uint64_t frequency, uint8_t power,
-		uint8_t LoRa_SF, uint8_t LoRa_BW, uint8_t LoRa_CR,
-		uint8_t LoRa_CRC_sum, uint8_t packetLength);
+		uint8_t LoRa_SF, uint8_t LoRa_BW, uint8_t LoRa_CR, uint8_t LoRa_CRC_sum,
+		uint8_t packetLength, SPI_HandleTypeDef *spi);
 
 /**
  * \brief Entry transmitter mode and send data
@@ -492,7 +483,7 @@ void SX1278_init(SX1278_t *module, uint64_t frequency, uint8_t power,
  *             0 if timeout was exceeded
  */
 int SX1278_transmit(SX1278_t *module, uint8_t *txBuf, uint8_t length,
-		uint32_t timeout);
+		uint32_t timeout, SPI_HandleTypeDef *spi);
 
 /**
  * \brief Entry reception mode
@@ -506,7 +497,8 @@ int SX1278_transmit(SX1278_t *module, uint8_t *txBuf, uint8_t length,
  * \return     1 if entering reception mode
  *             0 if timeout was exceeded
  */
-int SX1278_receive(SX1278_t *module, uint8_t length, uint32_t timeout);
+int SX1278_receive(SX1278_t *module, uint8_t length, uint32_t timeout,
+		SPI_HandleTypeDef *spi);
 
 /**
  * \brief Returns number of received data
@@ -519,7 +511,7 @@ int SX1278_receive(SX1278_t *module, uint8_t length, uint32_t timeout);
  *
  * \return     returns number of read bytes
  */
-uint8_t SX1278_available(SX1278_t *module);
+uint8_t SX1278_available(SX1278_t *module, SPI_HandleTypeDef *spi);
 
 /**
  * \brief Read received data to buffer
@@ -547,7 +539,7 @@ uint8_t SX1278_read(SX1278_t *module, uint8_t *rxBuf, uint8_t length);
  *
  * \return     RSSI value
  */
-uint8_t SX1278_RSSI_LoRa(SX1278_t *module);
+uint8_t SX1278_RSSI_LoRa(SX1278_t *module, SPI_HandleTypeDef *spi);
 
 /**
  * \brief Returns RSSI
@@ -558,35 +550,25 @@ uint8_t SX1278_RSSI_LoRa(SX1278_t *module);
  *
  * \return     RSSI value
  */
-uint8_t SX1278_RSSI(SX1278_t *module);
+uint8_t SX1278_RSSI(SX1278_t *module, SPI_HandleTypeDef *spi);
 
-/**
- * \brief Enter standby mode
- *
- * Enters standby mode.
- *
- * \param[in]  module	Pointer to LoRa structure
- */
-void SX1278_standby(SX1278_t *module);
-
-/**
- * \brief Enter sleep mode
- *
- * Enters sleep mode.
- *
- * \param[in]  module	Pointer to LoRa structure
- */
-void SX1278_sleep(SX1278_t *module);
-
+////////////////////////////////////////////////////////////////////////////////////
 uint8_t readRegister(SPI_HandleTypeDef *spi, uint8_t address);
-uint8_t writeRegister(SPI_HandleTypeDef *spi, uint8_t address, uint8_t *cmd,uint8_t lenght);
+uint8_t writeRegister(SPI_HandleTypeDef *spi, uint8_t address, uint8_t *cmd,
+		uint8_t lenght);
 void setRFFrequency(SX1278_t *module);
+void setOutputPower(SX1278_t *module);
 void setLORAWAN(SX1278_t *module);
 void setOvercurrentProtect(SX1278_t *module);
 void setLNAGain(SX1278_t *module);
 void setPreambleParameters(SX1278_t *module);
-void updateLoraLowFreq(SX1278_t *module, SX1278_Status_t mode);
-void setDetectionParameters(SX1278_t *module);
 void setReModemConfig(SX1278_t *module);
+void setDetectionParameters(SX1278_t *module);
+void standbyMode(SX1278_t *module);
+void sleepMode(SX1278_t *module);
+void setMode(SX1278_t *module, SX1278_Status_t mode);
+void setLoraLowFreqMode(SX1278_t *module);
 void clearIrqFlags(SX1278_t *module);
+SX1278_Status_t readMode(SX1278_t *module);
+void updateLoraLowFreq(SX1278_t *module, SX1278_Status_t mode);
 #endif

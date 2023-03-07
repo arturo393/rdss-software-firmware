@@ -23,8 +23,6 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "SX1278.h"
-#include "uart.h"
-#include "spi.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,6 +42,12 @@
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
 
+CRC_HandleTypeDef hcrc;
+
+SPI_HandleTypeDef hspi1;
+
+UART_HandleTypeDef huart1;
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -52,7 +56,9 @@ ADC_HandleTypeDef hadc1;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_ADC1_Init(void);
-
+static void MX_SPI1_Init(void);
+static void MX_USART1_UART_Init(void);
+static void MX_CRC_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -80,7 +86,7 @@ void setBaseParameters(SX1278_t *loraRx) {
 	uint8_t dio2 = DIO2_FHSS_CHANGE_CHANNEL;
 	uint8_t dio3 = DIO3_VALID_HEADER;
 	////////////////////////////////////////
-	uint8_t rxTimeoutMask = 0x00 | (MASK_DISABLE << 7);
+	uint8_t rxTimeoutMask = 0x00 | (MASK_ENABLE << 7);
 	uint8_t rxDoneMask = 0x00 | (MASK_ENABLE << 6);
 	uint8_t payloadCrcErrorMask = 0x00 | (MASK_DISABLE << 5);
 	uint8_t validHeaderMask = 0x00 | (MASK_DISABLE << 4);
@@ -100,13 +106,14 @@ void setBaseParameters(SX1278_t *loraRx) {
 	loraRx->lnaGain = LNAGAIN;
 	loraRx->AgcAutoOn = LNA_SET_BY_AGC;
 	loraRx->symbTimeoutLsb = RX_TIMEOUT_LSB;
-	loraRx->PreambleLengthMsb = PREAMBLE_LENGTH_MSB;
-	loraRx->PreambleLengthLsb = PREAMBLE_LENGTH_LSB;
+	loraRx->preambleLengthMsb = PREAMBLE_LENGTH_MSB;
+	loraRx->preambleLengthLsb = PREAMBLE_LENGTH_LSB;
 	loraRx->dioConfig = dio0 | dio1 | dio2 | dio3;
 	loraRx->flagsMode = rxTimeoutMask | rxDoneMask | payloadCrcErrorMask;
 	loraRx->flagsMode |= validHeaderMask | txDoneMask | cadDoneMask;
 	loraRx->flagsMode |= fhssChangeChannelMask | cadDetectedMask;
 	loraRx->fhssValue = HOPS_PERIOD;
+	loraRx->packetLength = SX1278_MAX_PACKET;
 }
 
 void save(SX1278_t *module) {
@@ -136,13 +143,11 @@ void save(SX1278_t *module) {
 }
 
 void setRxParameters(SX1278_t *module) {
-//	writeRegister(module->spi, LR_RegFifoTxBaseAddr, 0x80, 1);///
+	updateLoraLowFreq(module, SLEEP); //Change modem mode Must in Sleep mode
 	uint8_t cmd = module->packetLength;
 	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1); //RegPayloadLength 21byte
 	uint8_t addr = readRegister(module->spi, LR_RegFifoRxBaseAddr); //RegFiFoTxBaseAddr
 	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1); //RegFifoAddrPtr
-	uint8_t DireccionBaseTx = readRegister(module->spi, LR_RegFifoRxBaseAddr);
-	uint8_t DireccionPtr = readRegister(module->spi, LR_RegFifoAddrPtr);
 	module->packetLength = readRegister(module->spi, LR_RegPayloadLength);
 }
 
@@ -156,6 +161,48 @@ void sx1278Reset() {
 
 uint8_t DireccionBaseTx;
 uint8_t DireccionPtr;
+
+void read(UART_HandleTypeDef *huart1, SX1278_t *loraRx) {
+	if (loraRx->status == UNKNOW) {
+		uint8_t tmp[] = "Configuring Master LoRa module\r\n";
+		size_t len = strlen(tmp);
+		HAL_UART_Transmit(&*huart1, tmp, len, 100);
+		setBaseParameters(&*loraRx);
+		save(loraRx);
+		loraRx->status = RX_READY;
+	}
+	if (loraRx->status == RX_READY) {
+		memset(loraRx->buffer, 0, SX1278_MAX_PACKET);
+		setRxParameters(loraRx);
+	}
+	updateLoraLowFreq(&*loraRx, RX_SINGLE);
+	while (!SX1278_hw_GetDIO0(loraRx->hw)) {
+		uint8_t flags = readRegister(loraRx->spi, LR_RegIrqFlags);
+		if (flags && (MASK_DISABLE << 7)) {
+			uint8_t cmd = flags | (1 << 7);
+			writeRegister(loraRx->spi, LR_RegIrqFlags, &cmd, 1);
+			flags = readRegister(loraRx->spi, LR_RegIrqFlags);
+			updateLoraLowFreq(&*loraRx, RX_SINGLE);
+		}
+	}; //if(Get_NIRQ()) //Packet send over
+	loraRx->operatingMode = readMode(loraRx);
+	loraRx->packetLength = readRegister(loraRx->spi, LR_RegRxNbBytes); //Number for received bytes
+	uint8_t addr = 0x00;
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET); // pull the pin low
+	HAL_Delay(1);
+	HAL_SPI_Transmit(loraRx->spi, &addr, 1, 100);  // send address
+	HAL_SPI_Receive(loraRx->spi, loraRx->buffer, loraRx->packetLength, 100); // receive 6 bytes data
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET); // pull the pin high
+
+	HAL_UART_Transmit(huart1, loraRx->buffer, loraRx->packetLength, 100);
+	clearIrqFlags(loraRx); //Clear irq
+	uint8_t tmp[] = " -> Reception OK\r\n";
+	uint16_t len = strlen(tmp);
+	HAL_UART_Transmit(huart1, tmp, len, 100);
+	loraRx->operatingMode = readMode(loraRx);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -185,29 +232,15 @@ int main(void) {
 
 	/* Initialize all configured peripherals */
 	MX_GPIO_Init();
-	//MX_I2C1_Init();
+	MX_ADC1_Init();
 	MX_SPI1_Init();
 	MX_USART1_UART_Init();
-	//MX_USART2_UART_Init();
-	//MX_USART3_UART_Init();
-	MX_ADC1_Init();
-	//MX_CRC_Init();
+	MX_CRC_Init();
 	/* USER CODE BEGIN 2 */
-	/*
-	 master = HAL_GPIO_ReadPin(MODE_GPIO_Port, MODE_Pin);
-	 if (master == 1) {
-	 printf("Mode: Master\r\n");
-	 HAL_GPIO_WritePin(MODE_GPIO_Port, MODE_Pin, GPIO_PIN_RESET);
-	 } else {
-	 printf("Mode: Slave\r\n");
-	 HAL_GPIO_WritePin(MODE_GPIO_Port, MODE_Pin, GPIO_PIN_SET);
-	 }
-	 */
-	SX1278_hw_t lora_hw;
-	SX1278_t loraTx, loraRx;
-	lora_ptr = &loraRx;
 
-	int messageCounter = 0;
+	SX1278_hw_t lora_hw;
+	SX1278_t loraRx;
+	lora_ptr = &loraRx;
 
 	lora_hw.dio0.port = BUSSY_GPIO_Port;
 	lora_hw.dio0.pin = BUSSY_Pin;
@@ -219,8 +252,9 @@ int main(void) {
 	loraRx.spi = &hspi1;
 	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(LORA_RST_GPIO_Port, LORA_RST_Pin, GPIO_PIN_SET);
-	loraRx.operatingMode = readRegister(&hspi1, LR_RegOpMode);
+	loraRx.operatingMode = readMode(&loraRx);
 	loraRx.status = UNKNOW;
+	bool RX_MODE = true;
 	//initialize LoRa module
 
 	/* USER CODE END 2 */
@@ -229,63 +263,10 @@ int main(void) {
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 
-		if (loraRx.status == UNKNOW) {
-			uart_send("Configuring Master LoRa module\r\n");
-			setBaseParameters(&loraRx);
-			save(&loraRx);
-			loraRx.status = RX_READY;
+		if (RX_MODE){
+			read(&huart1, &loraRx);
+
 		}
-		SX1278_t *module;
-		module = &loraRx;
-		if (loraRx.status == RX_READY) {
-
-			memset(loraRx.rxBuffer, 0, SX1278_MAX_PACKET);
-			setRxParameters(&loraRx);
-		}
-		updateLoraLowFreq(module, RX_SINGLE);
-		if (SX1278_hw_GetDIO0(module->hw)) { //if(Get_NIRQ()) //Packet send over
-			unsigned char addr;
-			unsigned char packet_size;
-
-			memset(loraRx.rxBuffer, 0, SX1278_MAX_PACKET);
-
-			addr = readRegister(module->spi, LR_RegFifoRxCurrentaddr); //last packet addr
-			writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1); //RxBaseAddr -> FiFoAddrPtr
-
-			if (module->LoRa_SF == SX1278_LORA_SF_6) { //When SpreadFactor is six,will used Implicit Header mode(Excluding internal packet length)
-				packet_size = module->packetLength;
-			} else {
-				packet_size = SX1278_SPIRead(module, LR_RegRxNbBytes); //Number for received bytes
-			}
-			uint8_t buff[20] = { 0 };
-			for (int i = 0; i < packet_size; i++) {
-
-				buff[i] = readRegister(module->spi, LR_RegFifoRxBaseAddr);
-			}
-			uart_send(buff);
-			module->readBytes = packet_size;
-			SX1278_clearLoRaIrq(module);
-
-			return module->readBytes;
-
-			readRegister(module->spi, LR_RegIrqFlags);
-			clearIrqFlags(module); //Clear irq
-			uart_send("Transmission: OK\r\n");
-			break;
-		}
-		//module->operatingMode = readMode(module);
-
-		HAL_Delay(500);
-		//}
-
-		//	rssi_lora = SX1278_RSSI_LoRa(&SX1278);
-		//	rssi = SX1278_RSSI(&SX1278);
-		//	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-		//	version = SX1278_SPIRead(&SX1278, REG_LR_VERSION);
-		//	sprintf(str,"LoRa Version %d...\r\n", version);
-		//	uart_send(str);
-
-		//	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
 	}
 	/* USER CODE END WHILE */
 
@@ -360,6 +341,7 @@ static void MX_ADC1_Init(void) {
 	hadc1.Init.LowPowerAutoPowerOff = DISABLE;
 	hadc1.Init.ContinuousConvMode = DISABLE;
 	hadc1.Init.NbrOfConversion = 1;
+	hadc1.Init.DiscontinuousConvMode = DISABLE;
 	hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
 	hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
 	hadc1.Init.DMAContinuousRequests = DISABLE;
@@ -383,6 +365,118 @@ static void MX_ADC1_Init(void) {
 	/* USER CODE BEGIN ADC1_Init 2 */
 
 	/* USER CODE END ADC1_Init 2 */
+
+}
+
+/**
+ * @brief CRC Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_CRC_Init(void) {
+
+	/* USER CODE BEGIN CRC_Init 0 */
+
+	/* USER CODE END CRC_Init 0 */
+
+	/* USER CODE BEGIN CRC_Init 1 */
+
+	/* USER CODE END CRC_Init 1 */
+	hcrc.Instance = CRC;
+	hcrc.Init.DefaultPolynomialUse = DEFAULT_POLYNOMIAL_ENABLE;
+	hcrc.Init.DefaultInitValueUse = DEFAULT_INIT_VALUE_ENABLE;
+	hcrc.Init.InputDataInversionMode = CRC_INPUTDATA_INVERSION_NONE;
+	hcrc.Init.OutputDataInversionMode = CRC_OUTPUTDATA_INVERSION_DISABLE;
+	hcrc.InputDataFormat = CRC_INPUTDATA_FORMAT_BYTES;
+	if (HAL_CRC_Init(&hcrc) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN CRC_Init 2 */
+
+	/* USER CODE END CRC_Init 2 */
+
+}
+
+/**
+ * @brief SPI1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_SPI1_Init(void) {
+
+	/* USER CODE BEGIN SPI1_Init 0 */
+
+	/* USER CODE END SPI1_Init 0 */
+
+	/* USER CODE BEGIN SPI1_Init 1 */
+
+	/* USER CODE END SPI1_Init 1 */
+	/* SPI1 parameter configuration*/
+	hspi1.Instance = SPI1;
+	hspi1.Init.Mode = SPI_MODE_MASTER;
+	hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+	hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+	hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+	hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+	hspi1.Init.NSS = SPI_NSS_SOFT;
+	hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+	hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+	hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+	hspi1.Init.CRCPolynomial = 7;
+	hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+	hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+	if (HAL_SPI_Init(&hspi1) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN SPI1_Init 2 */
+
+	/* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
+ * @brief USART1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_USART1_UART_Init(void) {
+
+	/* USER CODE BEGIN USART1_Init 0 */
+
+	/* USER CODE END USART1_Init 0 */
+
+	/* USER CODE BEGIN USART1_Init 1 */
+
+	/* USER CODE END USART1_Init 1 */
+	huart1.Instance = USART1;
+	huart1.Init.BaudRate = 115200;
+	huart1.Init.WordLength = UART_WORDLENGTH_8B;
+	huart1.Init.StopBits = UART_STOPBITS_1;
+	huart1.Init.Parity = UART_PARITY_NONE;
+	huart1.Init.Mode = UART_MODE_TX_RX;
+	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+	huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+	huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+	if (HAL_UART_Init(&huart1) != HAL_OK) {
+		Error_Handler();
+	}
+	if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8)
+			!= HAL_OK) {
+		Error_Handler();
+	}
+	if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8)
+			!= HAL_OK) {
+		Error_Handler();
+	}
+	if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN USART1_Init 2 */
+
+	/* USER CODE END USART1_Init 2 */
 
 }
 

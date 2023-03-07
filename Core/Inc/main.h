@@ -73,6 +73,7 @@ void Error_Handler(void);
 #define RS232_RX_GPIO_Port GPIOA
 #define SCK_Pin GPIO_PIN_3
 #define SCK_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
