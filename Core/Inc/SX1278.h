@@ -14,8 +14,23 @@
 
 #include "SX1278_hw.h"
 
-#define SX1278_MAX_PACKET	256
+#define DOWNLINK_FREQ 150000000
+#define SX1278_MAX_PACKET	20
 #define SX1278_DEFAULT_TIMEOUT		3000
+#define SX1278_POWER_20DBM  0xFF //20dbm
+#define SX1278_POWER_17DBM  0xFC //17dbm
+#define SX1278_POWER_14DBM  0xF9 //14dbm
+#define SX1278_POWER_11DBM  0xF6 //11dbm
+#define LORAWAN  0x34
+#define OVERCURRENTPROTECT 0x0B //Default value
+#define LNAGAIN 0x23 //Highest gain & Boost on
+#define LNA_SET_BY_AGC 0x04
+#define RX_TIMEOUT_LSB 0x08
+#define PREAMBLE_LENGTH_MSB 0x00
+#define PREAMBLE_LENGTH_LSB 8
+#define HOPS_PERIOD 0x00
+#define DIO0_1_2_3_CONFIG 0x41
+#define FLAGS_VALUE 0xF7
 
 //RFM98 Internal registers Address
 /********************LoRa mode***************************/
@@ -58,9 +73,11 @@
 #define LR_RegHopPeriod                             0x24
 #define LR_RegFifoRxByteAddr                        0x25
 #define LR_RegModemConfig3                          0x26
+#define LR_RegDetectOptimize						0x31
+#define LR_RegDetectionThreshold					0x37
 // I/O settings
-#define REG_LR_DIOMAPPING1                          0x40
-#define REG_LR_DIOMAPPING2                          0x41
+#define LR_RegDioMapping1                          0x40
+#define LR_RegDioMapping2                          0x41
 // Version
 #define REG_LR_VERSION                              0x42
 // Additional settings
@@ -147,7 +164,7 @@
  **Parameter table define
  **********************************************************/
 
-#define SX1278_POWER_20DBM		0
+/*#define SX1278_POWER_20DBM		0
 #define SX1278_POWER_17DBM		1
 #define SX1278_POWER_14DBM		2
 #define SX1278_POWER_11DBM		3
@@ -156,7 +173,10 @@ static const uint8_t SX1278_Power[4] = { 0xFF, //20dbm
 		0xFC, //17dbm
 		0xF9, //14dbm
 		0xF6, //11dbm
-		};
+		};*/
+typedef enum SPREAD_FACTOR {
+	SF_6 = 6, SF_7, SF_8, SF_9, SF_10, SF_11, SF_12
+} SPREAD_FACTOR_t;
 
 #define SX1278_LORA_SF_6		0
 #define SX1278_LORA_SF_7		1
@@ -191,6 +211,27 @@ static const uint8_t SX1278_LoRaBandwidth[10] = { 0, //   7.8KHz,
 		9  // 500.0KHz
 		};
 
+enum LORABW {
+	LORABW_7_8KHZ,
+	LORABW_10_4KHZ,
+	LORABW_15_6KHZ,
+	LORABW_20_8KHZ,
+	LORABW_31_2KHZ,
+	LORABW_41_7KHZ,
+	LORABW_62_5KHZ,
+	LORABW_125KHZ,
+	LORABW_250KHZ,
+	LORABW_500KHZ
+};
+
+typedef enum CODING_RATE {
+	LORA_CR_4_5 = 1, LORA_CR_4_6, LORA_CR_4_7, LORA_CR_4_8
+} CODING_RATE_t;
+
+typedef enum HEADER_MODE {
+	EXPLICIT, IMPLICIT
+} HEADER_MODE_t;
+
 //Coding rate
 #define SX1278_LORA_CR_4_5    0
 #define SX1278_LORA_CR_4_6    1
@@ -203,13 +244,51 @@ static const uint8_t SX1278_CodingRate[4] = { 0x01, 0x02, 0x03, 0x04 };
 #define SX1278_LORA_CRC_EN              0
 #define SX1278_LORA_CRC_DIS             1
 
-static const uint8_t SX1278_CRC_Sum[2] = { 0x01, 0x00 };
+//static const uint8_t SX1278_CRC_Sum[2] = { 0x01, 0x00 };
 
-typedef enum _SX1278_STATUS {
+typedef enum CRC_SUM {
+	CRC_DISABLE, CRC_ENABLE
+} CRC_SUM_t;
+
+/*typedef enum _SX1278_STATUS {
 	SLEEP, STANDBY, TX, RX
+} SX1278_Status_t;*/
+typedef enum OPERATING_MODE {
+	SLEEP,
+	STANDBY,
+	FSTX, //Frequency synthesis TX
+	TX,
+	FSRX, //Frequency synthesis RX
+	RX_CONTINUOUS,
+	RX_SINGLE,
+	CAD //Channel activity detection
+} OPERATING_MODE_t;
+
+typedef enum SX1278_STATUS {
+	UNKNOW,
+	TX_READY,
+	RX_READY
 } SX1278_Status_t;
 
+#define LORA_MODE_ACTIVATION (0x00 | 8 << 4)
+#define HIGH_FREQUENCY_MODE (0x00 | 0 << 3)
+#define LOW_FREQUENCY_MODE (0x00 | 1 << 3)
+
+#define DIO0_RX_DONE (0x00 | 0 << 6)
+#define DIO0_TX_DONE (0x00 | 1 << 6)
+#define DIO0_CAD_DONE (0x00 | 2 << 6)
+#define DIO1_RX_TIMEOUT (0x00 | 0 << 4)
+#define DIO1_FHSS_CHANGE_CHANNEL (0x00 | 1 << 4)
+#define DIO1_CAD_DETECTED (0x00 | 2 << 4)
+#define DIO2_FHSS_CHANGE_CHANNEL (0x00 | 0 << 2)
+#define DIO3_CAD_DONE (0x00 | 0 << 0)
+#define DIO3_VALID_HEADER (0x00 | 1 << 0)
+#define DIO3_PAYLOAD_CRC_ERROR (0x00 | 2 << 0)
+
+#define MASK_ENABLE 0
+#define MASK_DISABLE 1
 typedef struct {
+
 	SX1278_hw_t *hw;
 
 	uint64_t frequency;
@@ -220,11 +299,28 @@ typedef struct {
 	uint8_t LoRa_CRC_sum;
 	uint8_t packetLength;
 
+	uint8_t syncWord;
+	uint8_t ocp;
+	uint8_t lnaGain;
+	uint8_t AgcAutoOn;
+	uint8_t symbTimeoutLsb;
+	uint8_t symbTimeoutMsb;
+	uint8_t PreambleLengthMsb;
+	uint8_t PreambleLengthLsb;
+	uint8_t fhssValue;
+	uint8_t dioConfig;
+	uint8_t flagsMode;
+	HEADER_MODE_t headerMode;
+	bool saveParameters;
+
+	OPERATING_MODE_t operatingMode;
+
 	SX1278_Status_t status;
 
 	uint8_t rxBuffer[SX1278_MAX_PACKET];
 	uint8_t rxBuffer2[SX1278_MAX_PACKET];
 	uint8_t readBytes;
+	SPI_HandleTypeDef *spi;
 } SX1278_t;
 
 /**
@@ -482,4 +578,15 @@ void SX1278_standby(SX1278_t *module);
  */
 void SX1278_sleep(SX1278_t *module);
 
+uint8_t readRegister(SPI_HandleTypeDef *spi, uint8_t address);
+uint8_t writeRegister(SPI_HandleTypeDef *spi, uint8_t address, uint8_t *cmd,uint8_t lenght);
+void setRFFrequency(SX1278_t *module);
+void setLORAWAN(SX1278_t *module);
+void setOvercurrentProtect(SX1278_t *module);
+void setLNAGain(SX1278_t *module);
+void setPreambleParameters(SX1278_t *module);
+void updateLoraLowFreq(SX1278_t *module, SX1278_Status_t mode);
+void setDetectionParameters(SX1278_t *module);
+void setReModemConfig(SX1278_t *module);
+void clearIrqFlags(SX1278_t *module);
 #endif

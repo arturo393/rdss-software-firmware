@@ -8,7 +8,6 @@
 #include "SX1278_hw.h"
 #include <string.h>
 
-#include "gpio.h"
 #include "spi.h"
 
 __weak void SX1278_hw_init(SX1278_hw_t *hw) {
@@ -46,7 +45,7 @@ __weak uint8_t SX1278_hw_SPIReadByte(SX1278_hw_t *hw) {
 	SX1278_hw_SetNSS(hw, 0);
 	//HAL_SPI_Transmit (hw->spi, &address, 1, 100);  // send address
 //	HAL_SPI_Receive (hw->spi, &rxByte, 1, 100);  // receive 1 bytes data
-
+	// TODO Agregar timeout!
 	HAL_SPI_TransmitReceive(hw->spi, &txByte, &rxByte, 1, 1000);
 	while (HAL_SPI_GetState(hw->spi) != HAL_SPI_STATE_READY)
 		;
@@ -74,4 +73,5 @@ __weak void SX1278_hw_DelayMs(uint32_t msec) {
 __weak int SX1278_hw_GetDIO0(SX1278_hw_t *hw) {
 	return (HAL_GPIO_ReadPin(hw->dio0.port, hw->dio0.pin) == GPIO_PIN_SET);
 }
+
 

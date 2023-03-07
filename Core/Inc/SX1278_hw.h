@@ -9,6 +9,7 @@
 #define __SX1278_HW_HEADER
 
 #include <stdint.h>
+#include "main.h"
 
 typedef struct {
 	int pin;
@@ -18,6 +19,7 @@ typedef struct {
 typedef struct {
 	SX1278_hw_dio_t reset;
 	SX1278_hw_dio_t dio0;
+	SX1278_hw_dio_t dio3;
 	SX1278_hw_dio_t nss;
 	void *spi;
 } SX1278_hw_t;
@@ -91,6 +93,7 @@ void SX1278_hw_DelayMs(uint32_t msec);
  * \return				0 if DIO0 low, 1 if DIO high
  */
 int SX1278_hw_GetDIO0(SX1278_hw_t *hw);
+int SX1278_hw_GetDIO3(SX1278_hw_t *hw);
 
 #endif
 

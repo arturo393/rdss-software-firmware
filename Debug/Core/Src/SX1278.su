@@ -3,7 +3,6 @@
 ../Core/Src/SX1278.c:30:6:SX1278_SPIBurstRead	40	static
 ../Core/Src/SX1278.c:46:6:SX1278_SPIBurstRead2	16	static
 ../Core/Src/SX1278.c:58:9:SX1278_SPIBurstWrite	40	static
-../Core/Src/SX1278.c:75:6:SX1278_config	64	static
 ../Core/Src/SX1278.c:133:6:SX1278_standby	16	static
 ../Core/Src/SX1278.c:138:6:SX1278_sleep	16	static
 ../Core/Src/SX1278.c:143:6:sx1278_entry_LoRA_mode	16	static
@@ -19,3 +18,15 @@
 ../Core/Src/SX1278.c:291:9:SX1278_read	24	static
 ../Core/Src/SX1278.c:300:9:SX1278_RSSI_LoRa	24	static
 ../Core/Src/SX1278.c:307:9:SX1278_RSSI	32	static
+../Core/Src/SX1278.c:315:9:readRegister	32	static
+../Core/Src/SX1278.c:326:9:writeRegister	72	static
+../Core/Src/SX1278.c:340:6:setRFFrequency	56	static
+../Core/Src/SX1278.c:349:6:setOutputPower	16	static
+../Core/Src/SX1278.c:353:6:setLORAWAN	16	static
+../Core/Src/SX1278.c:356:6:setOvercurrentProtect	16	static
+../Core/Src/SX1278.c:360:6:setLNAGain	16	static
+../Core/Src/SX1278.c:364:6:setPreambleParameters	16	static
+../Core/Src/SX1278.c:374:6:updateLoraLowFreq	24	static
+../Core/Src/SX1278.c:379:6:setDetectionParameters	32	static
+../Core/Src/SX1278.c:389:6:setReModemConfig	32	static
+../Core/Src/SX1278.c:404:6:clearIrqFlags	24	static

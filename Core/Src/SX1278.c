@@ -71,7 +71,7 @@ uint8_t SX1278_SPIBurstWrite(SX1278_t *module, uint8_t addr, uint8_t *txBuf,
 
 	return length;
 }
-
+/*
 void SX1278_config(SX1278_t *module) {
 	SX1278_sleep(module); //Change modem mode Must in Sleep mode
 	SX1278_hw_DelayMs(15);
@@ -125,11 +125,11 @@ void SX1278_config(SX1278_t *module) {
 	SX1278_SPIWrite(module, LR_RegSymbTimeoutLsb, 0x08); //RegSymbTimeoutLsb Timeout = 0x3FF(Max)
 	SX1278_SPIWrite(module, LR_RegPreambleMsb, 0x00); //RegPreambleMsb
 	SX1278_SPIWrite(module, LR_RegPreambleLsb, 65535); //RegPreambleLsb 8+4=12byte Preamble
-	SX1278_SPIWrite(module, REG_LR_DIOMAPPING2, 0x01); //RegDioMapping2 DIO5=00, DIO4=01
+	SX1278_SPIWrite(module, LR_RegDioMapping2, 0x01); //RegDioMapping2 DIO5=00, DIO4=01
 	module->readBytes = 0;
 	SX1278_standby(module); //Entry standby mode
 }
-
+*/
 void SX1278_standby(SX1278_t *module) {
 	SX1278_SPIWrite(module, LR_RegOpMode, 0x09);
 	module->status = STANDBY;
@@ -156,7 +156,7 @@ int SX1278_LoRaEntryRx(SX1278_t *module, uint8_t length, uint32_t timeout) {
 	SX1278_config(module);		//Setting base parameter
 	SX1278_SPIWrite(module, REG_LR_PADAC, 0x84);	//Normal and RX
 	SX1278_SPIWrite(module, LR_RegHopPeriod, 0xFF);	//No FHSS
-	SX1278_SPIWrite(module, REG_LR_DIOMAPPING1, 0x01);//DIO=00,DIO1=00,DIO2=00, DIO3=01
+	SX1278_SPIWrite(module, LR_RegDioMapping1, 0x01);//DIO=00,DIO1=00,DIO2=00, DIO3=01
 	SX1278_SPIWrite(module, LR_RegIrqFlagsMask, 0x3F);//Open RxDone interrupt & Timeout
 	SX1278_clearLoRaIrq(module);
 	SX1278_SPIWrite(module, LR_RegPayloadLength, length);//Payload Length 21byte(this register must difine when the data long of one byte in SF is 6)
@@ -168,7 +168,7 @@ int SX1278_LoRaEntryRx(SX1278_t *module, uint8_t length, uint32_t timeout) {
 
 	while (1) {
 		if ((SX1278_SPIRead(module, LR_RegModemStat) & 0x04) == 0x04) {	//Rx-on going RegModemStat
-			module->status = RX;
+			module->status = RX_READY;
 			return 1;
 		}
 		if (--timeout == 0) {
@@ -212,7 +212,7 @@ int SX1278_LoRaEntryTx(SX1278_t *module, uint8_t length, uint32_t timeout) {
 	SX1278_config(module); //setting base parameter
 	SX1278_SPIWrite(module, REG_LR_PADAC, 0x87);	//Tx for 20dBm
 	SX1278_SPIWrite(module, LR_RegHopPeriod, 0x00); //RegHopPeriod NO FHSS
-	SX1278_SPIWrite(module, REG_LR_DIOMAPPING1, 0x41); //DIO0=01, DIO1=00,DIO2=00, DIO3=01
+	SX1278_SPIWrite(module, LR_RegDioMapping1, 0x41); //DIO0=01, DIO1=00,DIO2=00, DIO3=01
 	SX1278_clearLoRaIrq(module);
 	SX1278_SPIWrite(module, LR_RegIrqFlagsMask, 0xF7); //Open TxDone interrupt
 	SX1278_SPIWrite(module, LR_RegPayloadLength, length); //RegPayloadLength 21byte
@@ -309,4 +309,99 @@ uint8_t SX1278_RSSI(SX1278_t *module) {
 	temp = SX1278_SPIRead(module, RegRssiValue);
 	temp = 127 - (temp >> 1);	//127:Max RSSI
 	return temp;
+}
+////////////////////////////////////////////FUNCIONES NUEVAS
+
+uint8_t readRegister(SPI_HandleTypeDef *spi, uint8_t address) {
+	uint8_t rec;
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET);  // pull the pin low
+	HAL_Delay(1);
+	HAL_SPI_Transmit(spi, &address, 1, 100);  // send address
+	HAL_SPI_Receive(spi, &rec, 1, 100);  // receive 6 bytes data
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET);  // pull the pin high
+	return rec;
+}
+
+uint8_t writeRegister(SPI_HandleTypeDef *spi, uint8_t address, uint8_t *cmd,
+		uint8_t lenght) {
+	uint8_t tx_data[30] = { 0 };
+	tx_data[0] = address | 0x00;
+	int j = 0;
+	for (int i = 1; i <= lenght; i++) {
+		tx_data[i] = cmd[j++];
+	}
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET);  // pull the pin low
+	HAL_SPI_Transmit(spi, tx_data, lenght + 1, 1000);
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET);  // pull the pin high
+	HAL_Delay(10);
+	return cmd;  // pull the pin high
+}
+void setRFFrequency(SX1278_t *module) {
+	uint64_t freq = ((uint64_t) module->frequency << 19) / 32000000;
+	uint8_t freq_reg[3];
+	freq_reg[0] = (uint8_t) (freq >> 16);
+	freq_reg[1] = (uint8_t) (freq >> 8);
+	freq_reg[2] = (uint8_t) (freq >> 0);
+	writeRegister(module->spi, LR_RegFrMsb, freq_reg, sizeof(freq_reg));
+}
+
+void setOutputPower(SX1278_t *module) {
+	writeRegister(module->spi, LR_RegPaConfig, &(module->power), 1);
+}
+
+void setLORAWAN(SX1278_t *module) {
+	writeRegister(module->spi, RegSyncWord, &(module->syncWord), 1);
+}
+void setOvercurrentProtect(SX1278_t *module) {
+	writeRegister(module->spi, LR_RegOcp, &(module->ocp), 1);
+	//SX1278_SPIWrite(module, LR_RegOcp, 0x0B, spi);
+}
+void setLNAGain(SX1278_t *module) {
+	writeRegister(module->spi, LR_RegLna, &(module->lnaGain), 1);
+	//SX1278_SPIWrite(module, LR_RegLna, 0x23, spi);//RegLNA,High & LNA Enable
+}
+void setPreambleParameters(SX1278_t *module) {
+
+	writeRegister(module->spi, LR_RegSymbTimeoutLsb, &(module->symbTimeoutLsb),
+			1);
+	writeRegister(module->spi, LR_RegPreambleMsb, &(module->PreambleLengthMsb),
+			1);
+	writeRegister(module->spi, LR_RegPreambleLsb, &(module->PreambleLengthLsb),
+			1);
+	module->readBytes = 0;
+}
+void updateLoraLowFreq(SX1278_t *module, SX1278_Status_t mode) {
+	uint8_t cmd = LORA_MODE_ACTIVATION | LOW_FREQUENCY_MODE | mode;
+	writeRegister(module->spi, LR_RegOpMode, &cmd, 1);
+	module->operatingMode = mode;
+}
+void setDetectionParameters(SX1278_t *module) {
+	uint8_t tmp;
+	tmp = readRegister(module->spi, LR_RegDetectOptimize);
+	tmp &= 0xF8;
+	tmp |= 0x05;
+	writeRegister(module->spi, LR_RegDetectOptimize, &tmp, 1);
+	tmp = 0x0C;
+	writeRegister(module->spi, LR_RegDetectionThreshold, &tmp, 1);
+}
+
+void setReModemConfig(SX1278_t *module) {
+
+	uint8_t cmd = 0;
+	cmd = module->LoRa_BW << 4;
+	cmd += module->LoRa_CR << 1;
+	cmd += module->headerMode;
+	writeRegister(module->spi, LR_RegModemConfig1, &cmd, 1); //Explicit Enable CRC Enable(0x02) & Error Coding rate 4/5(0x01), 4/6(0x02), 4/7(0x03), 4/8(0x04)
+
+	cmd = module->LoRa_SF << 4;
+	cmd += module->LoRa_CRC_sum << 2;
+	cmd += module->symbTimeoutMsb;
+	writeRegister(module->spi, LR_RegModemConfig2, &cmd, 1);
+	writeRegister(module->spi, LR_RegModemConfig3, &(module->AgcAutoOn), 1);
+}
+
+void clearIrqFlags(SX1278_t *module) {
+	uint8_t cmd = 0xFF;
+	writeRegister(module->spi, LR_RegIrqFlags, &cmd, 1);
 }

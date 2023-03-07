@@ -1,6 +1,5 @@
 Core/Src/SX1278_hw.o: ../Core/Src/SX1278_hw.c ../Core/Inc/SX1278_hw.h \
- ../Core/Inc/gpio.h ../Core/Inc/main.h \
- ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal.h \
+ ../Core/Inc/main.h ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal.h \
  ../Core/Inc/stm32g0xx_hal_conf.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_rcc.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_def.h \
@@ -37,7 +36,6 @@ Core/Src/SX1278_hw.o: ../Core/Src/SX1278_hw.c ../Core/Inc/SX1278_hw.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart_ex.h \
  ../Core/Inc/spi.h
 ../Core/Inc/SX1278_hw.h:
-../Core/Inc/gpio.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal.h:
 ../Core/Inc/stm32g0xx_hal_conf.h:

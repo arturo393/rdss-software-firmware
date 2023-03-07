@@ -60,8 +60,8 @@ all: main-build
 main-build: VLADR.elf secondary-outputs
 
 # Tool invocations
-VLADR.elf VLADR.map: $(OBJS) $(USER_OBJS) C:\Users\sigmadev\development\stm32\VLADR\STM32G030K6TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "VLADR.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\sigmadev\development\stm32\VLADR\STM32G030K6TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="VLADR.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+VLADR.elf VLADR.map: $(OBJS) $(USER_OBJS) C:\Users\admin\RDSslave\vladr\STM32G030K6TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "VLADR.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\admin\RDSslave\vladr\STM32G030K6TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="VLADR.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
