@@ -298,7 +298,7 @@ uint8_t SX1278_LoRaRxPacket(SX1278_t *module, SPI_HandleTypeDef *spi) {
 	unsigned char packet_size;
 
 	if (SX1278_hw_GetDIO0(module->hw)) {
-		memset(module->txBuffer, 0x00, SX1278_MAX_PACKET);
+		memset(module->buffer, 0x00, SX1278_MAX_PACKET);
 
 		addr = SX1278_SPIRead(module, LR_RegFifoRxCurrentaddr, spi); //last packet addr
 		SX1278_SPIWrite(module, LR_RegFifoAddrPtr, addr, spi); //RxBaseAddr -> FiFoAddrPtr
@@ -309,7 +309,7 @@ uint8_t SX1278_LoRaRxPacket(SX1278_t *module, SPI_HandleTypeDef *spi) {
 			packet_size = SX1278_SPIRead(module, LR_RegRxNbBytes, spi); //Number for received bytes
 		}
 
-		SX1278_SPIBurstRead(module, 0x00, module->txBuffer, packet_size, spi);
+		SX1278_SPIBurstRead(module, 0x00, module->buffer, packet_size, spi);
 		module->readBytes = packet_size;
 		clearIrqFlags(module);
 	}
