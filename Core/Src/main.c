@@ -78,7 +78,6 @@ uint8_t lora_read_reg(uint8_t address) {
 	return rec;
 }
 
-
 SX1278_t *lora_ptr;
 void setTxBaseParameters(SX1278_t *loraTx) {
 
@@ -116,6 +115,106 @@ void setTxBaseParameters(SX1278_t *loraTx) {
 	loraTx->fhssValue = HOPS_PERIOD;
 }
 
+void saveTx(SX1278_t *module) {
+	updateLoraLowFreq(module, SLEEP);
+	HAL_Delay(15);
+	setRFFrequency(module);
+	setLORAWAN(module);
+	setOutputPower(module);
+	setOvercurrentProtect(module);
+	writeRegister(module->spi, LR_RegLna, &(module->lnaGain), 1);
+	if (module->LoRa_SF == SF_6) {
+		module->headerMode = IMPLICIT;
+		module->symbTimeoutMsb = 0x03;
+		setDetectionParameters(module);
+	} else {
+		module->headerMode = EXPLICIT;
+		module->symbTimeoutMsb = 0x00;
+	}
+	setReModemConfig(module);
+	setPreambleParameters(module);
+	writeRegister(module->spi, LR_RegHopPeriod, &(module->fhssValue), 1);
+	writeRegister(module->spi, LR_RegDioMapping1, &(module->dioConfig), 1);
+	clearIrqFlags(module);
+	writeRegister(module->spi, LR_RegIrqFlagsMask, &(module->flagsMode), 1);
+}
+
+void setTxParameters(SX1278_t *module) {
+	uint8_t cmd = module->packetLength;
+	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1);
+	uint8_t addr = readRegister(module->spi, LR_RegFifoTxBaseAddr);
+	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1);
+	module->packetLength = readRegister(module->spi, LR_RegPayloadLength);
+}
+
+void sx1278Reset() {
+	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_RESET);
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_SET);
+	HAL_Delay(100);
+}
+
+int messageCounter = 0;
+void transmit(SX1278_t *loraTx) {
+	if (loraTx->status == UNKNOW) {
+		uint8_t tmp[] = "Configuring Slave LoRa module: Tx Mode\r\n";
+		size_t len = strlen(tmp);
+		HAL_UART_Transmit(&huart1, tmp, len, 100);
+		setTxBaseParameters(loraTx);
+		saveTx(loraTx);
+		loraTx->status = TX_READY;
+	}
+	if (loraTx->status == TX_READY) {
+		memset(loraTx->buffer, 0, SX1278_MAX_PACKET);
+		loraTx->packetLength = sprintf((char*) loraTx->buffer,
+				"Adios tia Paty, Adios tia Lela, "
+						"saludos al loco Rene, al compadre moncho y "
+						"al vendedor de leña %d", messageCounter);
+
+		setTxParameters(loraTx);
+
+		if (!(loraTx->packetLength > 0))
+			return;
+		uint8_t tmp1[] = "EntryTx OK!\r\n";
+		size_t len1 = strlen(tmp1);
+		HAL_UART_Transmit(&huart1, tmp1, len1, 100);
+		uint8_t tmp2[] = "Sending message: \r\n";
+		size_t len2 = strlen(tmp2);
+		HAL_UART_Transmit(&huart1, tmp2, len2, 100);
+		HAL_UART_Transmit(&huart1, loraTx->buffer, loraTx->packetLength, 100);
+
+		for (int i = 0; i < loraTx->packetLength; i++) {
+			char data = loraTx->buffer[i];
+			writeRegister(loraTx->spi, 0x00, &data, 1);
+		}
+		updateLoraLowFreq(loraTx, TX);
+		uint32_t timeStart = HAL_GetTick();
+		while (1) {
+			if (SX1278_hw_GetDIO0(loraTx->hw)) {
+				readRegister(loraTx->spi, LR_RegIrqFlags);
+				clearIrqFlags(loraTx);
+				uint8_t tmp3[] = "\nTransmission: OK\r\n";
+				size_t len3 = strlen(tmp3);
+				HAL_UART_Transmit(&huart1, tmp3, len3, 100);
+				messageCounter += 1;
+				return;
+			}
+
+			if (HAL_GetTick() - timeStart > LORA_SEND_TIMEOUT) {
+				sx1278Reset();
+				uint8_t tmp4[] = "EntryTx failed, timeout reset!\r\n";
+				size_t len4 = strlen(tmp4);
+				HAL_UART_Transmit(&huart1, tmp4, len4, 100);
+				return;
+			}
+
+			HAL_Delay(1);
+		}
+		loraTx->operatingMode = readMode(loraTx);
+	}
+}
+
 void setRxBaseParameters(SX1278_t *loraRx) {
 
 	uint8_t dio0 = DIO0_RX_DONE;
@@ -123,16 +222,7 @@ void setRxBaseParameters(SX1278_t *loraRx) {
 	uint8_t dio2 = DIO2_FHSS_CHANGE_CHANNEL;
 	uint8_t dio3 = DIO3_VALID_HEADER;
 	////////////////////////////////////////
-	uint8_t rxTimeoutMask = 0x00 | (MASK_ENABLE << 7);
-	uint8_t rxDoneMask = 0x00 | (MASK_ENABLE << 6);
-	uint8_t payloadCrcErrorMask = 0x00 | (MASK_DISABLE << 5);
-	uint8_t validHeaderMask = 0x00 | (MASK_DISABLE << 4);
-	uint8_t txDoneMask = 0x00 | (MASK_DISABLE << 3);
-	uint8_t cadDoneMask = 0x00 | (MASK_DISABLE << 2);
-	uint8_t fhssChangeChannelMask = 0x00 | (MASK_DISABLE << 1);
-	uint8_t cadDetectedMask = 0x00 | (MASK_DISABLE << 0);
-
-	loraRx->frequency = UPLINK_FREQ;
+	loraRx->frequency = DOWNLINK_FREQ;
 	loraRx->power = SX1278_POWER_17DBM;
 	loraRx->LoRa_SF = SF_10;
 	loraRx->LoRa_BW = LORABW_62_5KHZ;
@@ -146,9 +236,11 @@ void setRxBaseParameters(SX1278_t *loraRx) {
 	loraRx->preambleLengthMsb = PREAMBLE_LENGTH_MSB;
 	loraRx->preambleLengthLsb = PREAMBLE_LENGTH_LSB;
 	loraRx->dioConfig = dio0 | dio1 | dio2 | dio3;
-	loraRx->flagsMode = rxTimeoutMask | rxDoneMask | payloadCrcErrorMask;
-	loraRx->flagsMode |= validHeaderMask | txDoneMask | cadDoneMask;
-	loraRx->flagsMode |= fhssChangeChannelMask | cadDetectedMask;
+
+	loraRx->flagsMode = 0xff;
+	CLEAR_BIT(loraRx->flagsMode, RX_DONE_MASK);
+	CLEAR_BIT(loraRx->flagsMode, PAYLOAD_CRC_ERROR_MASK);
+
 	loraRx->fhssValue = HOPS_PERIOD;
 	loraRx->packetLength = SX1278_MAX_PACKET;
 }
@@ -188,151 +280,81 @@ void setRxParameters(SX1278_t *module) {
 	module->packetLength = readRegister(module->spi, LR_RegPayloadLength);
 }
 
-void sx1278Reset() {
-	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_RESET);
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_SET);
-	HAL_Delay(100);
+void clearMemForRx(SX1278_t *loraRx) {
+	if (loraRx->status == RX_READY) {
+		memset(loraRx->buffer, 0, SX1278_MAX_PACKET);
+	}
 }
 
-void read(UART_HandleTypeDef *huart1, SX1278_t *loraRx) {
-	if (loraRx->status == UNKNOW) {
-		uint8_t tmp[] = "Configuring Slave LoRa module: Rx Mode\r\n";
-		size_t len = strlen(tmp);
-		HAL_UART_Transmit(&*huart1, tmp, len, 100);
-		setRxBaseParameters(&*loraRx);
-		saveRx(loraRx);
-		loraRx->status = RX_READY;
-	}
-	if (loraRx->status == RX_READY) {
-		memset(loraRx->rxBuffer, 0, SX1278_MAX_PACKET);
-		setRxParameters(loraRx);
-	}
-	updateLoraLowFreq(&*loraRx, RX_SINGLE);
+void waitForRxDone(SX1278_t *loraRx) {
 	while (!SX1278_hw_GetDIO0(loraRx->hw)) {
 		uint8_t flags = readRegister(loraRx->spi, LR_RegIrqFlags);
-		if (flags && (MASK_DISABLE << 7)) {
+		if (READ_BIT(flags, PAYLOAD_CRC_ERROR_MASK)) {
 			uint8_t cmd = flags | (1 << 7);
 			writeRegister(loraRx->spi, LR_RegIrqFlags, &cmd, 1);
 			flags = readRegister(loraRx->spi, LR_RegIrqFlags);
-			updateLoraLowFreq(&*loraRx, RX_SINGLE);
 		}
-	}; //if(Get_NIRQ()) //Packet send over
-	loraRx->operatingMode = readMode(loraRx);
+	}
+}
+
+void configInit(UART_HandleTypeDef *huart1, SX1278_t *loraRx) {
+	uint8_t tmp[] = "Configuring Slave LoRa module: Rx Mode\r\n";
+	size_t len = strlen(tmp);
+	HAL_UART_Transmit(&*huart1, tmp, len, 100);
+	setRxBaseParameters(&*loraRx);
+	saveRx(loraRx);
+	loraRx->status = RX_READY;
+	setRxParameters(loraRx);
+}
+
+int crcErrorActivation(SX1278_t *loraRx) {
+	uint8_t flags2 = readRegister(loraRx->spi, LR_RegIrqFlags);
+	SET_BIT(flags2, RX_DONE_MASK);
+	uint8_t cmd = flags2;
+	writeRegister(loraRx->spi, LR_RegIrqFlags, &cmd, 1);
+	uint8_t flags = readRegister(loraRx->spi, LR_RegIrqFlags);
+	int errorActivation = READ_BIT(flags, PAYLOAD_CRC_ERROR_MASK);
+	return errorActivation;
+}
+
+void getLoraPacket(SX1278_t *loraRx) {
 	loraRx->packetLength = readRegister(loraRx->spi, LR_RegRxNbBytes); //Number for received bytes
 	uint8_t addr = 0x00;
 	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET); // pull the pin low
 	HAL_Delay(1);
-	HAL_SPI_Transmit(loraRx->spi, &addr, 1, 100);  // send address
-	HAL_SPI_Receive(loraRx->spi, loraRx->rxBuffer, loraRx->packetLength, 100); // receive 6 bytes data
+	HAL_SPI_Transmit(loraRx->spi, &addr, 1, 100); // send address
+	HAL_SPI_Receive(loraRx->spi, loraRx->buffer, loraRx->packetLength, 100); // receive 6 bytes data
 	HAL_Delay(1);
 	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET); // pull the pin high
+}
 
-	HAL_UART_Transmit(huart1, loraRx->rxBuffer, loraRx->packetLength, 100);
-	clearIrqFlags(loraRx); //Clear irq
-	uint8_t tmp[] = " -> Reception OK\r\n";
-	uint16_t len = strlen(tmp);
-	HAL_UART_Transmit(huart1, tmp, len, 100);
+void printParameters(int timeRx, UART_HandleTypeDef *huart1, SX1278_t *loraRx) {
+	HAL_UART_Transmit(huart1, loraRx->buffer, loraRx->packetLength, 100);
+	uint8_t largo = sprintf((char*) loraRx->buffer,
+			" - Rx Ok: %d ms %d bytes\n", timeRx, loraRx->packetLength);
+	HAL_UART_Transmit(huart1, loraRx->buffer, largo, 100);
+}
+
+void read(UART_HandleTypeDef *huart1, SX1278_t *loraRx) {
+	if (loraRx->status == UNKNOW) {
+		configInit(huart1, loraRx);
+		updateLoraLowFreq(&*loraRx, RX_CONTINUOUS);
+	}
+	clearMemForRx(loraRx);
+	int timeStart = HAL_GetTick();
+	waitForRxDone(loraRx);
+	int timeEnd = HAL_GetTick();
+	int timeRx = timeEnd - timeStart;
+	int errorActivation = crcErrorActivation(loraRx);
+	if (errorActivation == 1) {
+		return;
+	}
+	getLoraPacket(loraRx);
+	printParameters(timeRx, huart1, loraRx);
+	setRxParameters(loraRx);
+	updateLoraLowFreq(&*loraRx, RX_CONTINUOUS);
 	loraRx->operatingMode = readMode(loraRx);
 }
-int messageCounter = 0;
-
-void transmit(SX1278_t *loraTx){
-		if (loraTx->status == UNKNOW) {
-			//printf("Configuring Slave LoRa module: Tx Mode\r\n");
-			uint8_t tmp[] = "Configuring Slave LoRa module: Rx Mode\r\n";
-			size_t len = strlen(tmp);
-			HAL_UART_Transmit(&huart1, tmp, len, 100);
-			setTxBaseParameters(loraTx);
-			saveTx(loraTx);
-			loraTx->status = TX_READY;
-		}
-		if (loraTx->status == TX_READY) {
-			memset(loraTx->txBuffer, 0, SX1278_MAX_PACKET);
-			loraTx->packetLength = sprintf((char*) loraTx->txBuffer, "Adios tia Paty, Adios tia Lela, "
-					"saludos al loco Rene, al compadre moncho y "
-					"al vendedor de leña %d",
-					messageCounter);
-
-			setTxParameters(loraTx);
-			if (!(loraTx->packetLength > 0))
-				return;
-			//printf("EntryTx OK!\r\n");
-			uint8_t tmp1[]= "EntryTx OK!\r\n";
-			size_t len1 = strlen(tmp1);
-			HAL_UART_Transmit(&huart1, tmp1, len1, 100);
-			//printf("Sending message: %s\r\n", loraTx->txBuffer);
-			uint8_t tmp2[]= "Sending message: \r\n";
-			size_t len2 = strlen(tmp2);
-			HAL_UART_Transmit(&huart1, tmp2, len2, 100);
-			HAL_UART_Transmit(&huart1, loraTx->txBuffer, loraTx->packetLength, 100);
-
-			for(int i = 0;i<loraTx->packetLength;i++){
-				char data = loraTx->txBuffer[i];
-				writeRegister(loraTx->spi, 0x00, &data,1);
-		}
-			updateLoraLowFreq(loraTx, TX);
-			uint32_t timeStart = HAL_GetTick();
-			while (1) {
-				if (SX1278_hw_GetDIO0(loraTx->hw)) {
-					readRegister(loraTx->spi, LR_RegIrqFlags);
-					clearIrqFlags(loraTx);
-					//printf("Transmission: OK\r\n");
-					uint8_t tmp3[]= "\nTransmission: OK\r\n";
-					size_t len3 = strlen(tmp3);
-					HAL_UART_Transmit(&huart1, tmp3, len3, 100);
-					messageCounter += 1;
-					return;
-				}
-
-				if (HAL_GetTick() - timeStart > LORA_SEND_TIMEOUT) {
-					sx1278Reset();
-					//printf("EntryTx failed, timeout reset!\r\n");
-					uint8_t tmp4[]= "EntryTx failed, timeout reset!\r\n";
-					size_t len4 = strlen(tmp4);
-					HAL_UART_Transmit(&huart1, tmp4, len4, 100);
-					return;
-				}
-
-				HAL_Delay(1);
-			}
-			loraTx->operatingMode = readMode(loraTx);
-		}
-}
-
-void setTxParameters(SX1278_t *module) {
-	uint8_t cmd = module->packetLength;
-	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1);
-	uint8_t addr = readRegister(module->spi, LR_RegFifoTxBaseAddr);
-	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1);
-	module->packetLength = readRegister(module->spi, LR_RegPayloadLength);
-}
-
-void saveTx(SX1278_t *module) {
-	updateLoraLowFreq(module, SLEEP);
-	HAL_Delay(15);
-	setRFFrequency(module);
-	setLORAWAN(module);
-	setOutputPower(module);
-	setOvercurrentProtect(module);
-	writeRegister(module->spi, LR_RegLna, &(module->lnaGain), 1);
-	if (module->LoRa_SF == SF_6) {
-		module->headerMode = IMPLICIT;
-		module->symbTimeoutMsb = 0x03;
-		setDetectionParameters(module);
-	} else {
-		module->headerMode = EXPLICIT;
-		module->symbTimeoutMsb = 0x00;
-	}
-	setReModemConfig(module);
-	setPreambleParameters(module);
-	writeRegister(module->spi, LR_RegHopPeriod, &(module->fhssValue), 1);
-	writeRegister(module->spi, LR_RegDioMapping1, &(module->dioConfig), 1);
-	clearIrqFlags(module);
-	writeRegister(module->spi, LR_RegIrqFlagsMask, &(module->flagsMode), 1);
-}
-
 /* USER CODE END 0 */
 
 /**
@@ -374,27 +396,24 @@ int main(void) {
 	lora_ptr = &loraTx;
 	lora_ptr = &loraRx;
 
-	//int messageCounter = 0;
-
 	lora_hw.dio0.port = BUSSY_GPIO_Port;
 	lora_hw.dio0.pin = BUSSY_Pin;
 	lora_hw.nss.port = LORA_NSS_GPIO_Port;
 	lora_hw.nss.pin = LORA_NSS_Pin;
 	lora_hw.reset.port = LORA_RST_GPIO_Port;
 	lora_hw.reset.pin = LORA_RST_Pin;
-	loraRx.hw = &lora_hw;
 	loraTx.hw = &lora_hw;
-	loraRx.spi = &hspi1;
+	loraRx.hw = &lora_hw;
 	loraTx.spi = &hspi1;
+	loraRx.spi = &hspi1;
 	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(LORA_RST_GPIO_Port, LORA_RST_Pin, GPIO_PIN_SET);
-	loraRx.operatingMode = readMode(&loraRx);
-	loraTx.operatingMode = readMode(&loraTx);
-	loraRx.status = UNKNOW;
+	loraTx.operatingMode = readRegister(&hspi1, LR_RegOpMode);
+	loraRx.operatingMode = readRegister(&hspi1, LR_RegOpMode);
 	loraTx.status = UNKNOW;
-
-	bool RX_MODE = true;
+	loraRx.status = UNKNOW;
 	bool TX_MODE = false;
+	bool RX_MODE = true;
 	//int counter = HAL_GetTick();
 	//initialize LoRa module
 
@@ -404,13 +423,13 @@ int main(void) {
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 
-		if (RX_MODE){
+		if (RX_MODE) {
 			read(&huart1, &loraRx);
 		}
-		if(TX_MODE){
-        	//if (HAL_GetTick() - counter > 700){
-        		//counter = HAL_GetTick();
-	        transmit(&loraTx);
+		if (TX_MODE) {
+			//if (HAL_GetTick() - counter > 700){
+			//counter = HAL_GetTick();
+			transmit(&loraTx);
 		}
 
 	}

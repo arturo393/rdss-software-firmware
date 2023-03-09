@@ -188,6 +188,16 @@
 /**********************************************************
  **Parameter table define
  **********************************************************/
+
+#define RX_TIMEOUT_MASK            (0x1 << 7)       /*!< 0x00000020 */
+#define RX_DONE_MASK               (0x1 << 6)
+#define PAYLOAD_CRC_ERROR_MASK     (0x1 << 5)
+#define VALID_HEADER_MASK          (0x1 << 4)
+#define TX_DONE_MASK               (0x1 << 3)
+#define CAD_DONE_MASK              (0x1 << 2)
+#define FHSS_CHANGE_CHANNEL_MASK   (0x1 << 1)
+#define CAD_DETECTED_MASK          (0x1 << 0)
+
 typedef enum SPREAD_FACTOR {
 	SF_6 = 6, SF_7, SF_8, SF_9, SF_10, SF_11, SF_12
 } SPREAD_FACTOR_t;
@@ -318,8 +328,7 @@ typedef struct {
 
 	SX1278_Status_t status;
 
-	uint8_t rxBuffer[SX1278_MAX_PACKET];
-	uint8_t txBuffer[SX1278_MAX_PACKET];
+	uint8_t buffer[SX1278_MAX_PACKET];
 	SPI_HandleTypeDef *spi;
 } SX1278_t;
 
