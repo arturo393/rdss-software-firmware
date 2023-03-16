@@ -17,7 +17,7 @@
 #define FXOSC 32000000
 #define DOWNLINK_FREQ 150000000
 #define UPLINK_FREQ 170000000
-#define SX1278_MAX_PACKET	255
+#define SX1278_MAX_PACKET	256
 #define SX1278_DEFAULT_TIMEOUT		3000
 #define LORA_SEND_TIMEOUT 2000 //2000
 #define SX1278_POWER_20DBM  0xFF //20dbm
@@ -188,6 +188,16 @@
 /**********************************************************
  **Parameter table define
  **********************************************************/
+
+#define RX_TIMEOUT_MASK            (0x1 << 7)       /*!< 0x00000020 */
+#define RX_DONE_MASK               (0x1 << 6)
+#define PAYLOAD_CRC_ERROR_MASK     (0x1 << 5)
+#define VALID_HEADER_MASK          (0x1 << 4)
+#define TX_DONE_MASK               (0x1 << 3)
+#define CAD_DONE_MASK              (0x1 << 2)
+#define FHSS_CHANGE_CHANNEL_MASK   (0x1 << 1)
+#define CAD_DETECTED_MASK          (0x1 << 0)
+
 typedef enum SPREAD_FACTOR {
 	SF_6 = 6, SF_7, SF_8, SF_9, SF_10, SF_11, SF_12
 } SPREAD_FACTOR_t;
