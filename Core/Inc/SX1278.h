@@ -329,6 +329,8 @@ typedef struct {
 	SX1278_Status_t status;
 
 	uint8_t buffer[SX1278_MAX_PACKET];
+	uint8_t readBytes;
+
 	SPI_HandleTypeDef *spi;
 } SX1278_t;
 

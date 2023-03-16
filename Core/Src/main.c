@@ -24,10 +24,16 @@
 #include <stdio.h>
 #include "SX1278.h"
 #include "led.h"
+#include "uart1.h"
+#include "rs485.h"
+#include "module.h"
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+#define HS16_CLK 16000000
+#define BAUD_RATE 115200
 
 /* USER CODE END PTD */
 
@@ -66,6 +72,13 @@ static void MX_CRC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+UART1_t *uart1_ptr;
+Tone_uhf_t *uhf_ptr;
+RS485_t *rs485_ptr;
+
+void USART1_IRQHandler(void) {
+	uart1_read_to_frame(uart1_ptr);
+}
 
 uint8_t lora_read_reg(uint8_t address) {
 	uint8_t rec;
@@ -156,56 +169,52 @@ void sx1278Reset() {
 }
 
 int messageCounter = 0;
-void transmit(SX1278_t *loraTx) {
+void transmit(const UART1_t *uart1, SX1278_t *loraTx) {
 	if (loraTx->status == UNKNOW) {
-		uint8_t tmp[] = "Configuring Slave LoRa module: Tx Mode\r\n";
-		size_t len = strlen(tmp);
-		HAL_UART_Transmit(&huart1, tmp, len, 100);
+		sprintf(uart1->txBuffer, "Configuring Slave LoRa module: Tx Mode\r\n");
+		uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
 		setTxBaseParameters(loraTx);
 		saveTx(loraTx);
 		loraTx->status = TX_READY;
 	}
 	if (loraTx->status == TX_READY) {
-		memset(loraTx->buffer, 0, SX1278_MAX_PACKET);
-		loraTx->packetLength = sprintf((char*) loraTx->buffer,
-				"Adios tia Paty, Adios tia Lela, "
-						"saludos al loco Rene, al compadre moncho y "
-						"al vendedor de leña %d", messageCounter);
+
+		memset(loraTx->buffer, 0, sizeof(loraTx->buffer));
+		loraTx->packetLength = sprintf((char*) loraTx->buffer, "Hola  Mundo"
+				" %d", messageCounter);
 
 		setTxParameters(loraTx);
-
-		if (!(loraTx->packetLength > 0))
-			return;
-		uint8_t tmp1[] = "EntryTx OK!\r\n";
-		size_t len1 = strlen(tmp1);
-		HAL_UART_Transmit(&huart1, tmp1, len1, 100);
-		uint8_t tmp2[] = "Sending message: \r\n";
+		/*uint8_t tmp2[] = "Sending message: ";
 		size_t len2 = strlen(tmp2);
 		HAL_UART_Transmit(&huart1, tmp2, len2, 100);
-		HAL_UART_Transmit(&huart1, loraTx->buffer, loraTx->packetLength, 100);
+		HAL_UART_Transmit(&huart1, loraTx->buffer, loraTx->packetLength, 100);*/
+		sprintf(uart1->txBuffer, "sending message: %s", loraTx->buffer);
+		uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
 
 		for (int i = 0; i < loraTx->packetLength; i++) {
 			char data = loraTx->buffer[i];
 			writeRegister(loraTx->spi, 0x00, &data, 1);
 		}
 		updateLoraLowFreq(loraTx, TX);
-		uint32_t timeStart = HAL_GetTick();
+		int timeStart = HAL_GetTick();
 		while (1) {
+
 			if (SX1278_hw_GetDIO0(loraTx->hw)) {
+				int timeEnd = HAL_GetTick();
+				int tiempoTransmision = timeEnd - timeStart;
 				readRegister(loraTx->spi, LR_RegIrqFlags);
 				clearIrqFlags(loraTx);
-				uint8_t tmp3[] = "\nTransmission: OK\r\n";
-				size_t len3 = strlen(tmp3);
-				HAL_UART_Transmit(&huart1, tmp3, len3, 100);
+				sprintf(uart1->txBuffer, "- Tx Ok: %d ms %d bytes\n", tiempoTransmision, loraTx->packetLength);
+				uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
 				messageCounter += 1;
 				return;
 			}
 
 			if (HAL_GetTick() - timeStart > LORA_SEND_TIMEOUT) {
 				sx1278Reset();
-				uint8_t tmp4[] = "EntryTx failed, timeout reset!\r\n";
-				size_t len4 = strlen(tmp4);
-				HAL_UART_Transmit(&huart1, tmp4, len4, 100);
+				sprintf(uart1->txBuffer, "EntryTx failed, timeout reset!\r\n");
+				uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
+
 				return;
 			}
 
@@ -248,14 +257,12 @@ void setRxBaseParameters(SX1278_t *loraRx) {
 void saveRx(SX1278_t *module) {
 	updateLoraLowFreq(module, SLEEP); //Change modem mode Must in Sleep mode
 	HAL_Delay(15);
-	//updateLoraLowFreq(module, STANDBY);
 	setRFFrequency(module);
 	setLORAWAN(module);
 	setOutputPower(module);
 	setOvercurrentProtect(module);
 	writeRegister(module->spi, LR_RegLna, &(module->lnaGain), 1);
 	if (module->LoRa_SF == SF_6) {
-		//SFactor=6
 		module->headerMode = IMPLICIT;
 		module->symbTimeoutMsb = 0x03;
 		setDetectionParameters(module);
@@ -282,7 +289,7 @@ void setRxParameters(SX1278_t *module) {
 
 void clearMemForRx(SX1278_t *loraRx) {
 	if (loraRx->status == RX_READY) {
-		memset(loraRx->buffer, 0, SX1278_MAX_PACKET);
+		memset(loraRx->buffer, 0, sizeof(loraRx->buffer));
 	}
 }
 
@@ -355,6 +362,60 @@ void read(UART_HandleTypeDef *huart1, SX1278_t *loraRx) {
 	updateLoraLowFreq(&*loraRx, RX_CONTINUOUS);
 	loraRx->operatingMode = readMode(loraRx);
 }
+
+bool TX_MODE;
+bool RX_MODE;
+
+void modeCmdUpdate(const UART1_t *uart1) {
+	unsigned long receiveValue;
+	receiveValue = 0;
+	receiveValue = uart1->rxBuffer[4] << 24;
+	receiveValue |= uart1->rxBuffer[5] << 16;
+	receiveValue |= uart1->rxBuffer[6] << 8;
+	receiveValue |= uart1->rxBuffer[7];
+	if (receiveValue == 0) {
+		RX_MODE = true;
+		TX_MODE = false;
+		sprintf(uart1->txBuffer, "New mode: Rx \n");
+		uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
+
+	}
+	if (receiveValue == 1) {
+		TX_MODE = true;
+		RX_MODE = false;
+		sprintf(uart1->txBuffer, "New mode: Tx \n");
+		uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
+	}
+}
+
+void modeRs485Update(const UART1_t *uart1, RS485_t *rs485) {
+	switch (rs485->cmd) {
+	case SET_PARAMETER_FREQOUT: //cmd = 31
+		modeCmdUpdate(uart1);
+		rs485->cmd = NONE;
+		break;
+	case SET_PARAMETERS: //cmd = 32
+		//ParametersCmd(uart1);
+		rs485->cmd = NONE;
+		break;
+	case SET_PARAMETER_FREQBASE: //cmd = 33
+		//freqBaseCmdUpdate(uart1);
+		rs485->cmd = NONE;
+		break;
+	case QUERY_PARAMETER_PdBm: //cmd = 34
+		//powerOutCmdUpdate(uart1);
+		rs485->cmd = NONE;
+		break;
+	case SET_MODE: //cmd = 35
+		//setModeCmd(uart1,;
+		rs485->cmd = NONE;
+		break;
+	default:
+		rs485->cmd = NONE;
+		break;
+	}
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -364,6 +425,12 @@ void read(UART_HandleTypeDef *huart1, SX1278_t *loraRx) {
 int main(void) {
 	/* USER CODE BEGIN 1 */
 	LED_t led;
+	RS485_t rs485;
+	UART1_t uart1;
+	Tone_uhf_t uhf;
+	uart1_ptr = &uart1;
+	uhf_ptr = &uhf;
+	rs485_ptr = &rs485;
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -389,6 +456,9 @@ int main(void) {
 	MX_USART1_UART_Init();
 	MX_CRC_Init();
 	/* USER CODE BEGIN 2 */
+	toneUhfInit(UHF_TONE, ID0, &uhf);
+	rs485Init(&rs485);
+	uart1Init(HS16_CLK, BAUD_RATE, &uart1);
 	ledInit(&led);
 
 	SX1278_hw_t lora_hw;
@@ -412,9 +482,10 @@ int main(void) {
 	loraRx.operatingMode = readRegister(&hspi1, LR_RegOpMode);
 	loraTx.status = UNKNOW;
 	loraRx.status = UNKNOW;
-	bool TX_MODE = false;
-	bool RX_MODE = true;
-	//int counter = HAL_GetTick();
+	TX_MODE = false;
+	RX_MODE = true;
+	int counter = HAL_GetTick();
+	int change = 0;;
 	//initialize LoRa module
 
 	/* USER CODE END 2 */
@@ -423,13 +494,32 @@ int main(void) {
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 
+		rs485Uart1Decode(&rs485, &uart1);
+		modeRs485Update(&uart1, &rs485);
+
 		if (RX_MODE) {
 			read(&huart1, &loraRx);
+			change += 1;
+			/*if(change == 13){
+			 TX_MODE = true;
+			 RX_MODE = false;
+			 loraRx.status = UNKNOW;
+			 }*/
 		}
 		if (TX_MODE) {
 			//if (HAL_GetTick() - counter > 700){
 			//counter = HAL_GetTick();
-			transmit(&loraTx);
+			if (HAL_GetTick() - counter > 1) {
+				counter = HAL_GetTick();
+				transmit(&uart1, &loraTx);
+				change += 1;
+				/*if(change == 26){
+				 TX_MODE = false;
+				 RX_MODE = true;
+				 change = 0;
+				 loraTx.status = UNKNOW;
+				 }*/
+			}
 		}
 
 	}
