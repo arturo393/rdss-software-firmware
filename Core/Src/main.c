@@ -304,10 +304,12 @@ void waitForRxDone(SX1278_t *loraRx) {
 	}
 }
 
-void configInit(UART_HandleTypeDef *huart1, SX1278_t *loraRx) {
-	uint8_t tmp[] = "Configuring Slave LoRa module: Rx Mode\r\n";
+void configInit(const UART1_t *uart1, SX1278_t *loraRx) {
+	/*uint8_t tmp[] = "Configuring Slave LoRa module: Rx Mode\r\n";
 	size_t len = strlen(tmp);
-	HAL_UART_Transmit(&*huart1, tmp, len, 100);
+	HAL_UART_Transmit(&*huart1, tmp, len, 100);*/
+	sprintf(uart1->txBuffer, "Configuring Slave LoRa module: Rx Mode\r\n");
+	uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
 	setRxBaseParameters(&*loraRx);
 	saveRx(loraRx);
 	loraRx->status = RX_READY;
@@ -335,16 +337,18 @@ void getLoraPacket(SX1278_t *loraRx) {
 	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET); // pull the pin high
 }
 
-void printParameters(int timeRx, UART_HandleTypeDef *huart1, SX1278_t *loraRx) {
-	HAL_UART_Transmit(huart1, loraRx->buffer, loraRx->packetLength, 100);
+void printParameters(int timeRx, const UART1_t *uart1, SX1278_t *loraRx) {
+	/*HAL_UART_Transmit(huart1, loraRx->buffer, loraRx->packetLength, 100);
 	uint8_t largo = sprintf((char*) loraRx->buffer,
 			" - Rx Ok: %d ms %d bytes\n", timeRx, loraRx->packetLength);
-	HAL_UART_Transmit(huart1, loraRx->buffer, largo, 100);
+	HAL_UART_Transmit(huart1, loraRx->buffer, largo, 100);*/
+	sprintf(uart1->txBuffer, "%s - Rx Ok: %d ms %d bytes\n", loraRx->buffer ,timeRx, loraRx->packetLength);
+	uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
 }
 
-void read(UART_HandleTypeDef *huart1, SX1278_t *loraRx) {
+void read(const UART1_t *uart1, SX1278_t *loraRx) {
 	if (loraRx->status == UNKNOW) {
-		configInit(huart1, loraRx);
+		configInit(uart1, loraRx);
 		updateLoraLowFreq(&*loraRx, RX_CONTINUOUS);
 	}
 	clearMemForRx(loraRx);
@@ -357,7 +361,7 @@ void read(UART_HandleTypeDef *huart1, SX1278_t *loraRx) {
 		return;
 	}
 	getLoraPacket(loraRx);
-	printParameters(timeRx, huart1, loraRx);
+	printParameters(timeRx, uart1, loraRx);
 	setRxParameters(loraRx);
 	updateLoraLowFreq(&*loraRx, RX_CONTINUOUS);
 	loraRx->operatingMode = readMode(loraRx);
@@ -366,7 +370,7 @@ void read(UART_HandleTypeDef *huart1, SX1278_t *loraRx) {
 bool TX_MODE;
 bool RX_MODE;
 
-void modeCmdUpdate(const UART1_t *uart1) {
+void modeCmdUpdate(const UART1_t *uart1, SX1278_t *loraRx, SX1278_t *loraTx) {
 	unsigned long receiveValue;
 	receiveValue = 0;
 	receiveValue = uart1->rxBuffer[4] << 24;
@@ -376,22 +380,19 @@ void modeCmdUpdate(const UART1_t *uart1) {
 	if (receiveValue == 0) {
 		RX_MODE = true;
 		TX_MODE = false;
-		sprintf(uart1->txBuffer, "New mode: Rx \n");
-		uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
-
+        loraRx->status = UNKNOW;
 	}
 	if (receiveValue == 1) {
 		TX_MODE = true;
 		RX_MODE = false;
-		sprintf(uart1->txBuffer, "New mode: Tx \n");
-		uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
+        loraTx->status = UNKNOW;
 	}
 }
 
-void modeRs485Update(const UART1_t *uart1, RS485_t *rs485) {
+void modeRs485Update(const UART1_t *uart1, RS485_t *rs485, SX1278_t *loraRx, SX1278_t *loraTx) {
 	switch (rs485->cmd) {
 	case SET_PARAMETER_FREQOUT: //cmd = 31
-		modeCmdUpdate(uart1);
+		modeCmdUpdate(uart1, loraRx, loraTx);
 		rs485->cmd = NONE;
 		break;
 	case SET_PARAMETERS: //cmd = 32
@@ -453,7 +454,7 @@ int main(void) {
 	MX_GPIO_Init();
 	MX_ADC1_Init();
 	MX_SPI1_Init();
-	MX_USART1_UART_Init();
+	//MX_USART1_UART_Init();
 	MX_CRC_Init();
 	/* USER CODE BEGIN 2 */
 	toneUhfInit(UHF_TONE, ID0, &uhf);
@@ -495,10 +496,10 @@ int main(void) {
 	while (1) {
 
 		rs485Uart1Decode(&rs485, &uart1);
-		modeRs485Update(&uart1, &rs485);
+		modeRs485Update(&uart1, &rs485, &loraRx, &loraTx);
 
 		if (RX_MODE) {
-			read(&huart1, &loraRx);
+			read(&uart1, &loraRx);
 			change += 1;
 			/*if(change == 13){
 			 TX_MODE = true;
