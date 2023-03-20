@@ -7,12 +7,12 @@
 
 #include <uart1.h>
 
-uint8_t  uart1_clean_by_timeout(UART1_t* uart1,const char* str){
+uint8_t  cleanByTimeout(UART1_t* uart1, const char* str){
 		if (HAL_GetTick() - uart1->timeout > SECONDS(5)) {
 			uart1_send_str((char*)str);
 			uart1_send_str("-TIMEOUT\r\n");
 			if(strlen(str)>0)
-				uart1_clean_buffer(uart1);
+				cleanTxBuffer(uart1);
 			uart1->timeout = HAL_GetTick();
 			return 1;
 		}
@@ -72,7 +72,7 @@ void uart1Init(uint32_t pclk, uint32_t baud_rate, UART1_t *u) {
 	USART1->BRR = (uint16_t) br_value;
 	/* transmitter enable*/
 	USART1->CR1 = USART_CR1_TE | USART_CR1_RE;
-	uart1_clean_buffer(u);
+	//uart1_clean_buffer(u);
 
 	/* enable FIFO */
 	//SET_BIT(USART1->CR2, USART_CR1_FIFOEN);
@@ -145,11 +145,11 @@ uint8_t uart1_1byte_read(void) {
 }
 
 void  uart1_read_to_frame(UART1_t *u) {
-	if (u->rxCount >= RX_BUFFLEN) {
-		uart1_clean_buffer(u);
-		u->rxCount = 0;
+	if (u->len >= RX_BUFFLEN) {
+		cleanRxBuffer(u);
+		u->len = 0;
 	}
-	u->rxBuffer[u->rxCount++] = uart1_1byte_read();
+	u->rxBuffer[u->len++] = uart1_1byte_read();
 }
 
 void uart1_send_str(char *str) {
@@ -168,21 +168,14 @@ void uart1_send_frame(uint8_t str[], uint8_t len) {
 	}
 }
 
-void uart1_clean_buffer(UART1_t *u) {
-	u->rxCount = 0;
-	if (TX_BUFFLEN > RX_BUFFLEN) {
-		for (int i = 0; i < TX_BUFFLEN; i++) {
-			if (i < RX_BUFFLEN)
-				u->rxBuffer[i] = 0x00;
-			u->txBuffer[i] = 0x00;
-		}
-	} else {
-		for (int i = 0; i < RX_BUFFLEN; i++) {
-			if (i < TX_BUFFLEN)
-				u->txBuffer[i] = 0x00;
-			u->rxBuffer[i] = 0x00;
-		}
-	}
+void cleanRxBuffer(UART1_t *u) {
+	memset(u->rxBuffer, 0, sizeof(u->len));
+	u->len = 0;
+}
+
+void cleanTxBuffer(UART1_t *u) {
+	memset(u->txBuffer, 0, sizeof(u->len));
+	u->len = 0;
 }
 
 uint8_t uart1_nonblocking_read(void) {

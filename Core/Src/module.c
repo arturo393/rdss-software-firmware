@@ -33,6 +33,33 @@ void toneUhfInit(Function_t funcion, Id_t id, Tone_uhf_t *uhf) {
 	uhf->id = id;
 }
 
+void vladInit(Function_t funcion, Id_t id, Vlad_t *vlad) {
+	vlad->agc150m = 0;
+	vlad->ref150m = 0;
+	vlad->level150m = 0;  // downlink 152 mhz
+	vlad->agc170m = 0;
+	vlad->ref170m = 0;
+	vlad->level170m = 0; //uplink 172 mhz
+	vlad->tone_level = 0;
+	vlad->v_5v = 0;
+	vlad->vin = 0;
+	vlad->current = 0;
+	vlad->v_5v_real = 0;
+	vlad->vin_real = 0;
+	vlad->current_real = 0;
+	vlad->uc_temperature = 0;
+	vlad->remote_attenuation = 0;
+	vlad->is_remote_attenuation = 0;
+    vlad->is_attenuation_updated = 0;
+	vlad->calc_en = 0;
+	vlad->function = funcion;
+	vlad->id = id;
+	vlad->vin2 = 0;
+	vlad->current2 = 0;
+	vlad->current_real2 = 0;
+	vlad->tone_level2 = 0;
+}
+
 void module_init(Module_pa_t *module, Function_t funcion, Id_t id) {
 
 }

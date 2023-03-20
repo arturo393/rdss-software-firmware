@@ -27,7 +27,6 @@
 #include "uart1.h"
 #include "rs485.h"
 #include "module.h"
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -80,7 +79,7 @@ static void MX_CRC_Init(void);
 /* USER CODE BEGIN 0 */
 UART1_t *uart1_ptr;
 RS485_t *rs485_ptr;
-Tone_uhf_t *uhf_ptr;
+Vlad_t *vlad_ptr;
 
 /*void USART1_IRQHandler(void) {
  uart1_read_to_frame(uart1_ptr);
@@ -93,15 +92,14 @@ uint8_t rxData;
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	/* Read received data from UART1 */
 
-	if (uart1_ptr->rxCount >= RX_BUFFLEN) {
-		uart1_clean_buffer(uart1_ptr);
-		uart1_ptr->rxCount = 0;
+	if (uart1_ptr->len >= RX_BUFFLEN) {
+		cleanRxBuffer(uart1_ptr);
+		uart1_ptr->len = 0;
 	}
 
 	HAL_UART_Receive_IT(&huart1, &rxData, 1);
-	uart1_ptr->rxBuffer[uart1_ptr->rxCount++] = rxData;
+	uart1_ptr->rxBuffer[uart1_ptr->len++] = rxData;
 }
-
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
 	printf("SPI TX Done .. Do Something ...");
@@ -182,12 +180,12 @@ void saveTx(SX1278_t *module) {
 }
 
 void setTxParameters(SX1278_t *module) {
-	uint8_t cmd = module->packetLength;
+	uint8_t cmd = module->len;
 	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1);
 	uint8_t addr = readRegister(module->spi, LR_RegFifoTxBaseAddr);
 	addr = 0x80;
 	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1);
-	module->packetLength = readRegister(module->spi, LR_RegPayloadLength);
+	module->len = readRegister(module->spi, LR_RegPayloadLength);
 }
 
 void sx1278Reset() {
@@ -211,16 +209,16 @@ void transmit(SX1278_t *loraTx) {
 	if (loraTx->status == TX_READY) {
 
 		memset(loraTx->buffer, 0, SX1278_MAX_PACKET);
-		loraTx->packetLength = sprintf((char*) loraTx->buffer, "Hello World"
+		loraTx->len = sprintf((char*) loraTx->buffer, "Hello World"
 				" %d", messageCounter);
 
 		setTxParameters(loraTx);
 		uint8_t tmp2[] = "Sending message: ";
 		size_t len2 = strlen(tmp2);
 		HAL_UART_Transmit(&huart1, tmp2, len2, 100);
-		HAL_UART_Transmit(&huart1, loraTx->buffer, loraTx->packetLength, 100);
+		HAL_UART_Transmit(&huart1, loraTx->buffer, loraTx->len, 100);
 
-		for (int i = 0; i < loraTx->packetLength; i++) {
+		for (int i = 0; i < loraTx->len; i++) {
 			char data = loraTx->buffer[i];
 			writeRegister(loraTx->spi, 0x00, &data, 1);
 		}
@@ -236,7 +234,7 @@ void transmit(SX1278_t *loraTx) {
 				uint8_t tmp3[100] = { 0 };
 				uint8_t len3 = sprintf((char*) tmp3,
 						" - Tx Ok: %d ms %d bytes\n", tiempoTransmision,
-						loraTx->packetLength);
+						loraTx->len);
 
 				HAL_UART_Transmit(&huart1, tmp3, len3, 100);
 				messageCounter += 1;
@@ -285,7 +283,7 @@ void setRxBaseParameters(SX1278_t *loraRx) {
 	CLEAR_BIT(loraRx->flagsMode, PAYLOAD_CRC_ERROR_MASK);
 
 	loraRx->fhssValue = HOPS_PERIOD;
-	loraRx->packetLength = SX1278_MAX_PACKET;
+	loraRx->len = SX1278_MAX_PACKET;
 }
 
 void saveRx(SX1278_t *module) {
@@ -314,11 +312,11 @@ void saveRx(SX1278_t *module) {
 
 void setRxParameters(SX1278_t *module) {
 	updateLoraLowFreq(module, SLEEP); //Change modem mode Must in Sleep mode
-	uint8_t cmd = module->packetLength;
+	uint8_t cmd = module->len;
 	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1); //RegPayloadLength 21byte
 	uint8_t addr = readRegister(module->spi, LR_RegFifoRxBaseAddr); //RegFiFoTxBaseAddr
 	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1); //RegFifoAddrPtr
-	module->packetLength = readRegister(module->spi, LR_RegPayloadLength);
+	module->len = readRegister(module->spi, LR_RegPayloadLength);
 }
 
 void clearMemForRx(SX1278_t *loraRx) {
@@ -359,21 +357,22 @@ int crcErrorActivation(SX1278_t *loraRx) {
 }
 
 void getLoraPacket(SX1278_t *loraRx) {
-	loraRx->packetLength = readRegister(loraRx->spi, LR_RegRxNbBytes); //Number for received bytes
+	loraRx->len = readRegister(loraRx->spi, LR_RegRxNbBytes); //Number for received bytes
 	uint8_t addr = 0x00;
 	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET); // pull the pin low
 	HAL_Delay(1);
 	HAL_SPI_Transmit(loraRx->spi, &addr, 1, 100); // send address
-	HAL_SPI_Receive(loraRx->spi, loraRx->buffer, loraRx->packetLength, 100); // receive 6 bytes data
+	HAL_SPI_Receive(loraRx->spi, loraRx->buffer, loraRx->len, 100); // receive 6 bytes data
 	HAL_Delay(1);
 	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET); // pull the pin high
 }
 
 void printParameters(int timeRx, UART_HandleTypeDef *huart1, SX1278_t *loraRx) {
-	HAL_UART_Transmit(huart1, loraRx->buffer, loraRx->packetLength, 100);
-	uint8_t largo = sprintf((char*) loraRx->buffer,
-			" - Rx Ok: %d ms %d bytes\n", timeRx, loraRx->packetLength);
-	HAL_UART_Transmit(huart1, loraRx->buffer, largo, 100);
+	uint8_t tmp[50];
+	HAL_UART_Transmit(huart1, loraRx->buffer, loraRx->len, 100);
+	uint8_t largo = sprintf(tmp, " - Rx Ok: %d ms %d bytes\n", timeRx,
+			loraRx->len);
+	HAL_UART_Transmit(huart1, tmp, largo, 100);
 }
 
 void read(UART_HandleTypeDef *huart1, SX1278_t *loraRx) {
@@ -400,46 +399,114 @@ void read(UART_HandleTypeDef *huart1, SX1278_t *loraRx) {
 bool TX_MODE;
 bool RX_MODE;
 
-void modeCmdUpdate(UART_HandleTypeDef *huart1) {
- unsigned long receiveValue;
- receiveValue = 0;
- receiveValue = uart1_ptr->rxBuffer[4] << 24;
- receiveValue |= uart1_ptr->rxBuffer[5] << 16;
- receiveValue |= uart1_ptr->rxBuffer[6] << 8;
- receiveValue |= uart1_ptr->rxBuffer[7];
- if (receiveValue == 0) {
- HAL_GPIO_WritePin(MODE_GPIO_Port, MODE_Pin, GPIO_PIN_RESET);
- } if (receiveValue == 1) {
- HAL_GPIO_WritePin(MODE_GPIO_Port, MODE_Pin, GPIO_PIN_SET);
- }
- }
+Vlad_t decodeVLAD(SX1278_t *loraRx) {
+	Vlad_t vlad;
+	vlad.vin = loraRx->buffer[6];
+	vlad.vin2 = loraRx->buffer[7];
+	vlad.current_real = loraRx->buffer[8];
+	vlad.current_real2 = loraRx->buffer[9];
+	vlad.tone_level = loraRx->buffer[10];
+	vlad.tone_level2 = loraRx->buffer[11];
+	vlad.current = loraRx->buffer[12];
+	vlad.current2 = loraRx->buffer[13];
+	vlad.agc150m = loraRx->buffer[14];
+	vlad.level150m = loraRx->buffer[15];
+	vlad.agc170m = loraRx->buffer[16];
+	vlad.level170m = loraRx->buffer[17];
 
-void modeRs485Update(UART_HandleTypeDef *huart1, RS485_t *rs485) {
+	return vlad;
+}
+
+void modeCmdUpdate(UART_HandleTypeDef *huart1) {
+	unsigned long receiveValue;
+	receiveValue = 0;
+	receiveValue = uart1_ptr->rxBuffer[4] << 8;
+	receiveValue |= uart1_ptr->rxBuffer[5];
+	if (receiveValue == 0) {
+		HAL_GPIO_WritePin(MODE_GPIO_Port, MODE_Pin, GPIO_PIN_RESET);
+	}
+	if (receiveValue == 1) {
+		HAL_GPIO_WritePin(MODE_GPIO_Port, MODE_Pin, GPIO_PIN_SET);
+	}
+}
+
+void modeRs485Update(UART1_t *uart1, RS485_t *rs485, SX1278_t *loraRx) {
+	Vlad_t vlad;
 	switch (rs485->cmd) {
-	case SET_PARAMETER_FREQOUT: //cmd = 31
+	case QUERY_PARAMETERS_VLAD: //cmd = 11
+		vlad = decodeVLAD(loraRx);
+		print_parameters(uart1, vlad);
+		break;
+	case SET_VLAD_MODE: //cmd = 12
 		modeCmdUpdate(uart1_ptr);
-		rs485->cmd = NONE;
-		break;
-	case SET_PARAMETERS: //cmd = 32
-		//ParametersCmd(uart1);
-		rs485->cmd = NONE;
-		break;
-	case SET_PARAMETER_FREQBASE: //cmd = 33
-		//freqBaseCmdUpdate(uart1);
-		rs485->cmd = NONE;
-		break;
-	case QUERY_PARAMETER_PdBm: //cmd = 34
-		//powerOutCmdUpdate(uart1);
-		rs485->cmd = NONE;
-		break;
-	case SET_MODE: //cmd = 35
-		//setModeCmd(uart1,;
-		rs485->cmd = NONE;
 		break;
 	default:
-		rs485->cmd = NONE;
+
 		break;
 	}
+	rs485->cmd = NONE;
+	memset(rs485->buffer, 0, sizeof(rs485->buffer));
+	rs485->len = 0;
+}
+
+void print_parameters(UART1_t *u, Vlad_t vlad) { //despues del decode Vlad
+	uint8_t len = 0;
+
+	/*sprintf((char*) u->buffer,
+			"vin %d[V] vin2 %d[V] current_ real %d[A] current_real %d[A] tone_level %d[dBm] "
+					"tone_level2 %d[dBm] current %d[A] current2 %d[A] agc150m %d[dBm] level150 %d[dBm] "
+					"agc170m %d[dBm] level170m %d[dBm]\r\n", vlad.vin,
+			vlad.vin2, vlad.current_real, vlad.current_real2, vlad.tone_level,
+			vlad.tone_level2, vlad.current, vlad.current2, vlad.agc150m,
+			vlad.level150m, vlad.agc170m, vlad.level170m);
+	uart1_send_frame((char*) u->buffer, TX_BUFFLEN);*/
+
+
+	len = sprintf((char*) u->txBuffer,
+			"vin %d[V]\r\n", vlad.vin);
+	uart1_send_frame((char*) u->txBuffer, len);
+	len = sprintf((char*) u->txBuffer,
+			"vin2 %d[V]\r\n", vlad.vin2);
+	uart1_send_frame((char*) u->txBuffer, len);
+	len = sprintf((char*) u->txBuffer,
+			"current real %d[A]\r\n", vlad.current_real);
+	uart1_send_frame((char*) u->txBuffer, len);
+	len = sprintf((char*) u->txBuffer,
+			"current real2  %d[A]\r\n", vlad.current_real2);
+	uart1_send_frame((char*) u->txBuffer, len);
+	len = sprintf((char*) u->txBuffer,
+			"tone level %d[dBm]\r\n", vlad.tone_level);
+	uart1_send_frame((char*) u->txBuffer, len);
+	len = sprintf((char*) u->txBuffer,
+			"tone level2 %d[dBm]\r\n", vlad.tone_level2);
+	uart1_send_frame((char*) u->txBuffer, len);
+	len = sprintf((char*) u->txBuffer,
+			"current %d[A]\r\n", vlad.current);
+	uart1_send_frame((char*) u->txBuffer, len);
+	len = sprintf((char*) u->txBuffer,
+			"current2 %d[A]\r\n", vlad.current2);
+	uart1_send_frame((char*) u->txBuffer, len);
+	len = sprintf((char*) u->txBuffer,
+			"agc150m %d[dBm]\r\n", vlad.agc150m);
+	uart1_send_frame((char*) u->txBuffer, len);
+	len = sprintf((char*) u->txBuffer,
+			"level150m %d[dBm]\r\n", vlad.level150m);
+	uart1_send_frame((char*) u->txBuffer, len);
+	len = sprintf((char*) u->txBuffer,
+			"agc170m %d[dBm]\r\n", vlad.agc170m);
+	uart1_send_frame((char*) u->txBuffer, len);
+	len = sprintf((char*) u->txBuffer,
+			"level170m %d[dBm]\r\n", vlad.level170m);
+	uart1_send_frame((char*) u->txBuffer, len);
+	cleanRxBuffer(u);
+}
+
+void printStatus(UART1_t *uart1, Rs485_status_t status) {
+	char rs485_msgs[11][30] = { "DATA OK", "START READING", "VALID FRAME",
+			"NOT VALID FRAME", "WRONG MODULE FUNCTION", "WRONG MODULE ID",
+			"CRC ERROR", "DONE", "WAITING", "VALID MODULE", "CHECK LORA DATA" };
+	cleanByTimeout(uart1, rs485_msgs[status]);
+
 }
 /* USER CODE END 0 */
 
@@ -452,8 +519,8 @@ int main(void) {
 	LED_t led;
 	RS485_t rs485;
 	UART1_t uart1;
-	Tone_uhf_t uhf;
-	uhf_ptr = &uhf;
+	Vlad_t vlad;
+	vlad_ptr = &vlad;
 	uart1_ptr = &uart1;
 	rs485_ptr = &rs485;
 	/* USER CODE END 1 */
@@ -484,7 +551,7 @@ int main(void) {
 	MX_ADC1_Init();
 	MX_CRC_Init();
 	/* USER CODE BEGIN 2 */
-	toneUhfInit(UHF_TONE, ID0, &uhf);
+	vladInit(VLAD, ID1, &vlad);
 	ledInit(&led);
 	rs485Init(&rs485);
 	//uart1Init(HS16_CLK, BAUD_RATE, &uart1);
@@ -512,6 +579,10 @@ int main(void) {
 	loraRx.status = UNKNOW;
 	TX_MODE = true;
 	RX_MODE = false;
+	memset(loraRx.buffer, 0, SX1278_MAX_PACKET);
+	memset(loraTx.buffer, 0, SX1278_MAX_PACKET);
+	loraRx.len = 0;
+	loraTx.len = 0;
 	int counter = HAL_GetTick();
 	int change = 0;
 	int master;
@@ -549,12 +620,34 @@ int main(void) {
 			}
 		}
 
-		rs485Uart1Decode(&rs485, &uart1);
-		modeRs485Update(&uart1, &rs485);
+		//rs485Uart1Decode(&rs485, &uart1, &loraRx);
+		if (uart1.len > 0) {
+			rs485.len = uart1.len;
+			memcpy(rs485.buffer, uart1.rxBuffer, uart1.len);
+
+		} else if (loraRx.len > 0) {
+			rs485.len = loraRx.len;
+			memcpy(rs485.buffer, loraRx.buffer, loraRx.len);
+		}
+
+		if (rs485.len > 0) {
+			checkBuffer(&rs485);
+			if (rs485.status == DATA_OK) {
+				rs485.cmd = rs485.buffer[3];
+				rs485.status = WAITING;
+				cleanRxBuffer(&uart1);
+				memset(loraRx.buffer, 0, sizeof(loraRx.len));
+				loraRx.len = 0;
+			}
+		}
+		printStatus(&uart1, rs485.status);
+
+		// validar loraRx frame
+		modeRs485Update(&huart1, &rs485, &loraRx);
 		if (TX_MODE) {
 			RX_MODE_OFF_LED();
 			TX_MODE_ON_LED();
-			if (HAL_GetTick() - counter > 1) {
+			if (HAL_GetTick() - counter > 10000) {
 				counter = HAL_GetTick();
 				transmit(&loraTx);
 				change += 1;
@@ -570,6 +663,10 @@ int main(void) {
 			TX_MODE_OFF_LED();
 			RX_MODE_ON_LED();
 			read(&huart1, &loraRx);
+
+			rs485.len = loraRx.len;
+			memcpy(rs485.buffer, loraRx.buffer, loraRx.len);
+			rs485.status = CHECK_LORA_DATA;
 			change += 1;
 			/*if(change == 13){
 			 TX_MODE = true;

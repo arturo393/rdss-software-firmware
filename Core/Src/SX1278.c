@@ -304,7 +304,7 @@ uint8_t SX1278_LoRaRxPacket(SX1278_t *module, SPI_HandleTypeDef *spi) {
 		SX1278_SPIWrite(module, LR_RegFifoAddrPtr, addr, spi); //RxBaseAddr -> FiFoAddrPtr
 
 		if (module->LoRa_SF == SF_6) { //When SpreadFactor is six,will used Implicit Header mode(Excluding internal packet length)
-			packet_size = module->packetLength;
+			packet_size = module->len;
 		} else {
 			packet_size = SX1278_SPIRead(module, LR_RegRxNbBytes, spi); //Number for received bytes
 		}
@@ -328,13 +328,13 @@ int configTxRegister(SX1278_t *module, SPI_HandleTypeDef *spi) {
 	SX1278_SPIWrite(module, LR_RegDioMapping1, 0x41, spi); //DIO0=01, DIO1=00,DIO2=00, DIO3=01
 	SX1278_clearLoRaIrq(module, spi);
 	SX1278_SPIWrite(module, LR_RegIrqFlagsMask, 0xF7, spi); //Open TxDone interrupt
-	SX1278_SPIWrite(module, LR_RegPayloadLength, module->packetLength, spi); //RegPayloadLength 21byte
+	SX1278_SPIWrite(module, LR_RegPayloadLength, module->len, spi); //RegPayloadLength 21byte
 	addr = SX1278_SPIRead(module, LR_RegFifoTxBaseAddr, spi); //RegFiFoTxBaseAddr
 	SX1278_SPIWrite(module, LR_RegFifoAddrPtr, addr, spi); //RegFifoAddrPtr
 
 	uint32_t timeStart = HAL_GetTick();
-	module->packetLength = SX1278_SPIRead(module, LR_RegPayloadLength, spi);
-	return module->packetLength;
+	module->len = SX1278_SPIRead(module, LR_RegPayloadLength, spi);
+	return module->len;
 
 }
 

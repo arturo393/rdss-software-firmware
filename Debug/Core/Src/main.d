@@ -31,7 +31,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Core/Inc/led.h ../Core/Inc/uart1.h \
  ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h \
  ../Core/Inc/rs485.h ../Core/Inc/module.h ../Core/Inc/uart1.h \
- ../Core/Inc/module.h
+ ../Core/Inc/SX1278.h ../Core/Inc/module.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h:
 ../Core/Inc/stm32f1xx_hal_conf.h:
@@ -70,4 +70,5 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Inc/rs485.h:
 ../Core/Inc/module.h:
 ../Core/Inc/uart1.h:
+../Core/Inc/SX1278.h:
 ../Core/Inc/module.h:

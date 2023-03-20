@@ -28,7 +28,8 @@ Core/Src/rs485.o: ../Core/Src/rs485.c ../Core/Inc/rs485.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h \
  ../Core/Inc/module.h ../Core/Inc/uart1.h \
- ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h
+ ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h \
+ ../Core/Inc/SX1278.h ../Core/Inc/SX1278_hw.h
 ../Core/Inc/rs485.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h:
@@ -62,3 +63,5 @@ Core/Src/rs485.o: ../Core/Src/rs485.c ../Core/Inc/rs485.h \
 ../Core/Inc/module.h:
 ../Core/Inc/uart1.h:
 ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h:
+../Core/Inc/SX1278.h:
+../Core/Inc/SX1278_hw.h:

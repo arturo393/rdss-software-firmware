@@ -29,6 +29,7 @@ void rs485Init(RS485_t *r) {
 	r->len = 0;
 	r->status = DONE;
 	r->cmd = NONE;
+	memset(r->buffer, 0, 100);
 	/* PB8 DE485 as output  */
 	SET_BIT(GPIOB->ODR, GPIO_ODR_ODR8);
 	CLEAR_BIT(GPIOB->ODR, GPIO_ODR_ODR8);
@@ -36,9 +37,9 @@ void rs485Init(RS485_t *r) {
 }
 Rs485_status_t rs485_check_frame(RS485_t *r, UART1_t *u) {
 
-	if (u->rxCount > (MINIMUN_FRAME_LEN)) {
+	if (u->len > (MINIMUN_FRAME_LEN)) {
 		if (u->rxBuffer[0] == LTEL_START_MARK) {
-			if (u->rxBuffer[u->rxCount - 1] == LTEL_END_MARK)
+			if (u->rxBuffer[u->len - 1] == LTEL_END_MARK)
 				return VALID_FRAME;
 			else
 				return START_READING;
@@ -52,18 +53,18 @@ Rs485_status_t rs485_check_frame(RS485_t *r, UART1_t *u) {
 Rs485_status_t rs485_check_CRC_module(UART1_t *uart1) {
 	unsigned long crc_cal;
 	unsigned long crc_save;
-	crc_save = uart1->rxBuffer[8] << 8;
-	crc_save |= uart1->rxBuffer[9];
-	crc_cal = crc_get(&(uart1->rxBuffer[1]), 7);
+	crc_save = uart1->rxBuffer[7] << 8;
+	crc_save |= uart1->rxBuffer[6];
+	crc_cal = crc_get(&(uart1->rxBuffer[1]), 5);
 	if (crc_cal == crc_save)
 		return DATA_OK;
 	return CRC_ERROR;
 }
 
 Rs485_status_t rs485_check_valid_module(UART1_t *uart1) {
-	if (uart1->rxBuffer[1] == UHF_TONE) {
-		if (uart1->rxBuffer[2] == ID0) {
-			for (int i = 3; i < uart1->rxCount; i++)
+	if (uart1->rxBuffer[1] == VLAD) {
+		if (uart1->rxBuffer[2] == ID1) {
+			for (int i = 3; i < uart1->len; i++)
 				if (uart1->rxBuffer[i] == LTEL_END_MARK)
 					return VALID_MODULE;
 		} else
@@ -73,7 +74,60 @@ Rs485_status_t rs485_check_valid_module(UART1_t *uart1) {
 	return WRONG_MODULE_FUNCTION;
 }
 
-void rs485Uart1Decode(RS485_t *rs485, UART1_t *uart1) {
+Rs485_status_t check_valid_module(uint8_t *frame, uint8_t lenght) {
+	if (frame[1] == VLAD) {
+		if (frame[2] == ID1) {
+			for (int i = 3; i < lenght; i++)
+				if (frame[i] == LTEL_END_MARK)
+					return VALID_MODULE;
+		} else
+			return WRONG_MODULE_ID;
+	} else
+		return WRONG_MODULE_FUNCTION;
+	return WRONG_MODULE_FUNCTION;
+}
+
+Rs485_status_t check_frame(uint8_t *frame, uint8_t lenght) {
+
+	if (lenght > (MINIMUN_FRAME_LEN)) {
+		if (frame[0] == LTEL_START_MARK) {
+			if (frame[lenght - 1] == LTEL_END_MARK)
+				return VALID_FRAME;
+			else
+				return START_READING;
+		} else
+			return NOT_VALID_FRAME;
+	} else
+
+		return WAITING;
+}
+
+Rs485_status_t check_CRC_module(uint8_t *frame, uint8_t len) {
+
+	unsigned long crc_cal;
+	unsigned long crc_save;
+	crc_save = frame[(len - 2)] << 8;
+	crc_save |= frame[(len - 3)];
+	crc_cal = crc_get(&(frame[1]), (len - 4));
+	if (crc_cal == crc_save)
+		return DATA_OK;
+	return CRC_ERROR;
+}
+
+Rs485_status_t checkBuffer(RS485_t *rs485){
+	rs485->status = check_frame(rs485->buffer,rs485->len);
+	if (!(rs485->status == VALID_FRAME))
+		return rs485->status;
+	rs485->status = check_valid_module(rs485->buffer, rs485->len);
+	if (!(rs485->status == VALID_MODULE))
+		return rs485->status;
+	rs485->status = check_CRC_module(rs485->buffer, rs485->len);
+	if (!(rs485->status == DATA_OK))
+		return rs485->status;
+	return rs485->status;
+}
+
+void rs485Uart1Decode(RS485_t *rs485, UART1_t *uart1, SX1278_t *loraRx) {
 	switch (rs485->status) {
 	case VALID_MODULE:
 		rs485->status = rs485_check_CRC_module(uart1);
@@ -85,7 +139,7 @@ void rs485Uart1Decode(RS485_t *rs485, UART1_t *uart1) {
 		break;
 	case START_READING:
 		rs485->status = WAITING;
-		if (uart1_clean_by_timeout(uart1, "START_READING"))
+		if (cleanByTimeout(uart1, "START_READING"))
 			rs485->status = DONE;
 		break;
 	case VALID_FRAME:
@@ -93,7 +147,7 @@ void rs485Uart1Decode(RS485_t *rs485, UART1_t *uart1) {
 		break;
 	case NOT_VALID_FRAME:
 		HAL_Delay(50);
-	    uart1_send_str("NOT VALID FRAME\r\n");
+		uart1_send_str("NOT VALID FRAME\r\n");
 		uart1_clean_buffer(uart1);
 		rs485->status = DONE;
 		break;
@@ -114,13 +168,24 @@ void rs485Uart1Decode(RS485_t *rs485, UART1_t *uart1) {
 		break;
 	case WAITING:
 		rs485->status = rs485_check_frame(rs485, uart1);
-		uart1_clean_by_timeout(uart1, "WAITING");
+		cleanByTimeout(uart1, "WAITING");
 		break;
 	case DONE:
 		uart1_send_str("DONE\r\n");
 		uart1_clean_buffer(uart1);
 		rs485->status = WAITING;
 		break;
+	case CHECK_LORA_DATA:
+		uart1_send_str("Check Lora\r\n");
+		if (check_frame(loraRx->buffer, loraRx->len) == VALID_FRAME)
+			if (check_valid_module(loraRx->buffer, loraRx->len)
+					== VALID_MODULE)
+				if (check_CRC_module(loraRx->buffer, loraRx->len)
+						== DATA_OK) {
+					rs485->cmd = loraRx->buffer[3];
+					uart1_send_str("DATA OK\r\n");
+					rs485->status = DONE;
+				}
 	default:
 		rs485->status = DONE;
 		uart1_clean_buffer(uart1);
