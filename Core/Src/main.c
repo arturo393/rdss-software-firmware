@@ -413,7 +413,6 @@ Vlad_t decodeVLAD(SX1278_t *loraRx) {
 	vlad.level150m = loraRx->buffer[15];
 	vlad.agc170m = loraRx->buffer[16];
 	vlad.level170m = loraRx->buffer[17];
-
 	return vlad;
 }
 
@@ -434,69 +433,62 @@ void modeRs485Update(UART1_t *uart1, RS485_t *rs485, SX1278_t *loraRx) {
 	Vlad_t vlad;
 	switch (rs485->cmd) {
 	case QUERY_PARAMETERS_VLAD: //cmd = 11
-		vlad = decodeVLAD(loraRx);
-		print_parameters(uart1, vlad);
+		//transmit(loraTx);
+		//vlad = decodeVLAD(loraRx);
+		//print_parameters(uart1, vlad);
 		break;
 	case SET_VLAD_MODE: //cmd = 12
 		modeCmdUpdate(uart1_ptr);
+		rs485->cmd = NONE;
+		memset(rs485->buffer, 0, sizeof(rs485->buffer));
+		rs485->len = 0;
 		break;
 	default:
 
 		break;
 	}
-	rs485->cmd = NONE;
-	memset(rs485->buffer, 0, sizeof(rs485->buffer));
-	rs485->len = 0;
+
 }
 
 void print_parameters(UART1_t *u, Vlad_t vlad) { //despues del decode Vlad
 	uint8_t len = 0;
 
 	/*sprintf((char*) u->buffer,
-			"vin %d[V] vin2 %d[V] current_ real %d[A] current_real %d[A] tone_level %d[dBm] "
-					"tone_level2 %d[dBm] current %d[A] current2 %d[A] agc150m %d[dBm] level150 %d[dBm] "
-					"agc170m %d[dBm] level170m %d[dBm]\r\n", vlad.vin,
-			vlad.vin2, vlad.current_real, vlad.current_real2, vlad.tone_level,
-			vlad.tone_level2, vlad.current, vlad.current2, vlad.agc150m,
-			vlad.level150m, vlad.agc170m, vlad.level170m);
-	uart1_send_frame((char*) u->buffer, TX_BUFFLEN);*/
+	 "vin %d[V] vin2 %d[V] current_ real %d[A] current_real %d[A] tone_level %d[dBm] "
+	 "tone_level2 %d[dBm] current %d[A] current2 %d[A] agc150m %d[dBm] level150 %d[dBm] "
+	 "agc170m %d[dBm] level170m %d[dBm]\r\n", vlad.vin,
+	 vlad.vin2, vlad.current_real, vlad.current_real2, vlad.tone_level,
+	 vlad.tone_level2, vlad.current, vlad.current2, vlad.agc150m,
+	 vlad.level150m, vlad.agc170m, vlad.level170m);
+	 uart1_send_frame((char*) u->buffer, TX_BUFFLEN);*/
 
-
-	len = sprintf((char*) u->txBuffer,
-			"vin %d[V]\r\n", vlad.vin);
+	len = sprintf((char*) u->txBuffer, "vin %d[V]\r\n", vlad.vin);
 	uart1_send_frame((char*) u->txBuffer, len);
-	len = sprintf((char*) u->txBuffer,
-			"vin2 %d[V]\r\n", vlad.vin2);
+	len = sprintf((char*) u->txBuffer, "vin2 %d[V]\r\n", vlad.vin2);
 	uart1_send_frame((char*) u->txBuffer, len);
-	len = sprintf((char*) u->txBuffer,
-			"current real %d[A]\r\n", vlad.current_real);
+	len = sprintf((char*) u->txBuffer, "current real %d[A]\r\n",
+			vlad.current_real);
 	uart1_send_frame((char*) u->txBuffer, len);
-	len = sprintf((char*) u->txBuffer,
-			"current real2  %d[A]\r\n", vlad.current_real2);
+	len = sprintf((char*) u->txBuffer, "current real2  %d[A]\r\n",
+			vlad.current_real2);
 	uart1_send_frame((char*) u->txBuffer, len);
-	len = sprintf((char*) u->txBuffer,
-			"tone level %d[dBm]\r\n", vlad.tone_level);
+	len = sprintf((char*) u->txBuffer, "tone level %d[dBm]\r\n",
+			vlad.tone_level);
 	uart1_send_frame((char*) u->txBuffer, len);
-	len = sprintf((char*) u->txBuffer,
-			"tone level2 %d[dBm]\r\n", vlad.tone_level2);
+	len = sprintf((char*) u->txBuffer, "tone level2 %d[dBm]\r\n",
+			vlad.tone_level2);
 	uart1_send_frame((char*) u->txBuffer, len);
-	len = sprintf((char*) u->txBuffer,
-			"current %d[A]\r\n", vlad.current);
+	len = sprintf((char*) u->txBuffer, "current %d[A]\r\n", vlad.current);
 	uart1_send_frame((char*) u->txBuffer, len);
-	len = sprintf((char*) u->txBuffer,
-			"current2 %d[A]\r\n", vlad.current2);
+	len = sprintf((char*) u->txBuffer, "current2 %d[A]\r\n", vlad.current2);
 	uart1_send_frame((char*) u->txBuffer, len);
-	len = sprintf((char*) u->txBuffer,
-			"agc150m %d[dBm]\r\n", vlad.agc150m);
+	len = sprintf((char*) u->txBuffer, "agc150m %d[dBm]\r\n", vlad.agc150m);
 	uart1_send_frame((char*) u->txBuffer, len);
-	len = sprintf((char*) u->txBuffer,
-			"level150m %d[dBm]\r\n", vlad.level150m);
+	len = sprintf((char*) u->txBuffer, "level150m %d[dBm]\r\n", vlad.level150m);
 	uart1_send_frame((char*) u->txBuffer, len);
-	len = sprintf((char*) u->txBuffer,
-			"agc170m %d[dBm]\r\n", vlad.agc170m);
+	len = sprintf((char*) u->txBuffer, "agc170m %d[dBm]\r\n", vlad.agc170m);
 	uart1_send_frame((char*) u->txBuffer, len);
-	len = sprintf((char*) u->txBuffer,
-			"level170m %d[dBm]\r\n", vlad.level170m);
+	len = sprintf((char*) u->txBuffer, "level170m %d[dBm]\r\n", vlad.level170m);
 	uart1_send_frame((char*) u->txBuffer, len);
 	cleanRxBuffer(u);
 }
@@ -644,6 +636,18 @@ int main(void) {
 
 		// validar loraRx frame
 		modeRs485Update(&huart1, &rs485, &loraRx);
+
+		if (rs485.cmd == QUERY_PARAMETERS_VLAD) { //cmd = 11
+			loraTx.len = rs485.len;
+			memcpy(loraTx.buffer, rs485.buffer, loraTx.len);
+			loraTx.status = UNKNOW;
+			transmit(&loraTx);
+			loraTx.status = UNKNOW;
+			rs485.cmd = NONE;
+			memset(rs485.buffer, 0, sizeof(rs485.buffer));
+			rs485.len = 0;
+		}
+
 		if (TX_MODE) {
 			RX_MODE_OFF_LED();
 			TX_MODE_ON_LED();

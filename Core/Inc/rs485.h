@@ -44,7 +44,6 @@ typedef enum RS485_STATUS{
     CHECK_LORA_DATA
 }Rs485_status_t ;
 
-
 typedef struct RS485{
 	Rs485_cmd_t cmd;
 	uint8_t len;
