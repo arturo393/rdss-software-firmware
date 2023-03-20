@@ -60,8 +60,26 @@ typedef struct TONE_UHF_MODULE {
 }  Tone_uhf_t;
 
 typedef struct VLAD_MODULE {
+    uint16_t agc150m;
+    uint16_t ref150m;
+    uint16_t level150m;  // downlink 150 mhz
+    uint16_t agc170m;
+    uint16_t ref170m;
+    uint16_t level170m; //uplink 170 mhz
+    uint16_t tone_level;
+    uint16_t  v_5v;
+    uint16_t  vin;
+    uint16_t current;
+    float  v_5v_real;
+    float  vin_real;
+    float current_real;
+    int32_t  uc_temperature;
+    uint8_t remote_attenuation;
+    bool is_remote_attenuation;
+    bool is_attenuation_updated;
 	Id_t id;
 	Function_t function;
+	bool calc_en;
 }  Vlad_t;
 
 static const uint8_t MODULE_ADDR = 0x08;
@@ -75,5 +93,6 @@ void module_calc_parameters(Module_pa_t m,uint16_t* media_array);
 void pa_sample_timer3_init();
 void module_pa_state_update(Module_pa_t *pa);
 void toneUhfInit(Function_t funcion, Id_t id, Tone_uhf_t *uhf);
+void vladInit(Function_t funcion, Id_t id, Vlad_t *vlad);
 
 #endif /* INC_LTEL_H_ */

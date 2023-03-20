@@ -1,5 +1,5 @@
 ../Drivers/CMSIS/Include/core_cm0plus.h:741:22:__NVIC_EnableIRQ	16	static,ignoring_inline_asm
-../Core/Src/uart1.c:10:10:uart1_clean_by_timeout	16	static
+../Core/Src/uart1.c:10:10:cleanByTimeout	16	static
 ../Core/Src/uart1.c:22:6:uart1_gpio_init	8	static
 ../Core/Src/uart1.c:45:6:uart1Init	32	static
 ../Core/Src/uart1.c:75:6:uart1_dma_init	8	static
@@ -9,5 +9,6 @@
 ../Core/Src/uart1.c:138:7:uart1_read_to_frame	24	static
 ../Core/Src/uart1.c:146:6:uart1_send_str	32	static
 ../Core/Src/uart1.c:152:6:uart1_send_frame	24	static
-../Core/Src/uart1.c:162:6:uart1_clean_buffer	24	static
-../Core/Src/uart1.c:179:9:uart1_nonblocking_read	24	static
+../Core/Src/uart1.c:162:6:cleanRxBuffer	16	static
+../Core/Src/uart1.c:167:6:cleanTxBuffer	16	static
+../Core/Src/uart1.c:172:9:uart1_nonblocking_read	24	static

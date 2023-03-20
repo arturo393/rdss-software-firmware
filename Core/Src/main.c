@@ -73,7 +73,7 @@ static void MX_CRC_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 UART1_t *uart1_ptr;
-Tone_uhf_t *uhf_ptr;
+Vlad_t *vlad_ptr;
 RS485_t *rs485_ptr;
 
 void USART1_IRQHandler(void) {
@@ -153,11 +153,11 @@ void saveTx(SX1278_t *module) {
 }
 
 void setTxParameters(SX1278_t *module) {
-	uint8_t cmd = module->packetLength;
+	uint8_t cmd = module->len;
 	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1);
 	uint8_t addr = readRegister(module->spi, LR_RegFifoTxBaseAddr);
 	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1);
-	module->packetLength = readRegister(module->spi, LR_RegPayloadLength);
+	module->len = readRegister(module->spi, LR_RegPayloadLength);
 }
 
 void sx1278Reset() {
@@ -168,7 +168,6 @@ void sx1278Reset() {
 	HAL_Delay(100);
 }
 
-int messageCounter = 0;
 void transmit(const UART1_t *uart1, SX1278_t *loraTx) {
 	if (loraTx->status == UNKNOW) {
 		sprintf(uart1->txBuffer, "Configuring Slave LoRa module: Tx Mode\r\n");
@@ -178,20 +177,11 @@ void transmit(const UART1_t *uart1, SX1278_t *loraTx) {
 		loraTx->status = TX_READY;
 	}
 	if (loraTx->status == TX_READY) {
-
-		memset(loraTx->buffer, 0, sizeof(loraTx->buffer));
-		loraTx->packetLength = sprintf((char*) loraTx->buffer, "Hola  Mundo"
-				" %d", messageCounter);
-
 		setTxParameters(loraTx);
-		/*uint8_t tmp2[] = "Sending message: ";
-		size_t len2 = strlen(tmp2);
-		HAL_UART_Transmit(&huart1, tmp2, len2, 100);
-		HAL_UART_Transmit(&huart1, loraTx->buffer, loraTx->packetLength, 100);*/
 		sprintf(uart1->txBuffer, "sending message: %s", loraTx->buffer);
 		uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
 
-		for (int i = 0; i < loraTx->packetLength; i++) {
+		for (int i = 0; i < loraTx->len; i++) {
 			char data = loraTx->buffer[i];
 			writeRegister(loraTx->spi, 0x00, &data, 1);
 		}
@@ -204,9 +194,9 @@ void transmit(const UART1_t *uart1, SX1278_t *loraTx) {
 				int tiempoTransmision = timeEnd - timeStart;
 				readRegister(loraTx->spi, LR_RegIrqFlags);
 				clearIrqFlags(loraTx);
-				sprintf(uart1->txBuffer, "- Tx Ok: %d ms %d bytes\n", tiempoTransmision, loraTx->packetLength);
+				sprintf(uart1->txBuffer, "- Tx Ok: %d ms %d bytes\n",
+						tiempoTransmision, loraTx->len);
 				uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
-				messageCounter += 1;
 				return;
 			}
 
@@ -214,7 +204,6 @@ void transmit(const UART1_t *uart1, SX1278_t *loraTx) {
 				sx1278Reset();
 				sprintf(uart1->txBuffer, "EntryTx failed, timeout reset!\r\n");
 				uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
-
 				return;
 			}
 
@@ -251,7 +240,7 @@ void setRxBaseParameters(SX1278_t *loraRx) {
 	CLEAR_BIT(loraRx->flagsMode, PAYLOAD_CRC_ERROR_MASK);
 
 	loraRx->fhssValue = HOPS_PERIOD;
-	loraRx->packetLength = SX1278_MAX_PACKET;
+	loraRx->len = SX1278_MAX_PACKET;
 }
 
 void saveRx(SX1278_t *module) {
@@ -280,11 +269,11 @@ void saveRx(SX1278_t *module) {
 
 void setRxParameters(SX1278_t *module) {
 	updateLoraLowFreq(module, SLEEP); //Change modem mode Must in Sleep mode
-	uint8_t cmd = module->packetLength;
+	uint8_t cmd = module->len;
 	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1); //RegPayloadLength 21byte
 	uint8_t addr = readRegister(module->spi, LR_RegFifoRxBaseAddr); //RegFiFoTxBaseAddr
 	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1); //RegFifoAddrPtr
-	module->packetLength = readRegister(module->spi, LR_RegPayloadLength);
+	module->len = readRegister(module->spi, LR_RegPayloadLength);
 }
 
 void clearMemForRx(SX1278_t *loraRx) {
@@ -305,9 +294,6 @@ void waitForRxDone(SX1278_t *loraRx) {
 }
 
 void configInit(const UART1_t *uart1, SX1278_t *loraRx) {
-	/*uint8_t tmp[] = "Configuring Slave LoRa module: Rx Mode\r\n";
-	size_t len = strlen(tmp);
-	HAL_UART_Transmit(&*huart1, tmp, len, 100);*/
 	sprintf(uart1->txBuffer, "Configuring Slave LoRa module: Rx Mode\r\n");
 	uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
 	setRxBaseParameters(&*loraRx);
@@ -327,22 +313,19 @@ int crcErrorActivation(SX1278_t *loraRx) {
 }
 
 void getLoraPacket(SX1278_t *loraRx) {
-	loraRx->packetLength = readRegister(loraRx->spi, LR_RegRxNbBytes); //Number for received bytes
+	loraRx->len = readRegister(loraRx->spi, LR_RegRxNbBytes); //Number for received bytes
 	uint8_t addr = 0x00;
 	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET); // pull the pin low
 	HAL_Delay(1);
 	HAL_SPI_Transmit(loraRx->spi, &addr, 1, 100); // send address
-	HAL_SPI_Receive(loraRx->spi, loraRx->buffer, loraRx->packetLength, 100); // receive 6 bytes data
+	HAL_SPI_Receive(loraRx->spi, loraRx->buffer, loraRx->len, 100); // receive 6 bytes data
 	HAL_Delay(1);
 	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET); // pull the pin high
 }
 
 void printParameters(int timeRx, const UART1_t *uart1, SX1278_t *loraRx) {
-	/*HAL_UART_Transmit(huart1, loraRx->buffer, loraRx->packetLength, 100);
-	uint8_t largo = sprintf((char*) loraRx->buffer,
-			" - Rx Ok: %d ms %d bytes\n", timeRx, loraRx->packetLength);
-	HAL_UART_Transmit(huart1, loraRx->buffer, largo, 100);*/
-	sprintf(uart1->txBuffer, "%s - Rx Ok: %d ms %d bytes\n", loraRx->buffer ,timeRx, loraRx->packetLength);
+	sprintf(uart1->txBuffer, "%s - Rx Ok: %d ms %d bytes\n", loraRx->buffer,
+			timeRx, loraRx->len);
 	uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
 }
 
@@ -373,42 +356,68 @@ bool RX_MODE;
 void modeCmdUpdate(const UART1_t *uart1, SX1278_t *loraRx, SX1278_t *loraTx) {
 	unsigned long receiveValue;
 	receiveValue = 0;
-	receiveValue = uart1->rxBuffer[4] << 24;
-	receiveValue |= uart1->rxBuffer[5] << 16;
-	receiveValue |= uart1->rxBuffer[6] << 8;
-	receiveValue |= uart1->rxBuffer[7];
+	receiveValue = uart1->rxBuffer[4] << 8;
+	receiveValue |= uart1->rxBuffer[5];
 	if (receiveValue == 0) {
 		RX_MODE = true;
 		TX_MODE = false;
-        loraRx->status = UNKNOW;
+		loraRx->status = UNKNOW;
 	}
 	if (receiveValue == 1) {
 		TX_MODE = true;
 		RX_MODE = false;
-        loraTx->status = UNKNOW;
+		loraTx->status = UNKNOW;
 	}
 }
 
-void modeRs485Update(const UART1_t *uart1, RS485_t *rs485, SX1278_t *loraRx, SX1278_t *loraTx) {
+void encodeVLAD(uint8_t *frame) {
+	uint8_t crc_frame[2];
+	uint16_t crc;
+	uint8_t data_length = 12;
+
+	frame[0] = LTEL_START_MARK;
+	frame[1] = VLAD;
+	frame[2] = ID1;
+	frame[3] = QUERY_PARAMETERS_VLAD;
+	frame[4] = 0x00;
+	frame[5] = data_length;
+	frame[6] = 0x00;
+	frame[7] = 12;
+	frame[8] = 0x00;
+	frame[9] = 200;
+	frame[10] = 0x00;
+	frame[11] = 230;
+	frame[12] = 0x00;
+	frame[13] = 112;
+	frame[14] = 10;
+	frame[15] = 4;
+	frame[16] = 5;
+	frame[17] = 6;
+
+	crc = crc_get(&(frame[1]), 17);
+	memcpy(crc_frame, &crc, 2);
+	frame[18] = crc_frame[0];
+	frame[19] = crc_frame[1];
+	frame[20] = LTEL_END_MARK;
+
+}
+
+void modeRs485Update(const UART1_t *uart1, RS485_t *rs485, SX1278_t *loraRx,
+		SX1278_t *loraTx) {
+	uint8_t frame[21] = { 0 };
+
 	switch (rs485->cmd) {
-	case SET_PARAMETER_FREQOUT: //cmd = 31
+	case QUERY_PARAMETERS_VLAD: //cmd = 11
+		encodeVLAD(frame);
+		memcpy(loraTx->buffer, frame, 21);
+		loraTx->len = 21;
+		//loraTx->status = UNKNOW;
+		transmit(uart1, loraTx);
+		//loraTx->status = UNKNOW;
+		rs485->cmd = NONE;
+		break;
+	case SET_VLAD_MODE: //cmd = 12
 		modeCmdUpdate(uart1, loraRx, loraTx);
-		rs485->cmd = NONE;
-		break;
-	case SET_PARAMETERS: //cmd = 32
-		//ParametersCmd(uart1);
-		rs485->cmd = NONE;
-		break;
-	case SET_PARAMETER_FREQBASE: //cmd = 33
-		//freqBaseCmdUpdate(uart1);
-		rs485->cmd = NONE;
-		break;
-	case QUERY_PARAMETER_PdBm: //cmd = 34
-		//powerOutCmdUpdate(uart1);
-		rs485->cmd = NONE;
-		break;
-	case SET_MODE: //cmd = 35
-		//setModeCmd(uart1,;
 		rs485->cmd = NONE;
 		break;
 	default:
@@ -417,6 +426,13 @@ void modeRs485Update(const UART1_t *uart1, RS485_t *rs485, SX1278_t *loraRx, SX1
 	}
 }
 
+void printStatus(UART1_t *uart1, Rs485_status_t status) {
+	char rs485_msgs[11][30] = { "DATA OK", "START READING", "VALID FRAME",
+			"NOT VALID FRAME", "WRONG MODULE FUNCTION", "WRONG MODULE ID",
+			"CRC ERROR", "DONE", "WAITING", "VALID MODULE", "CHECK LORA DATA" };
+	cleanByTimeout(uart1, rs485_msgs[status]);
+
+}
 /* USER CODE END 0 */
 
 /**
@@ -428,9 +444,9 @@ int main(void) {
 	LED_t led;
 	RS485_t rs485;
 	UART1_t uart1;
-	Tone_uhf_t uhf;
+	Vlad_t vlad;
 	uart1_ptr = &uart1;
-	uhf_ptr = &uhf;
+	vlad_ptr = &vlad;
 	rs485_ptr = &rs485;
 	/* USER CODE END 1 */
 
@@ -457,7 +473,7 @@ int main(void) {
 	//MX_USART1_UART_Init();
 	MX_CRC_Init();
 	/* USER CODE BEGIN 2 */
-	toneUhfInit(UHF_TONE, ID0, &uhf);
+	vladInit(VLAD, ID1, &vlad);
 	rs485Init(&rs485);
 	uart1Init(HS16_CLK, BAUD_RATE, &uart1);
 	ledInit(&led);
@@ -483,10 +499,11 @@ int main(void) {
 	loraRx.operatingMode = readRegister(&hspi1, LR_RegOpMode);
 	loraTx.status = UNKNOW;
 	loraRx.status = UNKNOW;
-	TX_MODE = false;
-	RX_MODE = true;
+	TX_MODE = true;
+	RX_MODE = false;
 	int counter = HAL_GetTick();
-	int change = 0;;
+	int change = 0;
+	;
 	//initialize LoRa module
 
 	/* USER CODE END 2 */
@@ -494,41 +511,66 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
+		if (uart1.len > 0) {
+			rs485.len = uart1.len;
+			memcpy(rs485.buffer, uart1.rxBuffer, uart1.len);
 
-		rs485Uart1Decode(&rs485, &uart1);
-		modeRs485Update(&uart1, &rs485, &loraRx, &loraTx);
-
-		if (RX_MODE) {
-			read(&uart1, &loraRx);
-			change += 1;
-			/*if(change == 13){
-			 TX_MODE = true;
-			 RX_MODE = false;
-			 loraRx.status = UNKNOW;
-			 }*/
+		} else if (loraRx.len > 0) {
+			rs485.len = loraRx.len;
+			memcpy(rs485.buffer, loraRx.buffer, loraRx.len);
 		}
-		if (TX_MODE) {
-			//if (HAL_GetTick() - counter > 700){
-			//counter = HAL_GetTick();
-			if (HAL_GetTick() - counter > 1) {
-				counter = HAL_GetTick();
-				transmit(&uart1, &loraTx);
-				change += 1;
-				/*if(change == 26){
-				 TX_MODE = false;
-				 RX_MODE = true;
-				 change = 0;
-				 loraTx.status = UNKNOW;
-				 }*/
+
+		if (rs485.len > 0) {
+			checkBuffer(&rs485);
+			if (rs485.status == DATA_OK) {
+				rs485.cmd = rs485.buffer[3];
+				rs485.status = WAITING;
+				cleanRxBuffer(&uart1);
+				memset(loraRx.buffer, 0, sizeof(loraRx.len));
+				loraRx.len = 0;
 			}
 		}
+		printStatus(&uart1, rs485.status);
 
+		//rs485Uart1Decode(&rs485, &uart1);
+		modeRs485Update(&uart1, &rs485, &loraRx, &loraTx);
+
+	if (RX_MODE) {
+		read(&uart1, &loraRx);
+		change += 1;
+		/*if(change == 13){
+		 TX_MODE = true;
+		 RX_MODE = false;
+		 loraRx.status = UNKNOW;
+		 }*/
 	}
-	/* USER CODE END WHILE */
+	if (TX_MODE) {
+		//if (HAL_GetTick() - counter > 700){
+		//counter = HAL_GetTick();
 
-	/* USER CODE BEGIN 3 */
+		memset(loraTx.buffer, 0, sizeof(loraTx.buffer));
+		loraTx.len = sprintf((char*) loraTx.buffer, "Hola  Mundo"
+				" %d", change);
 
-	/* USER CODE END 3 */
+		if (HAL_GetTick() - counter > 10000) {
+			counter = HAL_GetTick();
+			transmit(&uart1, &loraTx);
+			change += 1;
+			/*if(change == 26){
+			 TX_MODE = false;
+			 RX_MODE = true;
+			 change = 0;
+			 loraTx.status = UNKNOW;
+			 }*/
+		}
+	}
+
+}
+/* USER CODE END WHILE */
+
+/* USER CODE BEGIN 3 */
+
+/* USER CODE END 3 */
 }
 
 /**
@@ -536,36 +578,36 @@ int main(void) {
  * @retval None
  */
 void SystemClock_Config(void) {
-	RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
-	RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
+RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
+RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
 
-	/** Configure the main internal regulator output voltage
-	 */
-	HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
+/** Configure the main internal regulator output voltage
+ */
+HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-	/** Initializes the RCC Oscillators according to the specified parameters
-	 * in the RCC_OscInitTypeDef structure.
-	 */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-	RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV1;
-	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
-	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-		Error_Handler();
-	}
+/** Initializes the RCC Oscillators according to the specified parameters
+ * in the RCC_OscInitTypeDef structure.
+ */
+RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV1;
+RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+	Error_Handler();
+}
 
-	/** Initializes the CPU, AHB and APB buses clocks
-	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-			| RCC_CLOCKTYPE_PCLK1;
-	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
-	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+/** Initializes the CPU, AHB and APB buses clocks
+ */
+RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+		| RCC_CLOCKTYPE_PCLK1;
+RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
-	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK) {
-		Error_Handler();
-	}
+if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK) {
+	Error_Handler();
+}
 }
 
 /**
@@ -575,52 +617,52 @@ void SystemClock_Config(void) {
  */
 static void MX_ADC1_Init(void) {
 
-	/* USER CODE BEGIN ADC1_Init 0 */
+/* USER CODE BEGIN ADC1_Init 0 */
 
-	/* USER CODE END ADC1_Init 0 */
+/* USER CODE END ADC1_Init 0 */
 
-	ADC_ChannelConfTypeDef sConfig = { 0 };
+ADC_ChannelConfTypeDef sConfig = { 0 };
 
-	/* USER CODE BEGIN ADC1_Init 1 */
+/* USER CODE BEGIN ADC1_Init 1 */
 
-	/* USER CODE END ADC1_Init 1 */
+/* USER CODE END ADC1_Init 1 */
 
-	/** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
-	 */
-	hadc1.Instance = ADC1;
-	hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
-	hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-	hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-	hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
-	hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-	hadc1.Init.LowPowerAutoWait = DISABLE;
-	hadc1.Init.LowPowerAutoPowerOff = DISABLE;
-	hadc1.Init.ContinuousConvMode = DISABLE;
-	hadc1.Init.NbrOfConversion = 1;
-	hadc1.Init.DiscontinuousConvMode = DISABLE;
-	hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-	hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-	hadc1.Init.DMAContinuousRequests = DISABLE;
-	hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
-	hadc1.Init.SamplingTimeCommon1 = ADC_SAMPLETIME_1CYCLE_5;
-	hadc1.Init.SamplingTimeCommon2 = ADC_SAMPLETIME_1CYCLE_5;
-	hadc1.Init.OversamplingMode = DISABLE;
-	hadc1.Init.TriggerFrequencyMode = ADC_TRIGGER_FREQ_HIGH;
-	if (HAL_ADC_Init(&hadc1) != HAL_OK) {
-		Error_Handler();
-	}
+/** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+ */
+hadc1.Instance = ADC1;
+hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+hadc1.Init.LowPowerAutoWait = DISABLE;
+hadc1.Init.LowPowerAutoPowerOff = DISABLE;
+hadc1.Init.ContinuousConvMode = DISABLE;
+hadc1.Init.NbrOfConversion = 1;
+hadc1.Init.DiscontinuousConvMode = DISABLE;
+hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+hadc1.Init.DMAContinuousRequests = DISABLE;
+hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+hadc1.Init.SamplingTimeCommon1 = ADC_SAMPLETIME_1CYCLE_5;
+hadc1.Init.SamplingTimeCommon2 = ADC_SAMPLETIME_1CYCLE_5;
+hadc1.Init.OversamplingMode = DISABLE;
+hadc1.Init.TriggerFrequencyMode = ADC_TRIGGER_FREQ_HIGH;
+if (HAL_ADC_Init(&hadc1) != HAL_OK) {
+	Error_Handler();
+}
 
-	/** Configure Regular Channel
-	 */
-	sConfig.Channel = ADC_CHANNEL_0;
-	sConfig.Rank = ADC_REGULAR_RANK_1;
-	sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
-	if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN ADC1_Init 2 */
+/** Configure Regular Channel
+ */
+sConfig.Channel = ADC_CHANNEL_0;
+sConfig.Rank = ADC_REGULAR_RANK_1;
+sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
+if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
+	Error_Handler();
+}
+/* USER CODE BEGIN ADC1_Init 2 */
 
-	/* USER CODE END ADC1_Init 2 */
+/* USER CODE END ADC1_Init 2 */
 
 }
 
@@ -631,25 +673,25 @@ static void MX_ADC1_Init(void) {
  */
 static void MX_CRC_Init(void) {
 
-	/* USER CODE BEGIN CRC_Init 0 */
+/* USER CODE BEGIN CRC_Init 0 */
 
-	/* USER CODE END CRC_Init 0 */
+/* USER CODE END CRC_Init 0 */
 
-	/* USER CODE BEGIN CRC_Init 1 */
+/* USER CODE BEGIN CRC_Init 1 */
 
-	/* USER CODE END CRC_Init 1 */
-	hcrc.Instance = CRC;
-	hcrc.Init.DefaultPolynomialUse = DEFAULT_POLYNOMIAL_ENABLE;
-	hcrc.Init.DefaultInitValueUse = DEFAULT_INIT_VALUE_ENABLE;
-	hcrc.Init.InputDataInversionMode = CRC_INPUTDATA_INVERSION_NONE;
-	hcrc.Init.OutputDataInversionMode = CRC_OUTPUTDATA_INVERSION_DISABLE;
-	hcrc.InputDataFormat = CRC_INPUTDATA_FORMAT_BYTES;
-	if (HAL_CRC_Init(&hcrc) != HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN CRC_Init 2 */
+/* USER CODE END CRC_Init 1 */
+hcrc.Instance = CRC;
+hcrc.Init.DefaultPolynomialUse = DEFAULT_POLYNOMIAL_ENABLE;
+hcrc.Init.DefaultInitValueUse = DEFAULT_INIT_VALUE_ENABLE;
+hcrc.Init.InputDataInversionMode = CRC_INPUTDATA_INVERSION_NONE;
+hcrc.Init.OutputDataInversionMode = CRC_OUTPUTDATA_INVERSION_DISABLE;
+hcrc.InputDataFormat = CRC_INPUTDATA_FORMAT_BYTES;
+if (HAL_CRC_Init(&hcrc) != HAL_OK) {
+	Error_Handler();
+}
+/* USER CODE BEGIN CRC_Init 2 */
 
-	/* USER CODE END CRC_Init 2 */
+/* USER CODE END CRC_Init 2 */
 
 }
 
@@ -660,34 +702,34 @@ static void MX_CRC_Init(void) {
  */
 static void MX_SPI1_Init(void) {
 
-	/* USER CODE BEGIN SPI1_Init 0 */
+/* USER CODE BEGIN SPI1_Init 0 */
 
-	/* USER CODE END SPI1_Init 0 */
+/* USER CODE END SPI1_Init 0 */
 
-	/* USER CODE BEGIN SPI1_Init 1 */
+/* USER CODE BEGIN SPI1_Init 1 */
 
-	/* USER CODE END SPI1_Init 1 */
-	/* SPI1 parameter configuration*/
-	hspi1.Instance = SPI1;
-	hspi1.Init.Mode = SPI_MODE_MASTER;
-	hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-	hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-	hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-	hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-	hspi1.Init.NSS = SPI_NSS_SOFT;
-	hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
-	hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-	hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-	hspi1.Init.CRCPolynomial = 7;
-	hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-	hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
-	if (HAL_SPI_Init(&hspi1) != HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN SPI1_Init 2 */
+/* USER CODE END SPI1_Init 1 */
+/* SPI1 parameter configuration*/
+hspi1.Instance = SPI1;
+hspi1.Init.Mode = SPI_MODE_MASTER;
+hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+hspi1.Init.NSS = SPI_NSS_SOFT;
+hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+hspi1.Init.CRCPolynomial = 7;
+hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+if (HAL_SPI_Init(&hspi1) != HAL_OK) {
+	Error_Handler();
+}
+/* USER CODE BEGIN SPI1_Init 2 */
 
-	/* USER CODE END SPI1_Init 2 */
+/* USER CODE END SPI1_Init 2 */
 
 }
 
@@ -698,41 +740,41 @@ static void MX_SPI1_Init(void) {
  */
 static void MX_USART1_UART_Init(void) {
 
-	/* USER CODE BEGIN USART1_Init 0 */
+/* USER CODE BEGIN USART1_Init 0 */
 
-	/* USER CODE END USART1_Init 0 */
+/* USER CODE END USART1_Init 0 */
 
-	/* USER CODE BEGIN USART1_Init 1 */
+/* USER CODE BEGIN USART1_Init 1 */
 
-	/* USER CODE END USART1_Init 1 */
-	huart1.Instance = USART1;
-	huart1.Init.BaudRate = 115200;
-	huart1.Init.WordLength = UART_WORDLENGTH_8B;
-	huart1.Init.StopBits = UART_STOPBITS_1;
-	huart1.Init.Parity = UART_PARITY_NONE;
-	huart1.Init.Mode = UART_MODE_TX_RX;
-	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-	huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-	huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-	huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-	if (HAL_UART_Init(&huart1) != HAL_OK) {
-		Error_Handler();
-	}
-	if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8)
-			!= HAL_OK) {
-		Error_Handler();
-	}
-	if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8)
-			!= HAL_OK) {
-		Error_Handler();
-	}
-	if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN USART1_Init 2 */
+/* USER CODE END USART1_Init 1 */
+huart1.Instance = USART1;
+huart1.Init.BaudRate = 115200;
+huart1.Init.WordLength = UART_WORDLENGTH_8B;
+huart1.Init.StopBits = UART_STOPBITS_1;
+huart1.Init.Parity = UART_PARITY_NONE;
+huart1.Init.Mode = UART_MODE_TX_RX;
+huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+if (HAL_UART_Init(&huart1) != HAL_OK) {
+	Error_Handler();
+}
+if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8)
+		!= HAL_OK) {
+	Error_Handler();
+}
+if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8)
+		!= HAL_OK) {
+	Error_Handler();
+}
+if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK) {
+	Error_Handler();
+}
+/* USER CODE BEGIN USART1_Init 2 */
 
-	/* USER CODE END USART1_Init 2 */
+/* USER CODE END USART1_Init 2 */
 
 }
 
@@ -742,48 +784,48 @@ static void MX_USART1_UART_Init(void) {
  * @retval None
  */
 static void MX_GPIO_Init(void) {
-	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+GPIO_InitTypeDef GPIO_InitStruct = { 0 };
 
-	/* GPIO Ports Clock Enable */
-	__HAL_RCC_GPIOA_CLK_ENABLE();
-	__HAL_RCC_GPIOB_CLK_ENABLE();
-	__HAL_RCC_GPIOC_CLK_ENABLE();
+/* GPIO Ports Clock Enable */
+__HAL_RCC_GPIOA_CLK_ENABLE();
+__HAL_RCC_GPIOB_CLK_ENABLE();
+__HAL_RCC_GPIOC_CLK_ENABLE();
 
-	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin | LORA_RST_Pin, GPIO_PIN_RESET);
+/*Configure GPIO pin Output Level */
+HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin | LORA_RST_Pin, GPIO_PIN_RESET);
 
-	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(DIO1_GPIO_Port, DIO1_Pin, GPIO_PIN_RESET);
+/*Configure GPIO pin Output Level */
+HAL_GPIO_WritePin(DIO1_GPIO_Port, DIO1_Pin, GPIO_PIN_RESET);
 
-	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(BUSSY_GPIO_Port, BUSSY_Pin, GPIO_PIN_RESET);
+/*Configure GPIO pin Output Level */
+HAL_GPIO_WritePin(BUSSY_GPIO_Port, BUSSY_Pin, GPIO_PIN_RESET);
 
-	/*Configure GPIO pins : LORA_NSS_Pin LORA_RST_Pin */
-	GPIO_InitStruct.Pin = LORA_NSS_Pin | LORA_RST_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+/*Configure GPIO pins : LORA_NSS_Pin LORA_RST_Pin */
+GPIO_InitStruct.Pin = LORA_NSS_Pin | LORA_RST_Pin;
+GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+GPIO_InitStruct.Pull = GPIO_NOPULL;
+GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-	/*Configure GPIO pin : DIO3_Pin */
-	GPIO_InitStruct.Pin = DIO3_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init(DIO3_GPIO_Port, &GPIO_InitStruct);
+/*Configure GPIO pin : DIO3_Pin */
+GPIO_InitStruct.Pin = DIO3_Pin;
+GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+GPIO_InitStruct.Pull = GPIO_NOPULL;
+HAL_GPIO_Init(DIO3_GPIO_Port, &GPIO_InitStruct);
 
-	/*Configure GPIO pin : DIO1_Pin */
-	GPIO_InitStruct.Pin = DIO1_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(DIO1_GPIO_Port, &GPIO_InitStruct);
+/*Configure GPIO pin : DIO1_Pin */
+GPIO_InitStruct.Pin = DIO1_Pin;
+GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+GPIO_InitStruct.Pull = GPIO_NOPULL;
+GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+HAL_GPIO_Init(DIO1_GPIO_Port, &GPIO_InitStruct);
 
-	/*Configure GPIO pin : BUSSY_Pin */
-	GPIO_InitStruct.Pin = BUSSY_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(BUSSY_GPIO_Port, &GPIO_InitStruct);
+/*Configure GPIO pin : BUSSY_Pin */
+GPIO_InitStruct.Pin = BUSSY_Pin;
+GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+GPIO_InitStruct.Pull = GPIO_NOPULL;
+GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+HAL_GPIO_Init(BUSSY_GPIO_Port, &GPIO_InitStruct);
 
 }
 
@@ -796,12 +838,12 @@ static void MX_GPIO_Init(void) {
  * @retval None
  */
 void Error_Handler(void) {
-	/* USER CODE BEGIN Error_Handler_Debug */
-	/* User can add his own implementation to report the HAL error return state */
-	__disable_irq();
-	while (1) {
-	}
-	/* USER CODE END Error_Handler_Debug */
+/* USER CODE BEGIN Error_Handler_Debug */
+/* User can add his own implementation to report the HAL error return state */
+__disable_irq();
+while (1) {
+}
+/* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT

@@ -13,18 +13,19 @@
 #include "stdlib.h"
 #include "string.h"
 
-#define RX_BUFFLEN 25
+#define RX_BUFFLEN 100
 #define TX_BUFFLEN  100
 #define SECONDS(x) x*1000
 
 typedef struct UART1 {
 	uint8_t rxBuffer[RX_BUFFLEN];
 	uint8_t txBuffer[TX_BUFFLEN];
-	uint8_t rxCount;
+	uint8_t len;
 	uint32_t timeout;
+	bool isReady;
 } UART1_t;
 
-uint8_t  uart1_clean_by_timeout(UART1_t* uart1,const char* str);
+uint8_t  cleanByTimeout(UART1_t* uart1,const char* str);
 void uart1Init(uint32_t, uint32_t, UART1_t*);
 void uart1_write(volatile char);
 void uart1_send_str( char*);
@@ -34,6 +35,8 @@ void uart1_read_test(char*, uint8_t);
 uint8_t uart1_1byte_read(void);
 void uart1_read_to_frame(UART1_t *u);
 void uart1_clean_buffer(UART1_t*);
+void cleanRxBuffer(UART1_t *u);
+void cleanTxBuffer(UART1_t *u);
 uint8_t uart1_nonblocking_read(void);
 
 #endif /* INC_UART1_H_ */

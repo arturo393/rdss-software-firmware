@@ -309,7 +309,7 @@ typedef struct {
 	uint8_t LoRa_BW;
 	CODING_RATE_t LoRa_CR;
 	CRC_SUM_t LoRa_CRC_sum;
-	uint8_t packetLength;
+	uint8_t len;
 	uint8_t syncWord;
 	uint8_t ocp;
 	uint8_t lnaGain;
