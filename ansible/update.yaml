@@ -8,8 +8,6 @@
 
 - name: "Installing RDSS base"
   import_playbook: playbooks/1-rdss_base.yaml
-#- name: "Configuring and running RDSS database"
-#  import_playbook: playbooks/2-rdss_database.yaml
 - name: "Installing and running RDSS monitor"
   import_playbook: playbooks/3-rdss_monitor.yaml 
 - name: "Installing and running RDSS frontend"
