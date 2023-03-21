@@ -29,5 +29,5 @@
   - name: "Start monitor"
     systemd:
       name: monitorRDSS
-      state: started
+      state: restarted
       enabled: yes
