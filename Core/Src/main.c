@@ -99,7 +99,7 @@ void setTxBaseParameters(SX1278_t *loraTx) {
 	uint8_t dio2 = DIO2_FHSS_CHANGE_CHANNEL;
 	uint8_t dio3 = DIO3_VALID_HEADER;
 
-	loraTx->frequency = UPLINK_FREQ; //
+	loraTx->frequency = UPLINK_FREQ;
 	loraTx->power = SX1278_POWER_17DBM;
 	loraTx->LoRa_SF = SF_10;
 	loraTx->LoRa_BW = LORABW_62_5KHZ;
@@ -112,7 +112,7 @@ void setTxBaseParameters(SX1278_t *loraTx) {
 	loraTx->symbTimeoutLsb = RX_TIMEOUT_LSB;
 	loraTx->preambleLengthMsb = PREAMBLE_LENGTH_MSB;
 	loraTx->preambleLengthLsb = PREAMBLE_LENGTH_LSB;
-	loraTx->dioConfig = dio0 | dio1 | dio2 | dio3; //
+	loraTx->dioConfig = dio0 | dio1 | dio2 | dio3;
 
 	loraTx->flagsMode = 0xff; //
 	CLEAR_BIT(loraTx->flagsMode, TX_DONE_MASK);
@@ -147,35 +147,28 @@ void saveTx(SX1278_t *module) {
 void txMode(SX1278_t *module) {
 	updateLoraLowFreq(module, STANDBY);
 	HAL_Delay(15);
-	setRFFrequency(module); // lo mismo
+	setRFFrequency(module); //
 	writeRegister(module->spi, LR_RegDioMapping1, &(module->dioConfig), 1);
 	clearIrqFlags(module);
 	writeRegister(module->spi, LR_RegIrqFlagsMask, &(module->flagsMode), 1);
 
 }
 
-void rxMode(SX1278_t *module) {
-	module->frequency = DOWNLINK_FREQ; //
-	module->dioConfig = 0x00;//
-	module->dioConfig |= DIO0_RX_DONE | DIO3_VALID_HEADER; //
-	module->flagsMode = 0xff; //
-	CLEAR_BIT(module->flagsMode, RX_DONE_MASK);
-	CLEAR_BIT(module->flagsMode, PAYLOAD_CRC_ERROR_MASK);
-	updateLoraLowFreq(module, SLEEP);
+void rxMode(SX1278_t *module) { // revisar porque es lo mismo que "txMode"
+	updateLoraLowFreq(module, STANDBY);
 	HAL_Delay(15);
-	setRFFrequency(module); // lo mismo
+	setRFFrequency(module); //
 	writeRegister(module->spi, LR_RegDioMapping1, &(module->dioConfig), 1);
 	clearIrqFlags(module);
 	writeRegister(module->spi, LR_RegIrqFlagsMask, &(module->flagsMode), 1);
 
 }
-
 
 void setTxParameters(SX1278_t *module) {
 	uint8_t cmd = module->len;
 	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1);
 	uint8_t addr = readRegister(module->spi, LR_RegFifoTxBaseAddr);
-	addr = 0x80;
+	addr = 0x80 ;
 	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1);
 	module->len = readRegister(module->spi, LR_RegPayloadLength);
 }
@@ -199,20 +192,15 @@ void transmit(const UART1_t *uart1, SX1278_t *loraTx) {
 	if (loraTx->status == TX_READY) {
 
 		setTxParameters(loraTx);
-
-		for (int i = 0; i < loraTx->len; i++) {
-			uint8_t data = loraTx->buffer[i];
-			writeRegister(loraTx->spi, 0x00, &data, 1);
-		}
-		uint8_t len = loraTx->len;
-		memset(loraTx->buffer, 0, sizeof(loraTx->len));
-		getLoraPacket(loraTx);
-		loraTx->len = len;
-		len = sprintf(uart1->txBuffer, "Sending message: ", loraTx->buffer);
+		uint8_t len = sprintf(uart1->txBuffer, "Sending message: ", loraTx->buffer);
 		uart1_send_frame(uart1->txBuffer, len);
 		for (int i = 0; i < loraTx->len; i++) {
 			len = sprintf(uart1->txBuffer, "%02X", loraTx->buffer[i]);
 			uart1_send_frame(uart1->txBuffer, len);
+		}
+		for (int i = 0; i < loraTx->len; i++) {
+			uint8_t data = loraTx->buffer[i];
+			writeRegister(loraTx->spi, 0x00, &data, 1);
 		}
 		updateLoraLowFreq(loraTx, TX);
 		int timeStart = HAL_GetTick();
@@ -223,7 +211,7 @@ void transmit(const UART1_t *uart1, SX1278_t *loraTx) {
 				int tiempoTransmision = timeEnd - timeStart;
 				readRegister(loraTx->spi, LR_RegIrqFlags);
 				clearIrqFlags(loraTx);
-				sprintf(uart1->txBuffer, "- Tx Ok: %d ms %d bytes\n",
+				sprintf(uart1->txBuffer, " - Tx Ok: %d ms %d bytes\n",
 						tiempoTransmision, loraTx->len);
 				uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
 				return;
@@ -448,7 +436,6 @@ void modeRs485Update(const UART1_t *uart1, RS485_t *rs485, SX1278_t *loraRx,
 
 	switch (rs485->cmd) {
 	case QUERY_PARAMETERS_VLAD: //cmd = 11
-
 		break;
 	case SET_VLAD_MODE: //cmd = 12
 		modeCmdUpdate(uart1, loraRx, loraTx);
@@ -568,7 +555,6 @@ int main(void) {
 		}
 		if (status != rs485.status)
 			printStatus(&uart1, rs485.status);
-		//rs485Uart1Decode(&rs485, &uart1);
 		modeRs485Update(&uart1, &rs485, &loraRx, &loraTx);
 		if (rs485.cmd == QUERY_PARAMETERS_VLAD) {
 			uint8_t frame[21] = { 0 };
@@ -600,7 +586,7 @@ int main(void) {
 
 			if (HAL_GetTick() - counter > 10000) {
 				counter = HAL_GetTick();
-				//transmit(&uart1, &loraTx);
+
 				change += 1;
 			}
 		}
