@@ -126,15 +126,6 @@ void setTxBaseParameters(SX1278_t *loraTx) {
 	uint8_t dio2 = DIO2_FHSS_CHANGE_CHANNEL;
 	uint8_t dio3 = DIO3_VALID_HEADER;
 
-	uint8_t rxTimeoutMask = 0x00 | (MASK_DISABLE << 7);
-	uint8_t rxDoneMask = 0x00 | (MASK_DISABLE << 6);
-	uint8_t payloadCrcErrorMask = 0x00 | (MASK_DISABLE << 5);
-	uint8_t validHeaderMask = 0x00 | (MASK_DISABLE << 4);
-	uint8_t txDoneMask = 0x00 | (MASK_ENABLE << 3);
-	uint8_t cadDoneMask = 0x00 | (MASK_DISABLE << 2);
-	uint8_t fhssChangeChannelMask = 0x00 | (MASK_DISABLE << 1);
-	uint8_t cadDetectedMask = 0x00 | (MASK_DISABLE << 0);
-
 	loraTx->frequency = DOWNLINK_FREQ;
 	loraTx->power = SX1278_POWER_17DBM;
 	loraTx->LoRa_SF = SF_10;
@@ -149,10 +140,12 @@ void setTxBaseParameters(SX1278_t *loraTx) {
 	loraTx->preambleLengthMsb = PREAMBLE_LENGTH_MSB;
 	loraTx->preambleLengthLsb = PREAMBLE_LENGTH_LSB;
 	loraTx->dioConfig = dio0 | dio1 | dio2 | dio3;
-	loraTx->flagsMode = rxTimeoutMask | rxDoneMask | payloadCrcErrorMask;
-	loraTx->flagsMode |= validHeaderMask | txDoneMask | cadDoneMask;
-	loraTx->flagsMode |= fhssChangeChannelMask | cadDetectedMask;
+
+	loraTx->flagsMode = 0xff; //
+	CLEAR_BIT(loraTx->flagsMode, TX_DONE_MASK);
+
 	loraTx->fhssValue = HOPS_PERIOD;
+	loraTx->len = SX1278_MAX_PACKET;
 }
 
 void saveTx(SX1278_t *module) {
@@ -179,6 +172,16 @@ void saveTx(SX1278_t *module) {
 	writeRegister(module->spi, LR_RegIrqFlagsMask, &(module->flagsMode), 1);
 }
 
+void txMode(SX1278_t *module) {
+	updateLoraLowFreq(module, STANDBY);
+	HAL_Delay(15);
+	setRFFrequency(module);
+	writeRegister(module->spi, LR_RegDioMapping1, &(module->dioConfig), 1);
+	clearIrqFlags(module);
+	writeRegister(module->spi, LR_RegIrqFlagsMask, &(module->flagsMode), 1);
+
+}
+
 void setTxParameters(SX1278_t *module) {
 	uint8_t cmd = module->len;
 	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1);
@@ -196,11 +199,9 @@ void sx1278Reset() {
 	HAL_Delay(100);
 }
 
-int messageCounter = 0;
-
 void transmit(const UART1_t *uart1, SX1278_t *loraTx) {
 	if (loraTx->status == UNKNOW) {
-		sprintf(uart1->txBuffer, "Configuring Slave LoRa module: Tx Mode\r\n");
+		sprintf(uart1->txBuffer, "Configuring Master LoRa module: Tx Mode\r\n");
 		uart1_send_frame(uart1->txBuffer, TX_BUFFLEN);
 		setTxBaseParameters(loraTx);
 		saveTx(loraTx);
