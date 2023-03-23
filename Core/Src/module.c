@@ -49,11 +49,12 @@ void vladInit(Function_t funcion, Id_t id, Vlad_t *vlad) {
 	vlad->current_real = 0;
 	vlad->uc_temperature = 0;
 	vlad->remote_attenuation = 0;
-	vlad->is_remote_attenuation = 0;
-    vlad->is_attenuation_updated = 0;
+	vlad->is_remote_attenuation = false;
+    vlad->is_attenuation_updated = false;
 	vlad->calc_en = 0;
 	vlad->function = funcion;
 	vlad->id = id;
+	/////////////////// VARIABLES DE PRUEBA ////////////////////////////////
 	vlad->vin2 = 0;
 	vlad->current2 = 0;
 	vlad->current_real2 = 0;

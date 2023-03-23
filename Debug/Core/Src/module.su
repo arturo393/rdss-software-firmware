@@ -2,6 +2,6 @@
 ../Core/Src/module.c:10:6:pa_init	16	static
 ../Core/Src/module.c:27:6:toneUhfInit	16	static
 ../Core/Src/module.c:36:6:vladInit	16	static
-../Core/Src/module.c:63:6:module_init	16	static
-../Core/Src/module.c:67:6:pa_sample_timer3_init	8	static
-../Core/Src/module.c:84:6:module_pa_state_update	16	static
+../Core/Src/module.c:64:6:module_init	16	static
+../Core/Src/module.c:68:6:pa_sample_timer3_init	8	static
+../Core/Src/module.c:85:6:module_pa_state_update	16	static

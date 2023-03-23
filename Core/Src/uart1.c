@@ -7,16 +7,18 @@
 
 #include <uart1.h>
 
-uint8_t  cleanByTimeout(UART1_t* uart1, const char* str){
-		if (HAL_GetTick() - uart1->timeout > SECONDS(5)) {
-			uart1_send_str((char*)str);
+uint8_t cleanByTimeout(UART1_t *uart1, const char *str) {
+	if (HAL_GetTick() - uart1->timeout > SECONDS(5)) {
+
+			uart1_send_str((char*) str);
 			uart1_send_str("-TIMEOUT\r\n");
-			if(strlen(str)>0)
-				cleanTxBuffer(uart1);
-			uart1->timeout = HAL_GetTick();
-			return 1;
-		}
-		return 0;
+
+		if (strlen(str) > 0)
+			cleanTxBuffer(uart1);
+		uart1->timeout = HAL_GetTick();
+		return 1;
+	}
+	return 0;
 }
 
 void uart1_gpio_init() {
@@ -25,7 +27,6 @@ void uart1_gpio_init() {
 	 PA3    ------> USART2_RX **/
 	//alternate function output
 	//open-drain = CNF1 1 ; CNF0 1 ; MODE1 Y MODE0 EN 01.
-
 	/* PA3 alternate mode */
 	SET_BIT(GPIOA->CRL, GPIO_CRL_CNF2_0);
 	CLEAR_BIT(GPIOA->CRL, GPIO_CRL_CNF2_1);
@@ -55,10 +56,10 @@ void uart1Init(uint32_t pclk, uint32_t baud_rate, UART1_t *u) {
 	//uart1_gpio_init();
 // clock HSI de 8 MHz
 	/*enable clock access to USART1 */
-    SET_BIT(RCC->APB2ENR, RCC_APB2ENR_USART1EN);
+	SET_BIT(RCC->APB2ENR, RCC_APB2ENR_USART1EN);
 
-    SET_BIT(RCC->APB2ENR, RCC_APB2ENR_SPI1EN);
-    SET_BIT(RCC->APB2ENR, RCC_APB2ENR_ADC1EN);
+	SET_BIT(RCC->APB2ENR, RCC_APB2ENR_SPI1EN);
+	SET_BIT(RCC->APB2ENR, RCC_APB2ENR_ADC1EN);
 
 	if (pclk == 16000000) {
 		/*set HSI 16 CLK */
@@ -82,7 +83,7 @@ void uart1Init(uint32_t pclk, uint32_t baud_rate, UART1_t *u) {
 	SET_BIT(USART1->CR1, USART_CR1_UE);
 }
 
- void uart1_dma_init() {
+void uart1_dma_init() {
 	/* enable clk access */
 	//SET_BIT(RCC->AHBENR, RCC_AHBENR_DMA1EN);
 	/* clear all interrupt flags on stream */
@@ -144,7 +145,7 @@ uint8_t uart1_1byte_read(void) {
 		return '\0';
 }
 
-void  uart1_read_to_frame(UART1_t *u) {
+void uart1_read_to_frame(UART1_t *u) {
 	if (u->len >= RX_BUFFLEN) {
 		cleanRxBuffer(u);
 		u->len = 0;
@@ -161,7 +162,7 @@ void uart1_send_str(char *str) {
 void uart1_send_frame(uint8_t str[], uint8_t len) {
 
 	if (len > 0) {
-		for (int i = 0; i < len; i++){
+		for (int i = 0; i < len; i++) {
 			uart1_write(str[i]);
 			str[i] = (char) '\0';
 		}
