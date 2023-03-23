@@ -49,6 +49,7 @@ typedef struct RS485{
 	uint8_t len;
 	uint8_t buffer[100];
 	Rs485_status_t status;
+	Rs485_status_t lastStatus;
 }RS485_t;
 
 Rs485_status_t rs485_check_frame(RS485_t *r, UART1_t *u);

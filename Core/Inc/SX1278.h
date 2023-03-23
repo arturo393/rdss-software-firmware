@@ -279,8 +279,18 @@ typedef enum OPERATING_MODE {
 typedef enum SX1278_STATUS {
 	UNKNOW,
 	TX_READY,
-	RX_READY
+	RX_READY,
+	TX_DONE,
+	RX_DONE,
+	TX_TIMEOUT,
+	RX_TIMEOUT,
+	CRC_ERROR_ACTIVATION
 } SX1278_Status_t;
+
+typedef enum LoRa_Mode {
+MASTER,
+SLAVE
+} Lora_Mode_t;
 
 #define LORA_MODE_ACTIVATION (0x00 | 8 << 4)
 #define HIGH_FREQUENCY_MODE (0x00 | 0 << 3)
@@ -323,248 +333,20 @@ typedef struct {
 	uint8_t flagsMode;
 	HEADER_MODE_t headerMode;
 	bool saveParameters;
-
+	uint32_t lastTxTime;
+	uint32_t lastRxTime;
 	OPERATING_MODE_t operatingMode;
-
-	SX1278_Status_t status;
+	Lora_Mode_t mode;
+	SX1278_Status_t currentStatus;
+	SX1278_Status_t lastStatus;
+	
 
 	uint8_t buffer[SX1278_MAX_PACKET];
 	uint8_t readBytes;
 
 	SPI_HandleTypeDef *spi;
 } SX1278_t;
-
-/**
- * \brief Read byte from LoRa module
- *
- * Reads data from LoRa module from given address.
- *
- * \param[in]  module	Pointer to LoRa structure
- * \param[in]  addr		Address from which data will be read
- *
- * \return              Read data
- */
-uint8_t SX1278_SPIRead(SX1278_t *module, uint8_t addr, SPI_HandleTypeDef *spi);
-
-/**
- * \brief Write byte to LoRa module
- *
- * Writes data to LoRa module under given address.
- *
- * \param[in]  module	Pointer to LoRa structure
- * \param[in]  addr		Address under which data will be written
- * \param[in]  cmd 		Data to write
- */
-void SX1278_SPIWrite(SX1278_t *module, uint8_t addr, uint8_t cmd,
-		SPI_HandleTypeDef *spi);
-
-/**
- * \brief Read data from LoRa module
- *
- * Reads data from LoRa module from given address.
- *
- * \param[in]  module	Pointer to LoRa structure
- * \param[in]  addr		Address from which data will be read
- * \param[out] rxBuf    Pointer to store read data
- * \param[in]  length   Number of bytes to read
- */
-void SX1278_SPIBurstRead(SX1278_t *module, uint8_t addr, uint8_t *rxBuf,
-		uint8_t length, SPI_HandleTypeDef *spi);
-
-/**
- * \brief Write data to LoRa module
- *
- * Writes data to LoRa module under given address.
- *
- * \param[in]  module	Pointer to LoRa structure
- * \param[in]  addr		Address under which data will be written
- * \param[in]  txBuf    Pointer to data
- * \param[in]  length   Number of bytes to write
- */
-void SX1278_SPIBurstWrite(SX1278_t *module, uint8_t addr, uint8_t *txBuf,
-		uint8_t length, SPI_HandleTypeDef *spi);
-void SX1278_SPIBurstWrite2(SX1278_t *module);
-
-/**
- * \brief Configure LoRa module
- *
- * Configure LoRa module according to parameters stored in
- * module structure.
- *
- * \param[in]  module	Pointer to LoRa structure
- */
-void configLoraMode(SX1278_t *module, SPI_HandleTypeDef *spi);
-
-/**
- * \brief Entry LoRa mode
- *
- * Module supports different operation mode.
- * To use LoRa operation mode one has to enter this
- * particular mode to transmit and receive data
- * using LoRa.
- *
- * \param[in]  module	Pointer to LoRa structure
- */
-
-/**
- * \brief Entry reception mode
- *
- * Entry reception mode
- *
- * \param[in]  module	Pointer to LoRa structure
- * \param[in]  length   Length of message to be received
- * \param[in]  timeout  Timeout in [ms]
- *
- * \return     1 if entering reception mode
- *             0 if timeout was exceeded
- */
-int SX1278_LoRaEntryRx(SX1278_t *module, uint8_t length, uint32_t timeout,
-		SPI_HandleTypeDef *spi);
-
-/**
- * \brief Read data
- *
- * Read data and store it in module's RX buffer
- *
- * \param[in]  module	Pointer to LoRa structure
- *
- * \return     returns number of read bytes
- */
-uint8_t SX1278_LoRaRxPacket(SX1278_t *module, SPI_HandleTypeDef *spi);
-
-/**
- * \brief Entry transmitter mode
- *
- * Entry transmitter mode
- *
- * \param[in]  module	Pointer to LoRa structure
- * \param[in]  length   Length of message to be sent
- * \param[in]  timeout  Timeout in [ms]
- *
- * \return     1 if entering reception mode
- *             0 if timeout was exceeded
- */
-int configTxRegister(SX1278_t *module, SPI_HandleTypeDef *spi);
-
-/**
- * \brief Send data
- *
- * Transmit data
- *
- * \param[in]  module	Pointer to LoRa structure
- * \param[in]  txBuf    Data buffer with data to be sent
- * \param[in]  length   Length of message to be sent
- * \param[in]  timeout  Timeout in [ms]
- *
- * \return     1 if entering reception mode
- *             0 if timeout was exceeded
- */
-SX1278_Status_t SX1278_LoRaTxPacket(SX1278_t *module, SPI_HandleTypeDef *spi);
-
-/**
- * \brief Initialize LoRa module
- *
- * Initialize LoRa module and initialize LoRa structure.
- *
- * \param[in]  module	    Pointer to LoRa structure
- * \param[in]  frequency    Frequency in [Hz]
- * \param[in]  power        Power level, accepts SX1278_POWER_*
- * \param[in]  LoRa_SF      LoRa spread rate, accepts SX1278_LORA_SF_*
- * \param[in]  LoRa_BW      LoRa bandwidth, accepts SX1278_LORA_BW_*
- * \param[in]  LoRa_CR      LoRa coding rate, accepts SX1278_LORA_CR_*
- * \param[in]  LoRa_CRC_sum Hardware CRC check, SX1278_LORA_CRC_EN or
- *                          SX1278_LORA_CRC_DIS
- * \param[in]  packetLength Package length, no more than 256 bytes
- */
-void SX1278_init(SX1278_t *module, uint64_t frequency, uint8_t power,
-		uint8_t LoRa_SF, uint8_t LoRa_BW, uint8_t LoRa_CR, uint8_t LoRa_CRC_sum,
-		uint8_t packetLength, SPI_HandleTypeDef *spi);
-
-/**
- * \brief Entry transmitter mode and send data
- *
- * Entry transmitter mode and send data.
- * Combination of SX1278_LoRaEntryTx() and SX1278_LoRaTxPacket().
- *
- * \param[in]  module	Pointer to LoRa structure
- * \param[in]  txBuf    Data buffer with data to be sent
- * \param[in]  length   Length of message to be sent
- * \param[in]  timeout  Timeout in [ms]
- *
- * \return     1 if entered TX mode and sent data
- *             0 if timeout was exceeded
- */
-int SX1278_transmit(SX1278_t *module, uint8_t *txBuf, uint8_t length,
-		uint32_t timeout, SPI_HandleTypeDef *spi);
-
-/**
- * \brief Entry reception mode
- *
- * Same as SX1278_LoRaEntryRx()
- *
- * \param[in]  module	Pointer to LoRa structure
- * \param[in]  length   Length of message to be received
- * \param[in]  timeout  Timeout in [ms]
- *
- * \return     1 if entering reception mode
- *             0 if timeout was exceeded
- */
-int SX1278_receive(SX1278_t *module, uint8_t length, uint32_t timeout,
-		SPI_HandleTypeDef *spi);
-
-/**
- * \brief Returns number of received data
- *
- * Returns the number of received data which are
- * held in internal buffer.
- * Same as SX1278_LoRaRxPacket().
- *
- * \param[in]  module	Pointer to LoRa structure
- *
- * \return     returns number of read bytes
- */
-uint8_t SX1278_available(SX1278_t *module, SPI_HandleTypeDef *spi);
-
-/**
- * \brief Read received data to buffer
- *
- * Reads data from internal buffer to external
- * buffer. Reads exactly number of bytes which are stored in
- * internal buffer.
- *
- * \param[in]  module	Pointer to LoRa structure
- * \param[out] rxBuf    External buffer to store data.
- *                      External buffer is terminated with '\0'
- *                      character
- * \param[in]  length   Length of message to be received
- *
- * \return     returns number of read bytes
- */
-uint8_t SX1278_read(SX1278_t *module, uint8_t *rxBuf, uint8_t length);
-
-/**
- * \brief Returns RSSI (LoRa)
- *
- * Returns RSSI in LoRa mode.
- *
- * \param[in]  module	Pointer to LoRa structure
- *
- * \return     RSSI value
- */
-uint8_t SX1278_RSSI_LoRa(SX1278_t *module, SPI_HandleTypeDef *spi);
-
-/**
- * \brief Returns RSSI
- *
- * Returns RSSI (general mode).
- *
- * \param[in]  module	Pointer to LoRa structure
- *
- * \return     RSSI value
- */
-uint8_t SX1278_RSSI(SX1278_t *module, SPI_HandleTypeDef *spi);
-
-////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 uint8_t readRegister(SPI_HandleTypeDef *spi, uint8_t address);
 uint8_t writeRegister(SPI_HandleTypeDef *spi, uint8_t address, uint8_t *cmd,
 		uint8_t lenght);
@@ -581,6 +363,11 @@ void sleepMode(SX1278_t *module);
 void setMode(SX1278_t *module, SX1278_Status_t mode);
 void setLoraLowFreqMode(SX1278_t *module);
 void clearIrqFlags(SX1278_t *module);
-SX1278_Status_t readMode(SX1278_t *module);
+SX1278_Status_t readOperatingMode(SX1278_t *module);
 void updateLoraLowFreq(SX1278_t *module, SX1278_Status_t mode);
+void writeLoRaParameters(SX1278_t *module);
+void updateMode(SX1278_t *module, Lora_Mode_t mode);
+void initLoRaParameters(SX1278_t *module, Lora_Mode_t mode);
+
+
 #endif
