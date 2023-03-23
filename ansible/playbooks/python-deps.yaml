@@ -20,4 +20,6 @@
         - Flask
         - flask_socketio
         - eventlet
+        - numpy
+        - csv
   

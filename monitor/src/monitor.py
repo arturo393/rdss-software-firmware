@@ -6,6 +6,8 @@ import config as cfg
 import serial
 import datetime
 import sys
+import numpy as np
+import csv
 from crccheck.crc import Crc16Xmodem
 from struct import *
 from sympy import *
@@ -30,6 +32,42 @@ socket = SocketIO(app, cors_allowed_origins='*')
 database = None
 client = None
 ser = None
+f_agc_convert = None
+
+def getCsvData(data):
+    x_vals = []
+    y_vals = []
+
+    try:
+        with open(data) as file:
+            reader = csv.reader(file)
+            next(reader) # saltar la fila de encabezado
+            for row in reader:
+                a = row[0]
+                x_vals.append(float(row[0]))
+                y_vals.append(float(row[1]))
+
+        # Convertir los datos a arrays de valores de x y y
+        x = np.array(x_vals)
+        y = np.array(y_vals)
+
+    except Exception as e:
+        logging.exception(e)
+    
+    return x,y
+
+x,y = getCsvData(cfg.AGC_DATA)
+coeffs = np.polyfit(x, y, 8)
+f_agc_convert = np.poly1d(coeffs)
+x,y = getCsvData(cfg.POWER_DATA)
+coeffs = np.polyfit(x, y, 8)
+f_power_convert = np.poly1d(coeffs)
+x,y = getCsvData(cfg.VOLTAGE_DATA)
+coeffs = np.polyfit(x, y, 8)
+f_voltage_convert = np.poly1d(coeffs)
+x,y = getCsvData(cfg.CURRENT_DATA)
+coeffs = np.polyfit(x, y, 8)
+f_current_convert = np.poly1d(coeffs)
 
 
 def dbConnect():
@@ -47,6 +85,9 @@ def dbConnect():
     except Exception as e:
         logging.exception(e)
 
+
+def convert(x,in_min,in_max,out_min,out_max):
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
 def getProvisionedDevices():
     """
@@ -278,28 +319,61 @@ def sendCmd(ser, cmd, createdevice):
             tranformData.append((deviceData[7] / 1.0))
 
         # -----------------------------------------------------
-        tranformData[0] = round(
-            (tranformData[0] * 1.0075) + 0.108, 2)
-        tranformData[3] = round(
-            (tranformData[3] * 0.99535) - 0.05815, 2)
+        voltage = round(f_voltage_convert(tranformData[0]),2)
+        current = round(f_current_convert(tranformData[3]),3)
+        
         # -----------------------------------------------------
 
         x, y = symbols('x y')
-        if (tranformData[4] >= 3.8 or tranformData[4] < 1.1):
-            solutionAgcUpl = 0
-        else:
-            solutionAGCUPL = solveset(
-                Eq(-0.8728*x**6 + 14.702*x**5 - 99.306*x**4 + 341.63*x**3 - 624.11*x**2 + 561.72*x - 180.8, tranformData[4]), x)
-            solutionAgcUpl = str(solutionAGCUPL.args[1])
-            solutionAgcUpl = float(solutionAgcUpl[:6])
+        agcUpl = tranformData[4]
+        agcDwl = tranformData[6]
+        dlPower = tranformData[7]
+        
 
-        if(tranformData[6] >= 3.8 or tranformData[6] < 1.1):
-            solutionAgcDwl = 0
-        else:
-            solutionAGCDWL = solveset(
-                Eq(-0.8728*x**6 + 14.702*x**5 - 99.306*x**4 + 341.63*x**3 - 624.11*x**2 + 561.72*x - 180.8, tranformData[6]), x)
-            solutionAgcDwl = str(solutionAGCDWL.args[1])
-            solutionAgcDwl = float(solutionAgcDwl[:6])
+        dlPower = round(f_power_convert(tranformData[7]),2)
+        if(dlPower < -100):
+            dlPower = -49
+        elif(dlPower > 1):
+            dlPower = 0.2
+
+        solutionAgcUpl = int(convert(agcUpl,0.5,4.2,40.51,0.01))
+        solutionAgcDwl = int(convert(agcDwl,0.5,4.2,40.51,0.01))
+
+        if(agcDwl < 0):
+            agcDwl = 0
+        elif(agcDwl > 30):
+            agcDwl = 30
+
+        if(agcUpl < 0):
+            agcUpl = -0
+        elif(agcUpl > 30):
+            agcUpl = 30
+
+        agcUpl = round(f_agc_convert(agcUpl),2)
+        agcDwl = round(f_agc_convert(agcDwl),2)
+
+    
+        logging.debug("Voltage:"+str(tranformData[0])+" "+str(voltage))
+        logging.debug("Current:"+str(tranformData[3])+" "+str(current))
+        logging.debug("AGC Uplink:"+str(tranformData[4])+" "+str(agcUpl)+" "+str(solutionAgcUpl))
+        logging.debug("AGC Downlink:"+str(tranformData[6])+" "+str(agcDwl)+" "+str(solutionAgcDwl))
+        logging.debug("Downlink Output Power:"+str(tranformData[7])+" "+str(dlPower))
+
+        # if (tranformData[4] >= 3.8 or tranformData[4] < 1.1):
+        #     solutionAgcUpl = 0
+        # else:
+        #     solutionAGCUPL = solveset(
+        #         Eq(-0.8728*x**6 + 14.702*x**5 - 99.306*x**4 + 341.63*x**3 - 624.11*x**2 + 561.72*x - 180.8, tranformData[4]), x)
+        #     solutionAgcUpl = str(solutionAGCUPL.args[1])
+        #     solutionAgcUpl = float(solutionAgcUpl[:6])
+
+        # if(tranformData[6] >= 3.8 or tranformData[6] < 1.1):
+        #     solutionAgcDwl = 0
+        # else:
+        #     solutionAGCDWL = solveset(
+        #         Eq(-0.8728*x**6 + 14.702*x**5 - 99.306*x**4 + 341.63*x**3 - 624.11*x**2 + 561.72*x - 180.8, tranformData[6]), x)
+        #     solutionAgcDwl = str(solutionAGCDWL.args[1])
+        #     solutionAgcDwl = float(solutionAgcDwl[:6])
 
         # -----------------------------------------------------
         # if(createdevice == True):
@@ -315,11 +389,11 @@ def sendCmd(ser, cmd, createdevice):
 
         finalData = {
             "sampleTime": timeNow,
-            "voltage": tranformData[0],
-            "current": tranformData[3],
-            "gupl": solutionAgcUpl,
-            "gdwl": solutionAgcDwl,
-            "power": tranformData[7]
+            "voltage": voltage,
+            "current": current,
+            "gupl": agcUpl,
+            "gdwl": agcDwl,
+            "power": dlPower
         }
 
         return(finalData)
