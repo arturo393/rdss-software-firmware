@@ -54,7 +54,7 @@ typedef struct RS485{
 
 Rs485_status_t rs485_check_frame(RS485_t *r, UART1_t *u);
 Rs485_status_t rs485_check_valid_module(UART1_t *uart1);
-Rs485_status_t rs485_check_CRC_module(UART1_t *uart1);
+Rs485_status_t rs485_check_CRC_module(UART1_t *uart1, uint8_t len);
 Rs485_status_t check_frame(uint8_t *frame, uint8_t lenght);
 Rs485_status_t check_valid_module(uint8_t *frame, uint8_t lenght);
 Rs485_status_t check_CRC_module(uint8_t *frame, uint8_t len);

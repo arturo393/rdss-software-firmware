@@ -88,7 +88,6 @@ SX1278_t *lora_ptr;
 
 /* In the interrupt handler, read the received data from the UART1 data register */
 /* Enable UART1 interrupt */
-
 uint8_t rxData;
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	/* Read received data from UART1 */
@@ -117,36 +116,12 @@ int _write(int file, char *ptr, int len) {
 	return len;
 }
 
-void setTxFifoAddr(SX1278_t *module) {
-	uint8_t cmd = module->len;
-	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1);
-	uint8_t addr = readRegister(module->spi, LR_RegFifoTxBaseAddr);
-	addr = 0x80;
-	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1);
-	module->len = readRegister(module->spi, LR_RegPayloadLength);
-}
-
 void sx1278Reset() {
 	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_RESET);
 	HAL_Delay(1);
 	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_SET);
 	HAL_Delay(100);
-}
-
-void setRxFifoAddr(SX1278_t *module) {
-	updateLoraLowFreq(module, SLEEP); //Change modem mode Must in Sleep mode
-	uint8_t cmd = module->len;
-	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1); //RegPayloadLength 21byte
-	uint8_t addr = readRegister(module->spi, LR_RegFifoRxBaseAddr); //RegFiFoTxBaseAddr
-	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1); //RegFifoAddrPtr
-	module->len = readRegister(module->spi, LR_RegPayloadLength);
-}
-
-void clearMemForRx(SX1278_t *loRa) {
-	if (loRa->status == RX_READY) {
-		memset(loRa->buffer, 0, SX1278_MAX_PACKET);
-	}
 }
 
 uint8_t waitForRxDone(SX1278_t *loRa) {
@@ -162,27 +137,6 @@ uint8_t waitForRxDone(SX1278_t *loRa) {
 			return -1;
 	}
 	return 0;
-}
-
-int crcErrorActivation(SX1278_t *loRa) {
-	uint8_t flags2 = readRegister(loRa->spi, LR_RegIrqFlags);
-	SET_BIT(flags2, RX_DONE_MASK);
-	uint8_t cmd = flags2;
-	writeRegister(loRa->spi, LR_RegIrqFlags, &cmd, 1);
-	uint8_t flags = readRegister(loRa->spi, LR_RegIrqFlags);
-	int errorActivation = READ_BIT(flags, PAYLOAD_CRC_ERROR_MASK);
-	return errorActivation;
-}
-
-void getRxFifoData(SX1278_t *loRa) {
-	loRa->len = readRegister(loRa->spi, LR_RegRxNbBytes); //Number for received bytes
-	uint8_t addr = 0x00;
-	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET); // pull the pin low
-	HAL_Delay(1);
-	HAL_SPI_Transmit(loRa->spi, &addr, 1, 100); // send address
-	HAL_SPI_Receive(loRa->spi, loRa->buffer, loRa->len, 100); // receive 6 bytes data
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET); // pull the pin high
 }
 
 void printParameters(int timeRx, UART1_t *uart1, SX1278_t *loRa) {
@@ -287,7 +241,7 @@ void printStatus(UART1_t *uart1, Rs485_status_t status, RS485_t *rs485) {
 	char rs485_msgs[11][30] = { "DATA OK", "START READING", "VALID FRAME",
 			"NOT VALID FRAME", "WRONG MODULE FUNCTION", "WRONG MODULE ID",
 			"CRC ERROR", "DONE", "WAITING", "VALID MODULE", "CHECK LORA DATA" };
-	if(rs485->status == rs485->lastStatus)
+	if (rs485->status == rs485->lastStatus)
 		return;
 	rs485->lastStatus = rs485->status;
 	cleanByTimeout(uart1, rs485_msgs[status]);
@@ -299,35 +253,43 @@ void printLoRaStatus(UART1_t *uart1, SX1278_t *loRa) {
 	uint8_t len = 0;
 	char *buff = uart1->txBuffer;
 	/*if (loRa->status == loRa->lastStatus)
-		return;*/
+	 return;*/
 	loRa->lastStatus = loRa->status;
 	if (status == TX_TIMEOUT) {
 		len = sprintf(buff, "Transmission Fail: %d seconds Timeout\r\n",
 				TX_TIMEOUT / 1000);
 		uart1_send_frame(buff, len);
+		for (int i = 0; i < loRa->len; i++) {
+			uint8_t len = sprintf(uart1->txBuffer, "%02X", loRa->buffer[i]);
+			uart1_send_frame(uart1->txBuffer, len);
+		}
 		return;
 	}
 	if (status == TX_DONE) {
 		uint8_t bytesLen = loRa->len;
 		uint32_t time = loRa->lastTxTime;
-		len = sprintf(buff, "Transmission Done: %d ms %d bytes\r\n", time,
+		len = sprintf(buff, "\nTransmission Done: %d ms %d bytes\r\n", time,
 				bytesLen);
 		uart1_send_frame(buff, len);
+		for (int i = 0; i < loRa->len; i++) {
+			uint8_t len = sprintf(uart1->txBuffer, "%02X", loRa->buffer[i]);
+			uart1_send_frame(uart1->txBuffer, len);
+		}
 		return;
 	}
 	if (status == TX_READY) {
-		len = sprintf(buff, "Master Mode\r\n");
+		len = sprintf(buff, "\nMaster Mode\r\n");
 		uart1_send_frame(buff, len);
 		return;
 	}
 	if (status == RX_DONE) {
 		uint8_t bytesLen = loRa->len;
-		len = sprintf(buff, "Reception Done:  %d bytes\r\n", bytesLen);
+		len = sprintf(buff, "Reception Done: %d bytes\r\n", bytesLen);
 		uart1_send_frame(buff, len);
 		return;
 	}
 	if (status == RX_READY) {
-		len = sprintf(buff, "Slave Mode\r\n");
+		len = sprintf(buff, "\nSlave Mode\r\n");
 		uart1_send_frame(buff, len);
 		return;
 	}
@@ -335,14 +297,6 @@ void printLoRaStatus(UART1_t *uart1, SX1278_t *loRa) {
 		len = sprintf(buff, "Reception Fail: Crc error activation\r\n");
 		uart1_send_frame(buff, len);
 		return;
-	}
-}
-
-void setTxFifoData(SX1278_t *module) {
-	setTxFifoAddr(module);
-	for (int i = 0; i < module->len; i++) {
-		uint8_t data = module->buffer[i];
-		writeRegister(module->spi, 0x00, &data, 1);
 	}
 }
 
@@ -364,6 +318,36 @@ void waitForTxEnd(SX1278_t *loRa) {
 		}
 		HAL_Delay(1);
 	}
+}
+
+void dinamicFrame(SX1278_t *loRa) {
+	uint8_t crc_frame[2];
+	uint16_t crc;
+	uint8_t i;
+	uint8_t len = loRa->len;
+	int *buff = (int) malloc((len + 9) * sizeof(int));
+
+	buff[0] = LTEL_START_MARK;
+	buff[1] = VLAD;
+	buff[2] = ID1;
+	buff[3] = QUERY_PARAMETERS_VLAD;
+	buff[4] = 0x00;
+	buff[5] = len;
+	for (i = 6; i < len + 6; i++) {
+		buff[i] = i - 6;
+	}
+	crc = crc_get(&(buff[1]), (len + 5));
+	memcpy(crc_frame, &crc, 2);
+	buff[len + 6] = crc_frame[0];
+	buff[len + 7] = crc_frame[1];
+	buff[len + 8] = LTEL_END_MARK;
+
+	for (i = 0; i < len + 9; i++) {
+		loRa->buffer[i] = buff[i];
+	}
+	loRa->len = len + 9;
+
+	free(buff);
 }
 
 int changeModeBySwitch(int master, int valueRx, _Bool TX_MODE, _Bool RX_MODE,
@@ -458,10 +442,11 @@ int main(void) {
 	memset(loRa.buffer, 0, SX1278_MAX_PACKET);
 	loRa.len = 0;
 	int counter = HAL_GetTick();
-	int change = 0;
+	int change = 162;//53//73//////////////////////////////
 	int master;
 	int valueTx = 0;
 	int valueRx = 0;
+	int data_length = 12;
 	HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
 	HAL_NVIC_EnableIRQ(USART1_IRQn);
 	HAL_UART_Receive_IT(&huart1, &rxData, 1);
@@ -495,7 +480,7 @@ int main(void) {
 				rs485.cmd = rs485.buffer[3];
 				rs485.status = WAITING;
 				cleanRxBuffer(&uart1);
-				memset(loRa.buffer, 0, sizeof(loRa.len));
+				memset(loRa.buffer, 0, sizeof(loRa.buffer));
 				loRa.len = 0;
 			}
 		}
@@ -513,7 +498,7 @@ int main(void) {
 			waitForTxEnd(&loRa);
 			printLoRaStatus(&uart1, &loRa);
 
-			memset(loRa.buffer, 0, sizeof(loRa.len));
+			memset(loRa.buffer, 0, sizeof(loRa.buffer));
 			loRa.len = 0;
 			rs485.cmd = NONE;
 			memset(rs485.buffer, 0, sizeof(rs485.buffer));
@@ -527,34 +512,36 @@ int main(void) {
 			updateLoraLowFreq(&loRa, RX_CONTINUOUS);
 			clearMemForRx(&loRa);
 			waitForRxDone(&loRa);
+//TODO agregar chequeo de ID y de buffer///////////////////////////////////////////////////////////////////////////////
 			getRxFifoData(&loRa);
 			printLoRaStatus(&uart1, &loRa);
 			vlad = decodeVLAD(&loRa);
 			print_parameters(&uart1, vlad);
-			memset(loRa.buffer, 0, sizeof(loRa.len));
+			memset(loRa.buffer, 0, sizeof(loRa.buffer));
 			loRa.len = 0;
 		}
 
 		if (TX_MODE) {
 			RX_MODE_OFF_LED();
 			TX_MODE_ON_LED();
-			if (change == 255)
-				change = 0;
-			loRa.buffer[change] = change;
-			loRa.len = change;
+
 			if (HAL_GetTick() - counter > 10000) {
 				counter = HAL_GetTick();
+				if (change == 255)
+					change = 0;
+				loRa.len = change;
+				dinamicFrame(&loRa);
 
 				updateMode(&loRa, MASTER);
 				setTxFifoData(&loRa);
 				updateLoraLowFreq(&loRa, TX);
 				waitForTxEnd(&loRa);
 				printLoRaStatus(&uart1, &loRa);
-				memset(loRa.buffer, 0, sizeof(loRa.len));
+				memset(loRa.buffer, 0, sizeof(loRa.buffer));
 				loRa.len = 0;
 				loRa.status = UNKNOW;
 				rs485.cmd = NONE;
-				memset(rs485.buffer, 0, sizeof(rs485.len));
+				memset(rs485.buffer, 0, sizeof(rs485.buffer));
 				rs485.len = 0;
 
 				change += 1;

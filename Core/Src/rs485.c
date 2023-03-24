@@ -50,12 +50,12 @@ Rs485_status_t rs485_check_frame(RS485_t *r, UART1_t *u) {
 		return WAITING;
 }
 
-Rs485_status_t rs485_check_CRC_module(UART1_t *uart1) {
+Rs485_status_t rs485_check_CRC_module(UART1_t *uart1, uint8_t len) {
 	unsigned long crc_cal;
 	unsigned long crc_save;
-	crc_save = uart1->rxBuffer[7] << 8;
-	crc_save |= uart1->rxBuffer[6];
-	crc_cal = crc_get(&(uart1->rxBuffer[1]), 5);
+	crc_save = uart1->rxBuffer[len - 2] << 8;
+	crc_save |= uart1->rxBuffer[len - 3];
+	crc_cal = crc_get(&(uart1->rxBuffer[1]), (len - 4));
 	if (crc_cal == crc_save)
 		return DATA_OK;
 	return CRC_ERROR;
@@ -63,7 +63,7 @@ Rs485_status_t rs485_check_CRC_module(UART1_t *uart1) {
 
 Rs485_status_t rs485_check_valid_module(UART1_t *uart1) {
 	if (uart1->rxBuffer[1] == VLAD) {
-		if (uart1->rxBuffer[2] == ID1) {
+		if ((uart1->rxBuffer[2] == ID1)||(uart1->rxBuffer[2] == ID2)) {
 			for (int i = 3; i < uart1->len; i++)
 				if (uart1->rxBuffer[i] == LTEL_END_MARK)
 					return VALID_MODULE;
@@ -76,7 +76,7 @@ Rs485_status_t rs485_check_valid_module(UART1_t *uart1) {
 
 Rs485_status_t check_valid_module(uint8_t *frame, uint8_t lenght) {
 	if (frame[1] == VLAD) {
-		if (frame[2] == ID1) {
+		if ((frame[2] == ID1) || (frame[2] == ID2)) {
 			for (int i = 3; i < lenght; i++)
 				if (frame[i] == LTEL_END_MARK)
 					return VALID_MODULE;
@@ -127,10 +127,10 @@ Rs485_status_t checkBuffer(RS485_t *rs485){
 	return rs485->status;
 }
 
-void rs485Uart1Decode(RS485_t *rs485, UART1_t *uart1, SX1278_t *loraRx) {
+void rs485Uart1Decode(RS485_t *rs485, UART1_t *uart1, SX1278_t *loRa) {
 	switch (rs485->status) {
 	case VALID_MODULE:
-		rs485->status = rs485_check_CRC_module(uart1);
+		rs485->status = rs485_check_CRC_module(uart1, loRa->len);
 		break;
 	case DATA_OK:
 		rs485->cmd = uart1->rxBuffer[3];
@@ -176,13 +176,13 @@ void rs485Uart1Decode(RS485_t *rs485, UART1_t *uart1, SX1278_t *loraRx) {
 		rs485->status = WAITING;
 		break;
 	case CHECK_LORA_DATA:
-		uart1_send_str("Check Lora\r\n");
-		if (check_frame(loraRx->buffer, loraRx->len) == VALID_FRAME)
-			if (check_valid_module(loraRx->buffer, loraRx->len)
+		uart1_send_str("Check LoRa\r\n");
+		if (check_frame(loRa->buffer, loRa->len) == VALID_FRAME)
+			if (check_valid_module(loRa->buffer, loRa->len)
 					== VALID_MODULE)
-				if (check_CRC_module(loraRx->buffer, loraRx->len)
+				if (check_CRC_module(loRa->buffer, loRa->len)
 						== DATA_OK) {
-					rs485->cmd = loraRx->buffer[3];
+					rs485->cmd = loRa->buffer[3];
 					uart1_send_str("DATA OK\r\n");
 					rs485->status = DONE;
 				}

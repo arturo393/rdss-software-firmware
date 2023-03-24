@@ -19,7 +19,7 @@
 #define UPLINK_FREQ 170000000
 #define SX1278_MAX_PACKET	256
 #define SX1278_DEFAULT_TIMEOUT		3000
-#define LORA_SEND_TIMEOUT 2000 //2000
+#define LORA_SEND_TIMEOUT 5000 //2000
 #define SX1278_POWER_20DBM  0xFF //20dbm
 #define SX1278_POWER_17DBM  0xFC //17dbm
 #define SX1278_POWER_14DBM  0xF9 //14dbm
@@ -368,5 +368,11 @@ void updateLoraLowFreq(SX1278_t *module, SX1278_Status_t mode);
 void writeLoRaParameters(SX1278_t *module);
 void updateMode(SX1278_t *module, Lora_Mode_t mode);
 void initLoRaParameters(SX1278_t *module, Lora_Mode_t mode);
+void getRxFifoData(SX1278_t *module);
+int crcErrorActivation(SX1278_t *module);
+void setRxFifoAddr(SX1278_t *module);
+void setTxFifoAddr(SX1278_t *module);
+void clearMemForRx(SX1278_t *module);
+void setTxFifoData(SX1278_t *module);
 
 #endif
