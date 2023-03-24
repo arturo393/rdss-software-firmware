@@ -368,6 +368,11 @@ void updateLoraLowFreq(SX1278_t *module, SX1278_Status_t mode);
 void writeLoRaParameters(SX1278_t *module);
 void updateMode(SX1278_t *module, Lora_Mode_t mode);
 void initLoRaParameters(SX1278_t *module, Lora_Mode_t mode);
-
+void getRxFifoData(SX1278_t *module);
+int crcErrorActivation(SX1278_t *module);
+void setRxFifoAddr(SX1278_t *module);
+void setTxFifoAddr(SX1278_t *module);
+void clearMemForRx(SX1278_t *module);
+void setTxFifoData(SX1278_t *module);
 
 #endif

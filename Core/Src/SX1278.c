@@ -180,4 +180,56 @@ void initLoRaParameters(SX1278_t *module, Lora_Mode_t mode) {
 	updateMode(module, mode);
 }
 
+void setRxFifoAddr(SX1278_t *module) {
+	updateLoraLowFreq(module, SLEEP); //Change modem mode Must in Sleep mode
+	uint8_t cmd = module->len;
+	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1); //RegPayloadLength 21byte
+	uint8_t addr = readRegister(module->spi, LR_RegFifoRxBaseAddr); //RegFiFoTxBaseAddr
+	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1); //RegFifoAddrPtr
+	module->len = readRegister(module->spi, LR_RegPayloadLength);
+}
 
+int crcErrorActivation(SX1278_t *module) {
+	uint8_t flags2 = readRegister(module->spi, LR_RegIrqFlags);
+	SET_BIT(flags2, RX_DONE_MASK);
+	uint8_t cmd = flags2;
+	writeRegister(module->spi, LR_RegIrqFlags, &cmd, 1);
+	uint8_t flags = readRegister(module->spi, LR_RegIrqFlags);
+	int errorActivation = READ_BIT(flags, PAYLOAD_CRC_ERROR_MASK);
+	return errorActivation;
+}
+
+void getRxFifoData(SX1278_t *module) {
+	module->len = readRegister(module->spi, LR_RegRxNbBytes); //Number for received bytes
+	uint8_t addr = 0x00;
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET); // pull the pin low
+	HAL_Delay(1);
+	HAL_SPI_Transmit(module->spi, &addr, 1, 100); // send address
+	HAL_SPI_Receive(module->spi, module->buffer, module->len, 100); // receive 6 bytes data
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET); // pull the pin high
+	module->currentStatus = RX_DONE;
+}
+
+void setTxFifoAddr(SX1278_t *module) {
+	uint8_t cmd = module->len;
+	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1);
+	uint8_t addr = readRegister(module->spi, LR_RegFifoTxBaseAddr);
+	addr = 0x80;
+	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1);
+	module->len = readRegister(module->spi, LR_RegPayloadLength);
+}
+
+void setTxFifoData(SX1278_t *module) {
+	setTxFifoAddr(module);
+	for (int i = 0; i < module->len; i++) {
+		uint8_t data = module->buffer[i];
+		writeRegister(module->spi, 0x00, &data, 1);
+	}
+}
+
+void clearMemForRx(SX1278_t *module) {
+	if (module->currentStatus == RX_READY) {
+		memset(module->buffer, 0, SX1278_MAX_PACKET);
+	}
+}

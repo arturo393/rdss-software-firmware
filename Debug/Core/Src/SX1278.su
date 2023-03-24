@@ -14,3 +14,9 @@
 ../Core/Src/SX1278.c:113:6:writeLoRaParameters	16	static
 ../Core/Src/SX1278.c:137:6:updateMode	16	static
 ../Core/Src/SX1278.c:165:6:initLoRaParameters	16	static
+../Core/Src/SX1278.c:183:6:setRxFifoAddr	24	static
+../Core/Src/SX1278.c:192:5:crcErrorActivation	40	static
+../Core/Src/SX1278.c:202:6:getRxFifoData	32	static
+../Core/Src/SX1278.c:214:6:setTxFifoAddr	24	static
+../Core/Src/SX1278.c:223:6:setTxFifoData	24	static
+../Core/Src/SX1278.c:231:6:clearMemForRx	16	static
