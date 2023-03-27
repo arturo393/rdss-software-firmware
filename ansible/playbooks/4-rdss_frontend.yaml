@@ -40,5 +40,5 @@
   - name: "Start frontend"
     systemd:
       name: frontendRDSS
-      state: started
+      state: restarted
       enabled: yes

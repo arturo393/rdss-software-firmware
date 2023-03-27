@@ -12,7 +12,7 @@
       path: /tmp/rdss2
   - name: "Cloning RDSSv2 repo"
     git:
-      repo: https://{{gitlabuser | urlencode}}:{{gitlabpassword | urlencode}}@gitlab.com/itaum/rdss2.git
+      repo: https://{{gitlabuser | urlencode}}:{{gitlabpassword | urlencode}}@gitlab.com/sigma-telecom/rdss-software.git
       dest: /tmp/rdss2
       # single_branch: yes
       version: development

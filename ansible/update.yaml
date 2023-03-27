@@ -5,6 +5,7 @@
   vars_files:
     - ./vars.yaml
 
+
 - name: "Installing RDSS base"
   import_playbook: playbooks/1-rdss_base.yaml
 - name: "Installing and running RDSS monitor"

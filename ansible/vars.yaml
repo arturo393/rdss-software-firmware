@@ -1,6 +1,6 @@
 ---
-gitlabuser: ytannus@itaum.com
-gitlabpassword: L4DMzB4rwXMBUCWi1xYN
+gitlabuser: arturo33
+gitlabpassword: gitlab393
 api_port: 80
 db_host: localhost
 db_port: 27017
