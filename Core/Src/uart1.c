@@ -14,7 +14,7 @@ uint8_t cleanByTimeout(UART1_t *uart1, const char *str) {
 			uart1_send_str("-TIMEOUT\r\n");
 
 		if (strlen(str) > 0)
-			cleanTxBuffer(uart1);
+			cleanTx(uart1);
 		uart1->timeout = HAL_GetTick();
 		return 1;
 	}
@@ -92,7 +92,7 @@ void uart1_dma_init() {
 	/*set the source buffer */
 }
 
-void uart1_write(char ch) {
+void writeTxReg(char ch) {
 	SET_BIT(GPIOB->ODR, GPIO_ODR_ODR8);
 
 	while (!READ_BIT(USART1->SR, USART_SR_TXE))
@@ -131,7 +131,7 @@ void uart1_read(char *data, uint8_t size) {
 	}
 }
 
-uint8_t uart1_1byte_read(void) {
+uint8_t readRxReg(void) {
 	volatile uint8_t data;
 	bool override = READ_BIT(USART1->SR, USART_SR_ORE);
 	bool data_present = READ_BIT(USART1->SR, USART_SR_RXNE);
@@ -145,37 +145,42 @@ uint8_t uart1_1byte_read(void) {
 		return '\0';
 }
 
-void uart1_read_to_frame(UART1_t *u) {
+void readRx(UART1_t *u) {
 	if (u->len >= RX_BUFFLEN) {
-		cleanRxBuffer(u);
+		cleanRx(u);
 		u->len = 0;
 	}
-	u->rxBuffer[u->len++] = uart1_1byte_read();
+	u->rx[u->len++] = readRxReg();
 }
 
 void uart1_send_str(char *str) {
 	uint8_t i;
 	for (i = 0; str[i] != '\0'; i++)
-		uart1_write(str[i]);
+		writeTxReg(str[i]);
 }
 
-void uart1_send_frame(uint8_t str[], uint8_t len) {
+void writeTxBuffer(uint8_t str[], uint8_t len) {
 
 	if (len > 0) {
 		for (int i = 0; i < len; i++) {
-			uart1_write(str[i]);
+			writeTxReg(str[i]);
 			str[i] = (char) '\0';
 		}
 	}
 }
 
-void cleanRxBuffer(UART1_t *u) {
-	memset(u->rxBuffer, 0, sizeof(u->len));
-	u->len = 0;
+void writeTx(UART1_t *uart1){
+	writeTxBuffer(uart1->tx,uart1->len);
 }
 
-void cleanTxBuffer(UART1_t *u) {
-	memset(u->txBuffer, 0, sizeof(u->len));
+void cleanRx(UART1_t *u) {
+	memset(u->rx, 0, sizeof(u->len));
+	u->len = 0;
+	u->isReady = false;
+}
+
+void cleanTx(UART1_t *u) {
+	memset(u->tx, 0, sizeof(u->len));
 	u->len = 0;
 }
 

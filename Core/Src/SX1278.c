@@ -20,7 +20,7 @@ uint8_t readRegister(SPI_HandleTypeDef *spi, uint8_t address) {
 	return rec;
 }
 
-uint8_t writeRegister(SPI_HandleTypeDef *spi, uint8_t address, uint8_t *cmd,
+void writeRegister(SPI_HandleTypeDef *spi, uint8_t address, uint8_t *cmd,
 		uint8_t lenght) {
 	uint8_t tx_data[30] = { 0 };
 	tx_data[0] = address | 0x80;
@@ -32,7 +32,6 @@ uint8_t writeRegister(SPI_HandleTypeDef *spi, uint8_t address, uint8_t *cmd,
 	HAL_SPI_Transmit(spi, tx_data, lenght + 1, 1000);
 	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET);  // pull the pin high
 	HAL_Delay(10);
-	return cmd;  // pull the pin high
 }
 
 void setRFFrequency(SX1278_t *module) {
@@ -51,6 +50,7 @@ void setOutputPower(SX1278_t *module) {
 void setLORAWAN(SX1278_t *module) {
 	writeRegister(module->spi, RegSyncWord, &(module->syncWord), 1);
 }
+
 void setOvercurrentProtect(SX1278_t *module) {
 	writeRegister(module->spi, LR_RegOcp, &(module->ocp), 1);
 }
@@ -93,7 +93,7 @@ void setDetectionParameters(SX1278_t *module) {
 	writeRegister(module->spi, LR_RegDetectionThreshold, &tmp, 1);
 }
 
-SX1278_Status_t readOperatingMode(SX1278_t *module) {
+void readOperatingMode(SX1278_t *module) {
 	module->operatingMode = (0x07 & readRegister(module->spi,
 	LR_RegOpMode));
 }
@@ -134,8 +134,9 @@ void writeLoRaParameters(SX1278_t *module) {
 }
 
 void updateMode(SX1278_t *module, Lora_Mode_t mode) {
-	if (mode == MASTER) {
-		module->frequency = DOWNLINK_FREQ;
+	if (mode == SLAVE_SENDER || mode == MASTER_SENDER) {
+		module->frequency =
+				(mode == SLAVE_SENDER) ? UPLINK_FREQ : DOWNLINK_FREQ;
 		module->dioConfig = DIO0_TX_DONE | DIO1_RX_TIMEOUT
 				| DIO2_FHSS_CHANGE_CHANNEL | DIO3_VALID_HEADER;
 		module->flagsMode = 0xff;
@@ -143,8 +144,10 @@ void updateMode(SX1278_t *module, Lora_Mode_t mode) {
 		module->mode = mode;
 		module->status = TX_READY;
 
-	} else if (mode == SLAVE) {
-		module->frequency = UPLINK_FREQ;
+	} else if (mode == SLAVE_RECEIVER || mode == MASTER_RECEIVER) {
+		module->frequency =
+				(mode == SLAVE_RECEIVER) ? DOWNLINK_FREQ : UPLINK_FREQ;
+
 		module->dioConfig = DIO0_RX_DONE | DIO1_RX_TIMEOUT
 				| DIO2_FHSS_CHANGE_CHANNEL | DIO3_VALID_HEADER;
 		module->flagsMode = 0xff;
@@ -177,6 +180,49 @@ void initLoRaParameters(SX1278_t *module, Lora_Mode_t mode) {
 	module->fhssValue = HOPS_PERIOD;
 	module->len = SX1278_MAX_PACKET;
 	updateMode(module, mode);
+}
+
+void sx1278Reset() {
+	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_RESET);
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_SET);
+	HAL_Delay(100);
+}
+
+void waitForTxEnd(SX1278_t *loRa) {
+	int timeStart = HAL_GetTick();
+	while (1) {
+		if (HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port, LORA_BUSSY_Pin)) {
+			int timeEnd = HAL_GetTick();
+			loRa->lastTxTime = timeEnd - timeStart;
+			readRegister(loRa->spi, LR_RegIrqFlags);
+			clearIrqFlags(loRa);
+			loRa->status = TX_DONE;
+			return;
+		}
+		if (HAL_GetTick() - timeStart > LORA_SEND_TIMEOUT) {
+			sx1278Reset();
+			loRa->status = TX_TIMEOUT;
+			return;
+		}
+		HAL_Delay(1);
+	}
+}
+
+uint8_t waitForRxDone(SX1278_t *loRa) {
+	uint32_t timeout = HAL_GetTick();
+	while ((!HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port, LORA_BUSSY_Pin))) {
+		uint8_t flags = readRegister(loRa->spi, LR_RegIrqFlags);
+		if (READ_BIT(flags, PAYLOAD_CRC_ERROR_MASK)) {
+			uint8_t cmd = flags | (1 << 7);
+			writeRegister(loRa->spi, LR_RegIrqFlags, &cmd, 1);
+			flags = readRegister(loRa->spi, LR_RegIrqFlags);
+		}
+		if (HAL_GetTick() - timeout > 2000)
+			return -1;
+	}
+	return 0;
 }
 
 void setRxFifoAddr(SX1278_t *module) {
