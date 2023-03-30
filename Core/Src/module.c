@@ -50,10 +50,69 @@ void vladInit(Function_t funcion, Id_t id, Vlad_t *vlad) {
 	vlad->uc_temperature = 0;
 	vlad->remote_attenuation = 0;
 	vlad->is_remote_attenuation = false;
-    vlad->is_attenuation_updated = false;
-	vlad->calc_en;
+	vlad->is_attenuation_updated = false;
+	vlad->calc_en = false;
 	vlad->function = funcion;
 	vlad->id = id;
+}
+
+void encodeVLAD(uint8_t *frame) {
+	uint8_t crc_frame[2];
+	uint16_t crc;
+	uint8_t data_length = 12;
+	uint8_t id = ID1;
+	if (id == ID1) {
+		frame[0] = LTEL_START_MARK;
+		frame[1] = VLAD;
+		frame[2] = ID1;
+		frame[3] = 0x11;
+		frame[4] = 0x00;
+		frame[5] = data_length;
+		frame[6] = 0x00;
+		frame[7] = 12;
+		frame[8] = 0x00;
+		frame[9] = 200;
+		frame[10] = 0x00;
+		frame[11] = 199;
+		frame[12] = 0x00;
+		frame[13] = 112;
+		frame[14] = 10;
+		frame[15] = 4;
+		frame[16] = 5;
+		frame[17] = 6;
+
+		crc = crc_get(&(frame[1]), 17);
+		memcpy(crc_frame, &crc, 2);
+		frame[18] = crc_frame[0];
+		frame[19] = crc_frame[1];
+		frame[20] = LTEL_END_MARK;
+	}
+	if (id == ID2) {
+		frame[0] = LTEL_START_MARK;
+		frame[1] = VLAD;
+		frame[2] = ID2;
+		frame[3] = 0x11;
+		frame[4] = 0x00;
+		frame[5] = data_length;
+		frame[6] = 0x00;
+		frame[7] = 28;
+		frame[8] = 0x00;
+		frame[9] = 250;
+		frame[10] = 0x00;
+		frame[11] = 22;
+		frame[12] = 0x00;
+		frame[13] = 101;
+		frame[14] = 20;
+		frame[15] = 19;
+		frame[16] = 10;
+		frame[17] = 8;
+
+		crc = crc_get(&(frame[1]), 17);
+		memcpy(crc_frame, &crc, 2);
+		frame[18] = crc_frame[0];
+		frame[19] = crc_frame[1];
+		frame[20] = LTEL_END_MARK;
+	}
 }
 
 void module_init(Module_pa_t *module, Function_t funcion, Id_t id) {

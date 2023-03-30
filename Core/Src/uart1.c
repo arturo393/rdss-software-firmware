@@ -7,16 +7,16 @@
 
 #include <uart1.h>
 
-uint8_t  cleanByTimeout(UART1_t* uart1,const char* str){
-		if (HAL_GetTick() - uart1->timeout > SECONDS(5)) {
-			uart1_send_str((char*)str);
-			uart1_send_str("-TIMEOUT\r\n");
-			if(strlen(str)>0)
-				cleanTxBuffer(uart1);
-			uart1->timeout = HAL_GetTick();
-			return 1;
-		}
-		return 0;
+uint8_t cleanByTimeout(UART1_t *uart1, const char *str) {
+	if (HAL_GetTick() - uart1->timeout > SECONDS(5)) {
+		uart1_send_str((char*) str);
+		uart1_send_str("-TIMEOUT\r\n");
+		if (strlen(str) > 0)
+			cleanTx(uart1);
+		uart1->timeout = HAL_GetTick();
+		return 1;
+	}
+	return 0;
 }
 
 void uart1_gpio_init() {
@@ -82,7 +82,7 @@ void uart1_dma_init() {
 
 }
 
-void uart1_write(char ch) {
+void writeTxReg(uint8_t ch) {
 	SET_BIT(GPIOB->ODR, GPIO_ODR_OD9);
 
 	while (!READ_BIT(USART1->ISR, USART_ISR_TXE_TXFNF))
@@ -121,7 +121,7 @@ void uart1_read(char *data, uint8_t size) {
 	}
 }
 
-uint8_t uart1_1byte_read(void) {
+uint8_t readRxReg(void) {
 	volatile uint8_t data;
 	bool override = READ_BIT(USART1->ISR, USART_ISR_ORE);
 	bool data_present = READ_BIT(USART1->ISR, USART_ISR_RXNE_RXFNE);
@@ -135,37 +135,42 @@ uint8_t uart1_1byte_read(void) {
 		return '\0';
 }
 
-void  uart1_read_to_frame(UART1_t *u) {
+void readRx(UART1_t *u) {
 	if (u->len >= RX_BUFFLEN) {
-		cleanRxBuffer(u);
+		cleanRx(u);
 		u->len = 0;
 	}
-	u->rxBuffer[u->len++] = uart1_1byte_read();
+	u->rx[u->len++] = readRxReg();
+
 }
 
 void uart1_send_str(char *str) {
 	uint8_t i;
 	for (i = 0; str[i] != '\0'; i++)
-		uart1_write(str[i]);
+		writeTxReg(str[i]);
 }
 
-void uart1_send_frame(uint8_t str[], uint8_t len) {
-
-	if (len > 0) {
-		for (int i = 0; i < len; i++){
-			uart1_write(str[i]);
-			str[i] = (char) '\0';
-		}
+void writeTxBuffer(uint8_t *str, uint8_t len) {
+	if (len <= 0)
+		return;
+	for (int i = 0; i < len; i++) {
+		writeTxReg(str[i]);
+		str[i] = '\0';
 	}
 }
 
-void cleanRxBuffer(UART1_t *u) {
-	memset(u->rxBuffer, 0, sizeof(u->len));
-	u->len = 0;
+void writeTx(UART1_t *uart1) {
+	writeTxBuffer(uart1->tx, uart1->len);
 }
 
-void cleanTxBuffer(UART1_t *u) {
-	memset(u->txBuffer, 0, sizeof(u->len));
+void cleanRx(UART1_t *u1) {
+	memset(u1->rx, 0, sizeof(u1->len));
+	u1->len = 0;
+	u1->isReady = false;
+}
+
+void cleanTx(UART1_t *u) {
+	memset(u->tx, 0, sizeof(u->len));
 	u->len = 0;
 }
 
