@@ -10,8 +10,8 @@
 uint8_t cleanByTimeout(UART1_t *uart1, const char *str) {
 	if (HAL_GetTick() - uart1->timeout > SECONDS(5)) {
 
-			uart1_send_str((char*) str);
-			uart1_send_str("-TIMEOUT\r\n");
+		writeTxStr((char*) str);
+		writeTxStr("-TIMEOUT\r\n");
 
 		if (strlen(str) > 0)
 			cleanTx(uart1);
@@ -83,15 +83,6 @@ void uart1Init(uint32_t pclk, uint32_t baud_rate, UART1_t *u) {
 	SET_BIT(USART1->CR1, USART_CR1_UE);
 }
 
-void uart1_dma_init() {
-	/* enable clk access */
-	//SET_BIT(RCC->AHBENR, RCC_AHBENR_DMA1EN);
-	/* clear all interrupt flags on stream */
-
-	/* set the destination buffer */
-	/*set the source buffer */
-}
-
 void writeTxReg(char ch) {
 	SET_BIT(GPIOB->ODR, GPIO_ODR_ODR8);
 
@@ -146,64 +137,36 @@ uint8_t readRxReg(void) {
 }
 
 void readRx(UART1_t *u) {
-	if (u->len >= RX_BUFFLEN) {
+	if (u->rxLen >= RX_BUFFLEN) {
 		cleanRx(u);
-		u->len = 0;
+		u->rxLen = 0;
 	}
-	u->rx[u->len++] = readRxReg();
+	u->rx[u->rxLen++] = readRxReg();
 }
 
-void uart1_send_str(char *str) {
-	uint8_t i;
-	for (i = 0; str[i] != '\0'; i++)
+void writeTxStr(char *str) {
+	for (uint8_t i = 0; str[i] != '\0'; i++)
 		writeTxReg(str[i]);
 }
 
 void writeTxBuffer(uint8_t str[], uint8_t len) {
-
-	if (len > 0) {
-		for (int i = 0; i < len; i++) {
-			writeTxReg(str[i]);
-			str[i] = (char) '\0';
-		}
+	for (uint8_t i = 0; i < len; i++) {
+		writeTxReg(str[i]);
+		str[i] = (char) '\0';
 	}
 }
 
-void writeTx(UART1_t *uart1){
-	writeTxBuffer(uart1->tx,uart1->len);
+void writeTx(UART1_t *uart1) {
+	writeTxBuffer(uart1->tx, uart1->txLen);
 }
 
 void cleanRx(UART1_t *u) {
-	memset(u->rx, 0, sizeof(u->len));
-	u->len = 0;
+	memset(u->rx, 0, sizeof(u->rx));
+	u->rxLen = 0;
 	u->isReady = false;
 }
 
 void cleanTx(UART1_t *u) {
-	memset(u->tx, 0, sizeof(u->len));
-	u->len = 0;
-}
-
-uint8_t uart1_nonblocking_read(void) {
-	uint8_t rcvcount = 0;
-	uint32_t tickstart = HAL_GetTick();
-	bool timeout = false;
-	uint8_t timeout_value = 10;
-
-	while (rcvcount < RX_BUFFLEN && timeout == false) {
-		if (((HAL_GetTick() - tickstart) > timeout_value)
-				|| (timeout_value == 0U)) {
-			timeout = true;
-			if (READ_BIT(USART1->SR, USART_SR_ORE))
-				SET_BIT(USART1->SR, USART_SR_ORE);
-			if (READ_BIT(USART1->CR1, USART_CR1_WAKE))
-				SET_BIT(USART1->CR1, USART_CR1_WAKE);
-			if (READ_BIT(USART1->SR, USART_SR_FE))
-				SET_BIT(USART1->SR, USART_SR_FE);
-		}
-
-		if (READ_BIT(USART1->SR, USART_SR_RXNE))
-			return USART1->DR;
-	}
-	return '\0';
+	memset(u->tx, 0, sizeof(u->tx));
+	u->txLen = 0;
 }
