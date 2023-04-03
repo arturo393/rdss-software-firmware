@@ -162,7 +162,7 @@ void printStatus(UART1_t *u1, RS485_t *rs485) {
 	switch (rs485->status) {
 	case CRC_ERROR:
 		isValidCrc2(rs485);
-		u1->txLen = sprintf(str, "CRC missmatch:");
+		u1->txLen = sprintf(str, "CRC mismatch:\r\n");
 		writeTx(u1);
 		u1->txLen = 0;
 
@@ -251,21 +251,32 @@ void printLoRaStatus(UART1_t *u1, SX1278_t *loRa) {
 		writeTxReg('\n');
 		break;
 	case TX_MODE:
-		u1->txLen = sprintf(str, "Master Sender Mode\r\n");
+		if (loRa->mode == MASTER_SENDER)
+			u1->txLen = sprintf(str, "Master Sender Mode\r\n");
+		else if (loRa->mode == SLAVE_SENDER)
+			u1->txLen = sprintf(str, "Slave Sender Mode\r\n");
+		else
+			u1->txLen = sprintf(str, "Unknow Mode\r\n");
 		writeTx(u1);
 		break;
 	case RX_DONE:
 		u1->txLen = sprintf(str, "Reception Done: %d bytes\r\n", loRa->len);
 		writeTx(u1);
-		for (int i = 0; i < loRa->len; i++) {
+		int i = 0;
+		for (i = 0; i < loRa->len; i++) {
 			u1->txLen = sprintf(str, "%02X", loRa->buffer[i]);
 			writeTx(u1);
 		}
-		writeTxReg('\n');
+		if (i > 0)
+			writeTxReg('\n');
 		break;
 	case RX_MODE:
-		u1->txLen = sprintf(str, "Master receiver Mode\r\n");
-		writeTx(u1);
+		if (loRa->mode == MASTER_RECEIVER)
+			u1->txLen = sprintf(str, "Master receiver Mode\r\n");
+		else if (loRa->mode == SLAVE_RECEIVER)
+			u1->txLen = sprintf(str, "Slave receiver Mode\r\n");
+		else
+			u1->txLen = sprintf(str, "Unknow Mode\r\n");
 		break;
 	case CRC_ERROR_ACTIVATION:
 		u1->txLen = sprintf(str, "Reception Fail: Crc error activation\r\n");
@@ -462,17 +473,18 @@ int main(void) {
 		} else if (loRa.mode == MASTER_SENDER) {
 			RX_MODE_OFF_LED();
 			TX_MODE_ON_LED();
-			if (HAL_GetTick() - counter > 1000) {
-				counter = HAL_GetTick();
-				if (dataLen == 240)
-					dataLen = 0;
-				loRa.len = dataLen;
-				dataLen += 1;
-				dinamicFrame(&loRa);
-				printLoRaStatus(&u1, &loRa);
-				transmit(&loRa);
-				printLoRaStatus(&u1, &loRa);
-			}
+			/*			if (HAL_GetTick() - counter > 1000) {
+			 counter = HAL_GetTick();
+			 if (dataLen == 240)
+			 dataLen = 0;
+			 loRa.len = dataLen;
+			 dataLen += 1;
+			 dinamicFrame(&loRa);
+			 printLoRaStatus(&u1, &loRa);
+			 transmit(&loRa);
+			 printLoRaStatus(&u1, &loRa);
+			 }
+			 */
 		}
 		led_enable_kalive(&led);
 	}
