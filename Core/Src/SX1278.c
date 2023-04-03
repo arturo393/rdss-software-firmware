@@ -142,7 +142,7 @@ void updateMode(SX1278_t *module, Lora_Mode_t mode) {
 		module->flagsMode = 0xff;
 		CLEAR_BIT(module->flagsMode, TX_DONE_MASK);
 		module->mode = mode;
-		module->status = TX_READY;
+		module->status = TX_MODE;
 
 	} else if (mode == SLAVE_RECEIVER || mode == MASTER_RECEIVER) {
 		module->frequency =
@@ -154,7 +154,7 @@ void updateMode(SX1278_t *module, Lora_Mode_t mode) {
 		CLEAR_BIT(module->flagsMode, RX_DONE_MASK);
 		CLEAR_BIT(module->flagsMode, PAYLOAD_CRC_ERROR_MASK);
 		module->mode = mode;
-		module->status = RX_READY;
+		module->status = RX_MODE;
 	}
 	updateLoraLowFreq(module, STANDBY);
 	HAL_Delay(15);
@@ -274,7 +274,23 @@ void setTxFifoData(SX1278_t *module) {
 }
 
 void clearMemForRx(SX1278_t *module) {
-	if (module->status == RX_READY) {
+	if (module->status == RX_MODE) {
 		memset(module->buffer, 0, SX1278_MAX_PACKET);
 	}
+}
+
+void receive(SX1278_t *loRa) {
+	setRxFifoAddr(loRa);
+	updateLoraLowFreq(loRa, RX_CONTINUOUS);
+	clearMemForRx(loRa);
+	waitForRxDone(loRa);
+	getRxFifoData(loRa);
+}
+
+void transmit(SX1278_t *loRa) {
+	setTxFifoData(loRa);
+	updateLoraLowFreq(loRa, TX);
+	waitForTxEnd(loRa);
+	memset(loRa->buffer, 0, sizeof(loRa->buffer));
+	loRa->len = 0;
 }

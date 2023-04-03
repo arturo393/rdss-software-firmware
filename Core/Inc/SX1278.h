@@ -276,13 +276,14 @@ typedef enum OPERATING_MODE {
 
 typedef enum SX1278_STATUS {
 	UNKNOW,
-	TX_READY,
-	RX_READY,
+	TX_MODE,
+	RX_MODE,
 	TX_DONE,
 	RX_DONE,
 	TX_TIMEOUT,
 	RX_TIMEOUT,
-	CRC_ERROR_ACTIVATION
+	CRC_ERROR_ACTIVATION,
+	TX_BUFFER_READY
 } SX1278_Status_t;
 
 typedef enum LoRa_Mode {
@@ -368,5 +369,7 @@ void setRxFifoAddr(SX1278_t *module);
 void setTxFifoAddr(SX1278_t *module);
 void clearMemForRx(SX1278_t *module);
 void setTxFifoData(SX1278_t *module);
+void receive(SX1278_t *loRa);
+void transmit(SX1278_t *loRa);
 
 #endif

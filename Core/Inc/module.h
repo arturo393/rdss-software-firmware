@@ -99,6 +99,6 @@ void pa_sample_timer3_init();
 void module_pa_state_update(Module_pa_t *pa);
 void toneUhfInit(Function_t funcion, Id_t id, Tone_uhf_t *uhf);
 void vladInit(Function_t funcion, Id_t id, Vlad_t *vlad);
-void encodeVLAD(uint8_t *frame);
+void encodeVLAD(uint8_t *frame,Id_t id);
 
 #endif /* INC_LTEL_H_ */

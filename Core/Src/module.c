@@ -56,11 +56,10 @@ void vladInit(Function_t funcion, Id_t id, Vlad_t *vlad) {
 	vlad->id = id;
 }
 
-void encodeVLAD(uint8_t *frame) {
+void encodeVLAD(uint8_t *frame,Id_t id) {
 	uint8_t crc_frame[2];
 	uint16_t crc;
 	uint8_t data_length = 12;
-	uint8_t id = ID1;
 	if (id == ID1) {
 		frame[0] = LTEL_START_MARK;
 		frame[1] = VLAD;
