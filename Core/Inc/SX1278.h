@@ -201,30 +201,8 @@
 typedef enum SPREAD_FACTOR {
 	SF_6 = 6, SF_7, SF_8, SF_9, SF_10, SF_11, SF_12
 } SPREAD_FACTOR_t;
-static const uint8_t SX1278_SpreadFactor[7] = { 6, 7, 8, 9, 10, 11, 12 };
 
-#define	SX1278_LORA_BW_7_8KHZ		0
-#define	SX1278_LORA_BW_10_4KHZ		1
-#define	SX1278_LORA_BW_15_6KHZ		2
-#define	SX1278_LORA_BW_20_8KHZ		3
-#define	SX1278_LORA_BW_31_2KHZ		4
-#define	SX1278_LORA_BW_41_7KHZ		5
-#define	SX1278_LORA_BW_62_5KHZ		6
-#define	SX1278_LORA_BW_125KHZ		7
-#define	SX1278_LORA_BW_250KHZ		8
-#define	SX1278_LORA_BW_500KHZ		9
 
-static const uint8_t SX1278_LoRaBandwidth[10] = { 0, //   7.8KHz,
-		1, //  10.4KHz,
-		2, //  15.6KHz,
-		3, //  20.8KHz,
-		4, //  31.2KHz,
-		5, //  41.7KHz,
-		6, //  62.5KHz,
-		7, // 125.0KHz,
-		8, // 250.0KHz,
-		9  // 500.0KHz
-		};
 
 enum LORABW {
 	LORABW_7_8KHZ,
