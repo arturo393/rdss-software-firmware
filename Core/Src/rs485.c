@@ -27,7 +27,7 @@ uint16_t crc_get(uint8_t *buffer, uint8_t buff_len) {
 
 void rs485Init(RS485_t *r) {
 	r->len = 0;
-	r->status = DONE;
+	r->status = WAITING;
 	r->cmd = NONE;
 	memset(r->buffer, 0, 100);
 	/* PB9 DE485 as output  */

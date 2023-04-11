@@ -72,6 +72,8 @@ static void MX_CRC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#define SX1276_REG_MIN      0x00
+#define SX1276_REG_MAX      0x70
 UART1_t *uart1_ptr;
 Vlad_t *vlad_ptr;
 RS485_t *rs485_ptr;
@@ -141,8 +143,7 @@ void printStatus(UART1_t *u1, RS485_t *rs485) {
 		u1->txLen = 0;
 		break;
 	case NOT_VALID_FRAME:
-		u1->txLen = sprintf(str, "Not valid start byte: %02x \r\n",
-				rs485->buffer[0]);
+		u1->txLen = sprintf(str, "Not valid start byte \r\n");
 		writeTx(u1);
 		u1->txLen = 0;
 		break;
@@ -220,6 +221,7 @@ void printStatus(UART1_t *u1, RS485_t *rs485) {
 	cleanTx(u1);
 
 }
+
 void printLoRaStatus(UART1_t *u1, SX1278_t *loRa) {
 
 	char *str = (char*) u1->tx;
@@ -431,16 +433,19 @@ int main(void) {
 //  MX_USART1_UART_Init();
 	MX_CRC_Init();
 	/* USER CODE BEGIN 2 */
-	vladInit(VLAD, ID2, &vlad);
+	vladInit(VLAD, 6, &vlad);
 	rs485Init(&rs485);
-	rs485.id = ID2;
+	rs485.id = 6;
 	uart1Init(HS16_CLK, BAUD_RATE, &u1);
 	ledInit(&led);
 	loRa.spi = &hspi1;
 	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(LORA_RST_GPIO_Port, LORA_RST_Pin, GPIO_PIN_SET);
 	loRa.operatingMode = readRegister(&hspi1, LR_RegOpMode);
+	//m24c64WriteNBytes(FREQ_OUT_ADDR, (uint8_t*) (&ppl->freqOut), 0,FREQ_OUT_SIZE);
 
+	/* Read the register value */
+	loRa.mode = -1;
 	initLoRaParameters(&loRa, SLAVE_RECEIVER);
 	writeLoRaParameters(&loRa);
 	printLoRaStatus(&u1, &loRa);
@@ -495,7 +500,7 @@ int main(void) {
 			parseLoRaSlave(&rs485, &loRa);
 			printStatus(&u1, &rs485);
 			printLoRaStatus(&u1, &loRa);
-		} else if (loRa.status == RX_MODE) {
+		} else if (loRa.mode == SLAVE_RECEIVER) {
 			if (loRa.operatingMode != RX_CONTINUOUS) {
 				updateMode(&loRa, SLAVE_RECEIVER);
 				setRxFifoAddr(&loRa);
@@ -505,15 +510,17 @@ int main(void) {
 			GPIO_PinState bussy = HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port,
 			LORA_BUSSY_Pin);
 			if (bussy == GPIO_PIN_SET)
-				if (crcErrorActivation(&loRa) != 1)
+				if (crcErrorActivation(&loRa) != 1) {
 					getRxFifoData(&loRa);
+					printLoRaStatus(&u1, &loRa);
+				}
 
 			if (loRa.status == RX_DONE) {
 				setRxFifoAddr(&loRa);
 				updateLoraLowFreq(&loRa, RX_CONTINUOUS);
 				readOperatingMode(&loRa);
-				printLoRaStatus(&u1, &loRa);
 				loRa.status = RX_MODE;
+				printLoRaStatus(&u1, &loRa);
 			}
 
 		}

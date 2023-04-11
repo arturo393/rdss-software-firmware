@@ -11,6 +11,8 @@
 #include <string.h>
 #include "math.h"
 #include "rs485.h"
+#include <stdlib.h>
+#include <time.h>
 
 #ifndef INC_LTEL_H_
 #define INC_LTEL_H_
@@ -32,7 +34,7 @@ typedef enum MODULE_FUNCTION {
 } Function_t;
 
 typedef enum MODULE_ID {
-	ID0 = 0x00, ID1 = 0x01, ID2 = 0x02, ID8 = 0x08, ID9 = 0X09
+	ID0 = 0x00, ID1 = 0x01, ID2 = 0x02,ID4 = 0x04, ID8 = 0x08, ID9 = 0X09
 } Id_t;
 
 typedef enum MODULE_S {

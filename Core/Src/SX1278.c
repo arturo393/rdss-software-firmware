@@ -113,7 +113,8 @@ void writeLoRaParameters(SX1278_t *module) {
 	updateLoraLowFreq(module, SLEEP);
 	HAL_Delay(15);
 	setRFFrequency(module);
-	setLORAWAN(module);
+	//setLORAWAN(module);
+	writeRegister(module->spi, RegSyncWord, &(module->syncWord), 1);
 	setOutputPower(module);
 	setOvercurrentProtect(module);
 	writeRegister(module->spi, LR_RegLna, &(module->lnaGain), 1);
@@ -125,6 +126,7 @@ void writeLoRaParameters(SX1278_t *module) {
 		module->headerMode = EXPLICIT;
 		module->symbTimeoutMsb = 0x00;
 	}
+
 	setReModemConfig(module);
 	setPreambleParameters(module);
 	writeRegister(module->spi, LR_RegHopPeriod, &(module->fhssValue), 1);
@@ -170,15 +172,17 @@ void initLoRaParameters(SX1278_t *module, Lora_Mode_t mode) {
 	module->LoRa_BW = LORABW_62_5KHZ;
 	module->LoRa_CR = LORA_CR_4_6;
 	module->LoRa_CRC_sum = CRC_ENABLE;
-	module->syncWord = LORAWAN;
+	//module->LoRa_CRC_sum = CRC_DISABLE;
 	module->ocp = OVERCURRENTPROTECT;
 	module->lnaGain = LNAGAIN;
-	module->AgcAutoOn = LNA_SET_BY_AGC;
+	module->AgcAutoOn = 12; // for L-TEL PROTOCOL
+	module->syncWord = 0x12; // for L-TEL PROTOCOL
 	module->symbTimeoutLsb = RX_TIMEOUT_LSB;
 	module->preambleLengthMsb = PREAMBLE_LENGTH_MSB;
 	module->preambleLengthLsb = PREAMBLE_LENGTH_LSB;
-	module->fhssValue = HOPS_PERIOD;
-	module->len = SX1278_MAX_PACKET;
+	module->preambleLengthLsb = 12; // for L-TEL PROTOCOL
+	module->fhssValue = HOPS_PERIOD; // for L-TEL PROTOCOL
+	module->len = 9;
 	updateMode(module, mode);
 }
 
@@ -228,8 +232,10 @@ uint8_t waitForRxDone(SX1278_t *loRa) {
 void setRxFifoAddr(SX1278_t *module) {
 	updateLoraLowFreq(module, SLEEP); //Change modem mode Must in Sleep mode
 	uint8_t cmd = module->len;
+	//cmd = 9;
 	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1); //RegPayloadLength 21byte
 	uint8_t addr = readRegister(module->spi, LR_RegFifoRxBaseAddr); //RegFiFoTxBaseAddr
+	addr = 0x00;
 	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1); //RegFifoAddrPtr
 	module->len = readRegister(module->spi, LR_RegPayloadLength);
 }
