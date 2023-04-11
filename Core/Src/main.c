@@ -159,6 +159,9 @@ void print_parameters(UART1_t *u, Vlad_t vlad) {
 void printStatus(UART1_t *u1, RS485_t *rs485) {
 
 	char *str = (char*) u1->tx;
+	int i = 0;
+	u1->txLen = sprintf(str, "RDSS Status - ");
+	writeTx(u1);
 	switch (rs485->status) {
 	case CRC_ERROR:
 		isValidCrc2(rs485);
@@ -208,14 +211,15 @@ void printStatus(UART1_t *u1, RS485_t *rs485) {
 				rs485->idReceived);
 		writeTx(u1);
 
-		for (int i = DATA_START_INDEX; i < rs485->buffer[DATA_LENGHT2_INDEX];
+		for (uint8_t i = DATA_START_INDEX; i < rs485->buffer[DATA_LENGHT2_INDEX];
 				i++) {
 			if (i > 250)
 				break;
 			u1->txLen = sprintf(str, "%02X", rs485->buffer[i]);
 			writeTx(u1);
 		}
-		writeTxReg('\n');
+		if (i > DATA_START_INDEX)
+			writeTxReg('\n');
 		u1->txLen = 0;
 		break;
 	default:
@@ -229,10 +233,12 @@ void printStatus(UART1_t *u1, RS485_t *rs485) {
 void printLoRaStatus(UART1_t *u1, SX1278_t *loRa) {
 
 	char *str = (char*) u1->tx;
+	u1->txLen = sprintf(str, "LoRa Status - ");
+	writeTx(u1);
 	switch (loRa->status) {
 	case TX_TIMEOUT:
 		u1->txLen = sprintf(str, "Transmission Fail: %d seconds Timeout\r\n",
-				TX_TIMEOUT / 1000);
+				LORA_SEND_TIMEOUT / 1000);
 		writeTx(u1);
 		break;
 	case TX_DONE:
@@ -277,9 +283,15 @@ void printLoRaStatus(UART1_t *u1, SX1278_t *loRa) {
 			u1->txLen = sprintf(str, "Slave receiver Mode\r\n");
 		else
 			u1->txLen = sprintf(str, "Unknow Mode\r\n");
+		writeTx(u1);
 		break;
 	case CRC_ERROR_ACTIVATION:
 		u1->txLen = sprintf(str, "Reception Fail: Crc error activation\r\n");
+		writeTx(u1);
+		break;
+	case RX_TIMEOUT:
+		u1->txLen = sprintf(str, "Reception Tiemout: %d seconds \r\n",
+		LORA_RECEIVE_TIMEOUT / 1000);
 		writeTx(u1);
 		break;
 	default:
@@ -353,11 +365,11 @@ void sendQuery(RS485_t *rs485, SX1278_t *loRa, UART1_t *u1) {
 		return;
 	rs485->idQuery = rs485->buffer[MODULE_ID_INDEX];
 	loRa->len = rs485->len;
-	updateMode(&*loRa, MASTER_SENDER);
+	updateMode(loRa, MASTER_SENDER);
 	memcpy(loRa->buffer, rs485->buffer, rs485->len);
 	loRa->status = TX_BUFFER_READY;
-	printLoRaStatus(&*u1, &*loRa);
-	transmit(&*loRa);
+	printLoRaStatus(u1, loRa);
+	transmit(loRa);
 }
 
 /* USER CODE END 0 */
@@ -404,7 +416,7 @@ int main(void) {
 	MX_ADC1_Init();
 	MX_CRC_Init();
 	/* USER CODE BEGIN 2 */
-	vladInit(VLAD, ID1, &vlad);
+	vladInit(VLAD, ID0, &vlad);
 	ledInit(&led);
 	rs485Init(&rs485);
 	rs485.id = ID0;
@@ -425,9 +437,16 @@ int main(void) {
 	HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
 	HAL_NVIC_EnableIRQ(USART1_IRQn);
 	HAL_UART_Receive_IT(&huart1, &rxData, 1);
-
-	initLoRaParameters(&loRa, MASTER_SENDER);
+	loRa.mode = -1;
+	initLoRaParameters(&loRa, MASTER_RECEIVER);
 	writeLoRaParameters(&loRa);
+	printStatus(&u1, &rs485);
+	printLoRaStatus(&u1, &loRa);
+	srand(time(NULL));
+	uint32_t preambleTime = HAL_GetTick();
+	uint16_t PREAMBLE_LENGTH = 0;
+	uint16_t preambleBytes = 0;
+	uint16_t symbTiemout = 0;
 //initialize LoRa module
 
 	/* USER CODE END 2 */
@@ -435,6 +454,7 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
+
 
 		if (rs485.status == LORA_RECEIVE) {
 			printStatus(&u1, &rs485);
@@ -445,7 +465,7 @@ int main(void) {
 				}
 			printLoRaStatus(&u1, &loRa);
 			reinit(&rs485);
-			updateMode(&loRa, MASTER_SENDER);
+			//	updateMode(&loRa, MASTER_SENDER);
 
 		} else if (rs485.status == LORA_SEND) {
 			printStatus(&u1, &rs485);
@@ -454,6 +474,7 @@ int main(void) {
 			printLoRaStatus(&u1, &loRa);
 			reinit(&rs485);
 			updateMode(&loRa, MASTER_RECEIVER);
+			printLoRaStatus(&u1, &loRa);
 		} else if (rs485.status == CRC_ERROR) {
 			printStatus(&u1, &rs485);
 			reinit(&rs485);
@@ -464,11 +485,28 @@ int main(void) {
 		else if (loRa.mode == MASTER_RECEIVER) {
 			RX_MODE_ON_LED();
 			TX_MODE_OFF_LED();
-			reinit(&rs485);
-			printLoRaStatus(&u1, &loRa);
-			receive(&loRa);
-			printLoRaStatus(&u1, &loRa);
-			updateMode(&loRa, MASTER_SENDER);
+			if (loRa.operatingMode != RX_CONTINUOUS) {
+				updateMode(&loRa, MASTER_RECEIVER);
+				setRxFifoAddr(&loRa);
+				updateLoraLowFreq(&loRa, RX_CONTINUOUS);
+				printLoRaStatus(&u1, &loRa);
+			}
+			clearMemForRx(&loRa);
+			GPIO_PinState bussy = HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port,
+			LORA_BUSSY_Pin);
+			if (bussy == GPIO_PIN_SET)
+				if (crcErrorActivation(&loRa) != 1) {
+					getRxFifoData(&loRa);
+					printLoRaStatus(&u1, &loRa);
+				}
+
+			if (loRa.status == RX_DONE) {
+				setRxFifoAddr(&loRa);
+				updateLoraLowFreq(&loRa, RX_CONTINUOUS);
+				loRa.status = RX_MODE;
+				printLoRaStatus(&u1, &loRa);
+			}
+			//updateMode(&loRa, MASTER_SENDER);
 
 		} else if (loRa.mode == MASTER_SENDER) {
 			RX_MODE_OFF_LED();

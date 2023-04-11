@@ -40,7 +40,10 @@ void setRFFrequency(SX1278_t *module) {
 	freq_reg[0] = (uint8_t) (freq >> 16);
 	freq_reg[1] = (uint8_t) (freq >> 8);
 	freq_reg[2] = (uint8_t) (freq >> 0);
-	writeRegister(module->spi, LR_RegFrMsb, freq_reg, sizeof(freq_reg));
+	//writeRegister(module->spi, LR_RegFrMsb, freq_reg, sizeof(freq_reg));
+	writeRegister(module->spi, LR_RegFrMsb, freq_reg, 1);
+	writeRegister(module->spi, LR_RegFrMid, freq_reg+1, 1);
+	writeRegister(module->spi, LR_RegFrLsb, freq_reg+2,1);
 }
 
 void setOutputPower(SX1278_t *module) {
@@ -76,7 +79,7 @@ void setReModemConfig(SX1278_t *module) {
 	cmd += module->headerMode;
 	writeRegister(module->spi, LR_RegModemConfig1, &cmd, 1); //Explicit Enable CRC Enable(0x02) & Error Coding rate 4/5(0x01), 4/6(0x02), 4/7(0x03), 4/8(0x04)
 
-	cmd = module->LoRa_SF << 4;
+	cmd = module->LoRa_SF <<4 ;
 	cmd += module->LoRa_CRC_sum << 2;
 	cmd += module->symbTimeoutMsb;
 	writeRegister(module->spi, LR_RegModemConfig2, &cmd, 1);
@@ -98,8 +101,9 @@ void readOperatingMode(SX1278_t *module) {
 	LR_RegOpMode));
 }
 
-void updateLoraLowFreq(SX1278_t *module, SX1278_Status_t mode) {
+void updateLoraLowFreq(SX1278_t *module, OPERATING_MODE_t mode) {
 	uint8_t cmd = LORA_MODE_ACTIVATION | LOW_FREQUENCY_MODE | mode;
+	cmd = LORA_MODE_ACTIVATION | mode;
 	writeRegister(module->spi, LR_RegOpMode, &cmd, 1);
 	module->operatingMode = mode;
 }
@@ -109,32 +113,53 @@ void clearIrqFlags(SX1278_t *module) {
 	writeRegister(module->spi, LR_RegIrqFlags, &cmd, 1);
 }
 
-void writeLoRaParameters(SX1278_t *module) {
-	updateLoraLowFreq(module, SLEEP);
+void initLoRaParameters(SX1278_t *module, Lora_Mode_t mode) {
+	module->power = SX1278_POWER_17DBM;
+	module->LoRa_SF = SF_10;
+	module->LoRa_BW = LORABW_62_5KHZ;
+	module->LoRa_CR = LORA_CR_4_6;
+	module->LoRa_CRC_sum = CRC_ENABLE;
+	//module->LoRa_CRC_sum = CRC_DISABLE;
+	module->ocp = OVERCURRENTPROTECT;
+	module->lnaGain = LNAGAIN;
+	//module->AgcAutoOn = LNA_SET_BY_AGC; // for L-TEL PROTOCOL
+	module->syncWord = 0x12; // for L-TEL PROTOCOL
+	module->symbTimeoutLsb = RX_TIMEOUT_LSB;
+	module->preambleLengthMsb = PREAMBLE_LENGTH_MSB;
+	module->preambleLengthLsb = PREAMBLE_LENGTH_LSB;
+	module->preambleLengthLsb = 12; // for L-TEL PROTOCOL
+	module->fhssValue = HOPS_PERIOD; // for L-TEL PROTOCOL
+	updateMode(module, mode);
+}
+
+void writeLoRaParameters(SX1278_t *loRa) {
+	updateLoraLowFreq(loRa, SLEEP);
 	HAL_Delay(15);
-	setRFFrequency(module);
-	setLORAWAN(module);
-	setOutputPower(module);
-	setOvercurrentProtect(module);
-	writeRegister(module->spi, LR_RegLna, &(module->lnaGain), 1);
-	if (module->LoRa_SF == SF_6) {
-		module->headerMode = IMPLICIT;
-		module->symbTimeoutMsb = 0x03;
-		setDetectionParameters(module);
+	setRFFrequency(loRa);
+	//setLORAWAN(loRa);
+	writeRegister(loRa->spi, RegSyncWord, &(loRa->syncWord), 1);
+	setOutputPower(loRa);
+	setOvercurrentProtect(loRa);
+	writeRegister(loRa->spi, LR_RegLna, &(loRa->lnaGain), 1);
+	if (loRa->LoRa_SF == SF_6) {
+		loRa->headerMode = IMPLICIT;
+		loRa->symbTimeoutMsb = 0x03;
+		setDetectionParameters(loRa);
 	} else {
-		module->headerMode = EXPLICIT;
-		module->symbTimeoutMsb = 0x00;
+		loRa->headerMode = EXPLICIT;
+		loRa->symbTimeoutMsb = 0x00;
 	}
-	setReModemConfig(module);
-	setPreambleParameters(module);
-	writeRegister(module->spi, LR_RegHopPeriod, &(module->fhssValue), 1);
-	writeRegister(module->spi, LR_RegDioMapping1, &(module->dioConfig), 1);
-	clearIrqFlags(module);
-	writeRegister(module->spi, LR_RegIrqFlagsMask, &(module->flagsMode), 1);
+
+	setReModemConfig(loRa);
+	setPreambleParameters(loRa);
+	writeRegister(loRa->spi, LR_RegHopPeriod, &(loRa->fhssValue), 1);
+	writeRegister(loRa->spi, LR_RegDioMapping1, &(loRa->dioConfig), 1);
+	clearIrqFlags(loRa);
+	writeRegister(loRa->spi, LR_RegIrqFlagsMask, &(loRa->flagsMode), 1);
 }
 
 void updateMode(SX1278_t *module, Lora_Mode_t mode) {
-	if(module->mode == mode)
+	if (module->mode == mode)
 		return;
 
 	if (mode == SLAVE_SENDER || mode == MASTER_SENDER) {
@@ -165,24 +190,6 @@ void updateMode(SX1278_t *module, Lora_Mode_t mode) {
 	writeRegister(module->spi, LR_RegDioMapping1, &(module->dioConfig), 1);
 	clearIrqFlags(module);
 	writeRegister(module->spi, LR_RegIrqFlagsMask, &(module->flagsMode), 1);
-}
-
-void initLoRaParameters(SX1278_t *module, Lora_Mode_t mode) {
-	module->power = SX1278_POWER_17DBM;
-	module->LoRa_SF = SF_10;
-	module->LoRa_BW = LORABW_62_5KHZ;
-	module->LoRa_CR = LORA_CR_4_6;
-	module->LoRa_CRC_sum = CRC_ENABLE;
-	module->syncWord = LORAWAN;
-	module->ocp = OVERCURRENTPROTECT;
-	module->lnaGain = LNAGAIN;
-	module->AgcAutoOn = LNA_SET_BY_AGC;
-	module->symbTimeoutLsb = RX_TIMEOUT_LSB;
-	module->preambleLengthMsb = PREAMBLE_LENGTH_MSB;
-	module->preambleLengthLsb = PREAMBLE_LENGTH_LSB;
-	module->fhssValue = HOPS_PERIOD;
-	module->len = SX1278_MAX_PACKET;
-	updateMode(module, mode);
 }
 
 void sx1278Reset() {
@@ -221,10 +228,16 @@ uint8_t waitForRxDone(SX1278_t *loRa) {
 			uint8_t cmd = flags | (1 << 7);
 			writeRegister(loRa->spi, LR_RegIrqFlags, &cmd, 1);
 			flags = readRegister(loRa->spi, LR_RegIrqFlags);
+			loRa->status = CRC_ERROR_ACTIVATION;
+			return -2;
 		}
-		if (HAL_GetTick() - timeout > 2000)
+		if (HAL_GetTick() - timeout > HAL_MAX_DELAY) {
+			loRa->status = RX_TIMEOUT;
 			return -1;
+		}
 	}
+	loRa->validLen = readRegister(loRa->spi, LR_RegRxPacketCntValueLsb);
+	getRxFifoData(loRa);
 	return 0;
 }
 
@@ -233,6 +246,7 @@ void setRxFifoAddr(SX1278_t *module) {
 	uint8_t cmd = module->len;
 	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1); //RegPayloadLength 21byte
 	uint8_t addr = readRegister(module->spi, LR_RegFifoRxBaseAddr); //RegFiFoTxBaseAddr
+//	addr = 0;
 	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1); //RegFifoAddrPtr
 	module->len = readRegister(module->spi, LR_RegPayloadLength);
 }
@@ -250,6 +264,7 @@ int crcErrorActivation(SX1278_t *module) {
 void getRxFifoData(SX1278_t *module) {
 	module->len = readRegister(module->spi, LR_RegRxNbBytes); //Number for received bytes
 	uint8_t addr = 0x00;
+//	uint8_t addr = readRegister(module->spi, LR_RegFifoAddrPtr); //RegFiFoTxBaseAddr
 	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET); // pull the pin low
 	HAL_Delay(1);
 	HAL_SPI_Transmit(module->spi, &addr, 1, 100); // send address
@@ -287,7 +302,6 @@ void receive(SX1278_t *loRa) {
 	updateLoraLowFreq(loRa, RX_CONTINUOUS);
 	clearMemForRx(loRa);
 	waitForRxDone(loRa);
-	getRxFifoData(loRa);
 }
 
 void transmit(SX1278_t *loRa) {

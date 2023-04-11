@@ -15,11 +15,12 @@
 #include "SX1278_hw.h"
 
 #define FXOSC 32000000
-#define DOWNLINK_FREQ 150000000
-#define UPLINK_FREQ 170000000
+#define DOWNLINK_FREQ 155000000
+#define UPLINK_FREQ   172000000
 #define SX1278_MAX_PACKET	256
 #define SX1278_DEFAULT_TIMEOUT		3000
-#define LORA_SEND_TIMEOUT 2000 //2000
+#define LORA_SEND_TIMEOUT 10000 //2000
+#define LORA_RECEIVE_TIMEOUT 5000
 #define SX1278_POWER_20DBM  0xFF //20dbm
 #define SX1278_POWER_17DBM  0xFC //17dbm
 #define SX1278_POWER_14DBM  0xF9 //14dbm
@@ -31,11 +32,14 @@
 #define RX_TIMEOUT_LSB 0x08
 #define PREAMBLE_LENGTH_MSB 0x00
 #define PREAMBLE_LENGTH_LSB 8
-#define HOPS_PERIOD 0x00
+#define HOPS_PERIOD  0x07;
 #define DIO0_1_2_3_CONFIG 0x41
 #define FLAGS_VALUE 0xF7
 //RFM98 Internal registers Address
+#define SX1276_REG_MIN      0x00
+#define SX1276_REG_MAX      0x70
 /********************LoRa mode***************************/
+
 #define LR_RegFifo                                  0x00
 // Common settings
 #define LR_RegOpMode                                0x01
@@ -204,7 +208,7 @@ typedef enum SPREAD_FACTOR {
 
 
 
-enum LORABW {
+typedef enum LORABW {
 	LORABW_7_8KHZ,
 	LORABW_10_4KHZ,
 	LORABW_15_6KHZ,
@@ -215,7 +219,7 @@ enum LORABW {
 	LORABW_125KHZ,
 	LORABW_250KHZ,
 	LORABW_500KHZ
-};
+}BANDWITDH_t ;
 
 typedef enum CODING_RATE {
 	LORA_CR_4_5 = 1, LORA_CR_4_6, LORA_CR_4_7, LORA_CR_4_8
@@ -290,7 +294,7 @@ typedef struct {
 	uint64_t frequency;
 	uint8_t power;
 	SPREAD_FACTOR_t LoRa_SF;
-	uint8_t LoRa_BW;
+	BANDWITDH_t LoRa_BW;
 	CODING_RATE_t LoRa_CR;
 	CRC_SUM_t LoRa_CRC_sum;
 	uint8_t len;
@@ -312,6 +316,7 @@ typedef struct {
 	OPERATING_MODE_t operatingMode;
 	Lora_Mode_t mode;
 	SX1278_Status_t status;
+	uint8_t validLen;
 
 	uint8_t buffer[SX1278_MAX_PACKET];
 	uint8_t readBytes;
@@ -335,7 +340,7 @@ void setMode(SX1278_t *module, SX1278_Status_t mode);
 void setLoraLowFreqMode(SX1278_t *module);
 void clearIrqFlags(SX1278_t *module);
 void readOperatingMode(SX1278_t *module);
-void updateLoraLowFreq(SX1278_t *module, SX1278_Status_t mode);
+void updateLoraLowFreq(SX1278_t *module, OPERATING_MODE_t mode);
 void writeLoRaParameters(SX1278_t *module);
 void updateMode(SX1278_t *module, Lora_Mode_t mode);
 void initLoRaParameters(SX1278_t *module, Lora_Mode_t mode);
