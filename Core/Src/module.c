@@ -62,7 +62,7 @@ void encodeVLAD(uint8_t *frame, Id_t id) {
 	uint8_t data_length = 12;
 
 	frame[0] = LTEL_START_MARK;
-	frame[1] = VLAD;
+	frame[1] = VLADR;
 	frame[2] = id;
 	frame[3] = 0x11;
 	frame[4] = 0x00;

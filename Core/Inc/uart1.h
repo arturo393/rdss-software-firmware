@@ -24,6 +24,7 @@ typedef struct UART1 {
 	uint8_t rxLen;
 	uint32_t timeout;
 	bool isReady;
+	bool debug;
 } UART1_t;
 
 uint8_t  cleanByTimeout(UART1_t* uart1,const char* str);

@@ -25,17 +25,18 @@ uint16_t crc_get(uint8_t *buffer, uint8_t buff_len) {
 	return crc;
 }
 
-void rs485Init(RS485_t *r) {
+void rdssInit(RDSS_t *r, uint8_t id) {
 	r->len = 0;
 	r->status = WAITING;
 	r->cmd = NONE;
+	r->id = 6;
 	memset(r->buffer, 0, 100);
 	/* PB9 DE485 as output  */
 	SET_BIT(GPIOB->MODER, GPIO_MODER_MODE9_0);
 	CLEAR_BIT(GPIOB->MODER, GPIO_MODER_MODE9_1);
 
 }
-Rs485_status_t rs485_check_frame(RS485_t *r, UART1_t *u) {
+Rs485_status_t rdssCheckFrame(RDSS_t *r, UART1_t *u) {
 
 	if (u->txLen > (MINIMUN_FRAME_LEN)) {
 		if (u->rx[0] == LTEL_START_MARK) {
@@ -62,7 +63,7 @@ Rs485_status_t rs485_check_CRC_module(UART1_t *uart1) {
 }
 
 Rs485_status_t rs485_check_valid_module(UART1_t *uart1) {
-	if (uart1->rx[1] == VLAD) {
+	if (uart1->rx[1] == VLADR) {
 		if (uart1->rx[2] == ID1) {
 			for (int i = 3; i < uart1->txLen; i++)
 				if (uart1->rx[i] == LTEL_END_MARK)
@@ -75,7 +76,7 @@ Rs485_status_t rs485_check_valid_module(UART1_t *uart1) {
 }
 
 Rs485_status_t isValidModule(uint8_t *frame, uint8_t lenght) {
-	if (frame[1] == VLAD) {
+	if (frame[1] == VLADR) {
 		for (int i = 3; i < lenght; i++)
 			if (frame[i] == LTEL_END_MARK)
 				return VALID_MODULE;
@@ -112,7 +113,7 @@ Rs485_status_t isValidCrc(uint8_t *frame, uint8_t len) {
 	return CRC_ERROR;
 }
 
-Rs485_status_t isValidCrc2(RS485_t *rs485) {
+Rs485_status_t isValidCrc2(RDSS_t *rs485) {
 
 	uint8_t *frame = rs485->buffer;
 	uint8_t len = rs485->len;
@@ -125,7 +126,7 @@ Rs485_status_t isValidCrc2(RS485_t *rs485) {
 	return CRC_ERROR;
 }
 
-Rs485_status_t isValidId(RS485_t *r) {
+Rs485_status_t isValidId(RDSS_t *r) {
 
 	r->idReceived = r->buffer[2];
 
@@ -152,7 +153,7 @@ Rs485_status_t isValid(uint8_t *buff,uint8_t len) {
 	return status;
 }
 
-void fillValidBuffer(RS485_t *r, uint8_t *buff, uint8_t len) {
+void fillValidBuffer(RDSS_t *r, uint8_t *buff, uint8_t len) {
 	r->status = isValid(buff, len);
 	if (r->status == DATA_OK) {
 		r->len = len;
@@ -160,7 +161,7 @@ void fillValidBuffer(RS485_t *r, uint8_t *buff, uint8_t len) {
 	}
 }
 
-Rs485_status_t checkBuffer(RS485_t *rs485) {
+Rs485_status_t checkBuffer(RDSS_t *rs485) {
 	rs485->status = isValidFrame(rs485->buffer, rs485->len);
 	if (!(rs485->status == VALID_FRAME))
 		return rs485->status;
@@ -176,7 +177,7 @@ Rs485_status_t checkBuffer(RS485_t *rs485) {
 	return rs485->status;
 }
 
-void rs485Uart1Decode(RS485_t *rs485, UART1_t *uart1, SX1278_t *loraRx) {
+void rs485Uart1Decode(RDSS_t *rs485, UART1_t *uart1, SX1278_t *loraRx) {
 	switch (rs485->status) {
 	case VALID_MODULE:
 		rs485->status = rs485_check_CRC_module(uart1);
@@ -197,7 +198,7 @@ void rs485Uart1Decode(RS485_t *rs485, UART1_t *uart1, SX1278_t *loraRx) {
 	case NOT_VALID_FRAME:
 		HAL_Delay(50);
 		writeTxStr("NOT VALID FRAME\r\n");
-		uart1_clean_buffer(uart1);
+		cleanRx(uart1);
 		rs485->status = DONE;
 		break;
 	case WRONG_MODULE_ID:
@@ -216,7 +217,7 @@ void rs485Uart1Decode(RS485_t *rs485, UART1_t *uart1, SX1278_t *loraRx) {
 		rs485->status = DONE;
 		break;
 	case WAITING:
-		rs485->status = rs485_check_frame(rs485, uart1);
+		rs485->status = rdssCheckFrame(rs485, uart1);
 		cleanByTimeout(uart1, "WAITING");
 		break;
 	case DONE:
@@ -241,7 +242,7 @@ void rs485Uart1Decode(RS485_t *rs485, UART1_t *uart1, SX1278_t *loraRx) {
 	}
 }
 
-void reinit(RS485_t *rs485) {
+void reinit(RDSS_t *rs485) {
 	rs485->cmd = NONE;
 	rs485->status = WAITING;
 	if (rs485->buffer[0] == '\0')

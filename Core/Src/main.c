@@ -28,6 +28,7 @@
 #include "rs485.h"
 #include "module.h"
 #include <string.h>
+#include "eeprom.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,6 +52,8 @@ ADC_HandleTypeDef hadc1;
 
 CRC_HandleTypeDef hcrc;
 
+I2C_HandleTypeDef hi2c1;
+
 SPI_HandleTypeDef hspi1;
 
 UART_HandleTypeDef huart1;
@@ -66,328 +69,28 @@ static void MX_ADC1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_CRC_Init(void);
+static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#define SX1276_REG_MIN      0x00
-#define SX1276_REG_MAX      0x70
 UART1_t *uart1_ptr;
 Vlad_t *vlad_ptr;
-RS485_t *rs485_ptr;
+RDSS_t *rs485_ptr;
 SX1278_t *lora_ptr;
 
-void USART1_IRQHandler(void) {
-	if (uart1_ptr->rxLen >= RX_BUFFLEN) {
-		cleanRx(uart1_ptr);
-		uart1_ptr->rxLen = 0;
-	}
-	uart1_ptr->rx[uart1_ptr->rxLen++] = readRxReg();
-	if (uart1_ptr->rx[uart1_ptr->rxLen - 1] == LTEL_END_MARK)
-		uart1_ptr->isReady = true;
-	if (uart1_ptr->rx[0] != LTEL_START_MARK) {
-		cleanRx(uart1_ptr);
-		uart1_ptr->rxLen = 0;
-	}
-
-}
-
-void print_parameters(UART1_t *u, Vlad_t vlad) {
-	char *buff = (char*) u->tx;
-	u->txLen = sprintf(buff, "vin %d [V]\r\n", vlad.vin);
-	writeTx(u);
-	//u->txLen = sprintf(buff, "vin2 %d[V]\r\n", vlad.vin2);
-	//writeTx(u);
-	u->txLen = sprintf(buff, "current real %d [A]\r\n",
-			(uint8_t) vlad.current_real);
-	writeTx(u);
-	//u->txLen = sprintf(buff, "current real2  %d[A]\r\n", vlad.current_real2);
-	//writeTx(u);
-	u->txLen = sprintf(buff, "tone level %d[dBm]\r\n", vlad.tone_level);
-	writeTx(u);
-	//u->txLen = sprintf(buff, "tone level2 %d[dBm]\r\n", vlad.tone_level2);
-	//writeTx(u);
-	u->txLen = sprintf(buff, "current %d[A]\r\n", vlad.current);
-	writeTx(u);
-	//u->txLen = sprintf(buff, "current2 %d[A]\r\n", vlad.current2);
-	//writeTx(u);
-	u->txLen = sprintf(buff, "agc150m %d[dBm]\r\n", vlad.agc150m);
-	writeTx(u);
-	u->txLen = sprintf(buff, "level150m %d[dBm]\r\n", vlad.level150m);
-	writeTx(u);
-	u->txLen = sprintf(buff, "agc170m %d[dBm]\r\n", vlad.agc170m);
-	writeTx(u);
-	u->txLen = sprintf(buff, "level170m %d[dBm]\r\n", vlad.level170m);
-	writeTx(u);
-	cleanTx(u);
-}
-
-void printStatus(UART1_t *u1, RS485_t *rs485) {
-
-	char *str = (char*) u1->tx;
-	uint8_t i = 0;
-	switch (rs485->status) {
-	case CRC_ERROR:
-		isValidCrc2(rs485);
-		u1->txLen = sprintf(str, "CRC mismatch:\r\n");
-		writeTx(u1);
-		u1->txLen = 0;
-
-		break;
-	case WRONG_MODULE_ID:
-		u1->txLen = sprintf(str, "ID mismatch - ID %d and ID received %d \r\n",
-				rs485->id, rs485->idReceived);
-		writeTx(u1);
-		u1->txLen = 0;
-		break;
-	case NOT_VALID_FRAME:
-		u1->txLen = sprintf(str, "Not valid start byte \r\n");
-		writeTx(u1);
-		u1->txLen = 0;
-		break;
-	case DATA_OK:
-		u1->txLen = sprintf(str,
-				"Validation ok: ID %02x Cmd %02x Bytes %d Data \r\n",
-				rs485->buffer[2], rs485->buffer[3], rs485->buffer[5]);
-		writeTx(u1);
-		for (int i = DATA_START_INDEX; i < rs485->buffer[5]; i++) {
-			if (i > 250)
-				break;
-			u1->txLen = sprintf(str, "%02X", rs485->buffer[i]);
-			writeTx(u1);
-		}
-		writeTxReg('\n');
-		break;
-	case WAITING:
-		u1->txLen = sprintf(str, "Waiting for new data\r\n");
-		writeTx(u1);
-		u1->txLen = 0;
-		break;
-	case LORA_SEND:
-		u1->txLen = sprintf(str, "Send uart data to loRa ID: %d\r\n",
-				rs485->idReceived);
-		writeTx(u1);
-		u1->txLen = 0;
-		break;
-	case LORA_RECEIVE:
-		u1->txLen = sprintf(str,
-				"Validation ok: ID %02x Cmd %02x Bytes %d Data \r\n",
-				rs485->buffer[2], rs485->buffer[3], rs485->buffer[5]);
-		writeTx(u1);
-		for (i = DATA_START_INDEX; i < rs485->buffer[5]; i++) {
-			if (i > 250)
-				break;
-			u1->txLen = sprintf(str, "%02X", rs485->buffer[i]);
-			writeTx(u1);
-		}
-		if (i > DATA_START_INDEX)
-			writeTxReg('\n');
-		u1->txLen = 0;
-		break;
-	case UART_SEND:
-		u1->txLen = sprintf(str, "Reply vlad data: %d\r\n", rs485->idReceived);
-		writeTx(u1);
-		for (i = 0; i < rs485->len; i++) {
-			if (i > 250)
-				break;
-			u1->txLen = sprintf(str, "%02X", rs485->buffer[i]);
-			writeTx(u1);
-		}
-		if (i > 0)
-			writeTxReg('\n');
-		u1->txLen = 0;
-		break;
-	case UART_VALID:
-		u1->txLen = sprintf(str,
-				"Validation ok: ID %02x Cmd %02x Bytes %d Data \r\n",
-				rs485->buffer[2], rs485->buffer[3], rs485->buffer[5]);
-		writeTx(u1);
-		for (int i = DATA_START_INDEX; i < rs485->buffer[5]; i++) {
-			if (i > 250)
-				break;
-			u1->txLen = sprintf(str, "%02X", rs485->buffer[i]);
-			writeTx(u1);
-		}
-		if (i > DATA_START_INDEX)
-			writeTxReg('\n');
-		u1->txLen = 0;
-		break;
-	default:
-		break;
-
-	}
-	cleanTx(u1);
-
-}
-
-void printLoRaStatus(UART1_t *u1, SX1278_t *loRa) {
-
-	char *str = (char*) u1->tx;
-	switch (loRa->status) {
-	case TX_TIMEOUT:
-		u1->txLen = sprintf(str, "Transmission Fail: %d seconds Timeout\r\n",
-				TX_TIMEOUT / 1000);
-		writeTx(u1);
-		break;
-	case TX_DONE:
-		u1->txLen = sprintf(str, "Transmission Done: %lu ms\r\n",
-				loRa->lastTxTime);
-		writeTx(u1);
-		break;
-	case TX_BUFFER_READY:
-		u1->txLen = sprintf(str, "Transmission Buffer: %d bytes data \r\n",
-				loRa->len);
-		writeTx(u1);
-		for (int i = 0; i < loRa->len; i++) {
-			u1->txLen = sprintf(str, "%02X", loRa->buffer[i]);
-			writeTx(u1);
-		}
-		writeTxReg('\n');
-		break;
-	case TX_MODE:
-		if (loRa->mode == MASTER_SENDER)
-			u1->txLen = sprintf(str, "Master Sender Mode\r\n");
-		else if (loRa->mode == SLAVE_SENDER)
-			u1->txLen = sprintf(str, "Slave Sender Mode\r\n");
-		else
-			u1->txLen = sprintf(str, "Unknow Mode\r\n");
-		writeTx(u1);
-
-		break;
-	case RX_DONE:
-		u1->txLen = sprintf(str, "Reception Done: %d bytes\r\n", loRa->len);
-		writeTx(u1);
-		int i = 0;
-		for (i = 0; i < loRa->len; i++) {
-			u1->txLen = sprintf(str, "%02X", loRa->buffer[i]);
-			writeTx(u1);
-		}
-		if (loRa->len > 0)
-			writeTxReg('\n');
-		break;
-	case RX_MODE:
-		if (loRa->mode == MASTER_RECEIVER)
-			u1->txLen = sprintf(str, "Master receiver Mode\r\n");
-		else if (loRa->mode == SLAVE_RECEIVER)
-			u1->txLen = sprintf(str, "Slave receiver Mode\r\n");
-		else
-			u1->txLen = sprintf(str, "Unknow Mode\r\n");
-		writeTx(u1);
-		break;
-	case CRC_ERROR_ACTIVATION:
-		u1->txLen = sprintf(str, "Reception Fail: Crc error activation\r\n");
-		writeTx(u1);
-		break;
-	default:
-		break;
-	}
-	u1->txLen = 0;
-	cleanTx(u1);
-}
-
-void dinamicFrame(SX1278_t *loRa) {
-	uint8_t crc_frame[2];
-	uint16_t crc;
-	uint8_t i;
-	uint8_t len = loRa->len;
-	uint8_t *buff = loRa->buffer;
-
-	if (len > 240)
-		len = 240;
-
-	buff[0] = LTEL_START_MARK;
-	buff[1] = VLAD;
-	buff[2] = ID1;
-	buff[3] = QUERY_PARAMETERS_VLAD;
-	buff[4] = 0x00;
-	buff[5] = len;
-	for (i = 6; i < len + 6; i++) {
-		buff[i] = i - 6;
-	}
-	crc = crc_get(&(buff[1]), (len + 5));
-	memcpy(crc_frame, &crc, 2);
-	buff[len + 6] = crc_frame[0];
-	buff[len + 7] = crc_frame[1];
-	buff[len + 8] = LTEL_END_MARK;
-
-	loRa->len = len + 9;
-	loRa->status = TX_BUFFER_READY;
-
-}
-
-void parseLoRaMaster(RS485_t *rs485, SX1278_t *loRa) {
-	fillValidBuffer(&*rs485, loRa->buffer, loRa->len);
-	memset(loRa->buffer, 0, sizeof(loRa->buffer));
-	loRa->len = 0;
-	if (rs485->status == DATA_OK) {
-		rs485->cmd = rs485->buffer[CMD_INDEX];
-		rs485->idReceived = rs485->buffer[MODULE_ID_INDEX];
-		if (rs485->idReceived == rs485->idQuery)
-			rs485->status = LORA_RECEIVE;
-		else
-			rs485->status = WRONG_MODULE_ID;
-
-		rs485->idQuery = 0;
-	}
-}
-
-void parseLoRaSlave(RS485_t *rs485, SX1278_t *loRa) {
-	fillValidBuffer(&*rs485, loRa->buffer, loRa->len);
-	memset(loRa->buffer, 0, sizeof(loRa->buffer));
-	loRa->len = 0;
-	if (rs485->status == DATA_OK) {
-		rs485->cmd = rs485->buffer[CMD_INDEX];
-		rs485->idReceived = rs485->buffer[MODULE_ID_INDEX];
-		if (rs485->idReceived == rs485->id)
-			rs485->status = LORA_RECEIVE;
-		else
-			rs485->status = WRONG_MODULE_ID;
-
-		rs485->idQuery = 0;
-	}
-}
-
-void parseUartMaster(UART1_t *u1, RS485_t *rs485) {
-	u1->isReady = false;
-	fillValidBuffer(&*rs485, u1->rx, u1->rxLen);
-	memset(u1->rx, 0, sizeof(u1->rx));
-	u1->rxLen = 0;
-	if (rs485->status == DATA_OK) {
-		rs485->cmd = rs485->buffer[CMD_INDEX];
-		rs485->idReceived = rs485->buffer[MODULE_ID_INDEX];
-		rs485->idQuery = rs485->idReceived;
-		rs485->status = LORA_SEND;
-	}
-}
-
-void parseUartSlave(UART1_t *u1, RS485_t *rs485) {
-	u1->isReady = false;
-	fillValidBuffer(&*rs485, u1->rx, u1->rxLen);
-	memset(u1->rx, 0, sizeof(u1->rx));
-	u1->rxLen = 0;
-	if (rs485->status == DATA_OK) {
-		rs485->cmd = rs485->buffer[CMD_INDEX];
-		rs485->idReceived = rs485->buffer[MODULE_ID_INDEX];
-		if (rs485->idReceived == rs485->id)
-			rs485->status = UART_VALID;
-		else
-			rs485->status = WRONG_MODULE_ID;
-		//	rs485->status = LORA_SEND;
-	}
-}
-
-void sendQuery(RS485_t *rs485, SX1278_t *loRa, UART1_t *u1) {
-	if (rs485->len != 9)
-		return;
-	rs485->idQuery = rs485->buffer[MODULE_ID_INDEX];
-	loRa->len = rs485->len;
-	updateMode(&*loRa, MASTER_SENDER);
-	memcpy(loRa->buffer, rs485->buffer, rs485->len);
-	printLoRaStatus(&*u1, &*loRa);
-	transmit(&*loRa);
-}
+void USART1_IRQHandler(void);
+void print_parameters(UART1_t *u, Vlad_t vlad);
+void printStatus(UART1_t *u1, RDSS_t *rs485);
+void printLoRaStatus(UART1_t *u1, SX1278_t *loRa);
+void dinamicFrame(SX1278_t *loRa);
+void parseLoRaMaster(RDSS_t *rs485, SX1278_t *loRa);
+void parseLoRaSlave(RDSS_t *rs485, SX1278_t *loRa);
+void parseUartMaster(UART1_t *u1, RDSS_t *rs485);
+void parseUartSlave(UART1_t *u1, RDSS_t *rs485);
+void sendQuery(RDSS_t *rs485, SX1278_t *loRa, UART1_t *u1);
 
 /* USER CODE END 0 */
 
@@ -398,15 +101,15 @@ void sendQuery(RS485_t *rs485, SX1278_t *loRa, UART1_t *u1) {
 int main(void) {
 	/* USER CODE BEGIN 1 */
 	LED_t led;
-	RS485_t rs485;
+	RDSS_t rdss;
 	UART1_t u1;
-	Vlad_t vlad;
+	//Vlad_t vlad;
 	SX1278_t loRa;
 
 	lora_ptr = &loRa;
 	uart1_ptr = &u1;
-	vlad_ptr = &vlad;
-	rs485_ptr = &rs485;
+	//vlad_ptr = &vlad;
+	rs485_ptr = &rdss;
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -426,29 +129,58 @@ int main(void) {
 	/* USER CODE END SysInit */
 
 	/* Initialize all configured peripherals */
-
 	MX_GPIO_Init();
 	MX_ADC1_Init();
 	MX_SPI1_Init();
-//  MX_USART1_UART_Init();
+	// MX_USART1_UART_Init();
 	MX_CRC_Init();
+	// MX_I2C1_Init();
 	/* USER CODE BEGIN 2 */
-	vladInit(VLAD, 6, &vlad);
-	rs485Init(&rs485);
-	rs485.id = 6;
+
 	uart1Init(HS16_CLK, BAUD_RATE, &u1);
+	u1.debug = false;
+	i2c1MasterInit();
+	rdssInit(&rdss, 6);
+
 	ledInit(&led);
-	loRa.spi = &hspi1;
+
 	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(LORA_RST_GPIO_Port, LORA_RST_Pin, GPIO_PIN_SET);
-	loRa.operatingMode = readRegister(&hspi1, LR_RegOpMode);
-	//m24c64WriteNBytes(FREQ_OUT_ADDR, (uint8_t*) (&ppl->freqOut), 0,FREQ_OUT_SIZE);
-
-	/* Read the register value */
+	loRa.spi = &hspi1;
+	loRa.operatingMode = readRegister(loRa.spi, LR_RegOpMode);
 	loRa.mode = -1;
+
+	readPage(CAT24C02_PAGE0_START_ADDR, &(loRa.spreadFactor), 0, 1);
+	readPage(CAT24C02_PAGE0_START_ADDR, &(loRa.bandwidth), 1, 1);
+	readPage(CAT24C02_PAGE0_START_ADDR, &(loRa.codingRate), 2, 1);
+	readPage(CAT24C02_PAGE1_START_ADDR, (uint8_t*) &(loRa.upFreq), 0, 4);
+	readPage(CAT24C02_PAGE1_START_ADDR, (uint8_t*) &(loRa.dlFreq), 4, 4);
+	if (loRa.spreadFactor < SF_9 || loRa.spreadFactor > SF_12)
+		loRa.spreadFactor = SF_10;
+
+	if (loRa.bandwidth < LORABW_7_8KHZ || loRa.bandwidth > LORABW_500KHZ)
+		loRa.bandwidth = LORABW_62_5KHZ;
+
+	if (loRa.codingRate < LORA_CR_4_5 || loRa.codingRate > LORA_CR_4_8)
+		loRa.codingRate = LORA_CR_4_6;
+
+	if (loRa.upFreq < UPLINK_FREQ_MIN || loRa.upFreq > UPLINK_FREQ_MAX)
+		loRa.upFreq = UPLINK_FREQ;
+
+	if (loRa.dlFreq < DOWNLINK_FREQ_MIN || loRa.dlFreq > DOWNLINK_FREQ_MAX)
+		loRa.dlFreq = DOWNLINK_FREQ;
+
+	/*
+	 savePage(CAT24C02_PAGE0_START_ADDR, &(loRa.spreadFactor),0, 1);
+	 savePage(CAT24C02_PAGE0_START_ADDR, &(loRa.bandwidth),1, 1);
+	 savePage(CAT24C02_PAGE0_START_ADDR, &(loRa.codingRate),2, 1);
+	 savePage(CAT24C02_PAGE1_START_ADDR, (uint8_t*)&(loRa.upFreq),0, 4);
+	 savePage(CAT24C02_PAGE1_START_ADDR, (uint8_t*)&(loRa.dlFreq),4, 4);
+	 */
 	initLoRaParameters(&loRa, SLAVE_RECEIVER);
 	writeLoRaParameters(&loRa);
 	printLoRaStatus(&u1, &loRa);
+
 	//initialize LoRa module
 
 	/* USER CODE END 2 */
@@ -457,48 +189,149 @@ int main(void) {
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 
-		if (rs485.status == LORA_RECEIVE) {
-			if (rs485.cmd == QUERY_PARAMETERS_VLAD)
-				if (rs485.len == 9) {
-					encodeVLAD(loRa.buffer, vlad.id);
-					loRa.len = 21;
-					loRa.status = TX_BUFFER_READY;
-					printLoRaStatus(&u1, &loRa);
-					updateMode(&loRa, SLAVE_SENDER);
-					printStatus(&u1, &rs485);
-					transmit(&loRa);
-					printLoRaStatus(&u1, &loRa);
-				}
-			reinit(&rs485);
+		if (rdss.status == LORA_RECEIVE) {
+			uint8_t crc_frame[2];
+			uint16_t crc;
+			uint8_t data_length;
+			loRa.buffer[0] = LTEL_START_MARK;
+			loRa.buffer[1] = VLADR;
+			loRa.buffer[2] = rdss.id;
+			loRa.buffer[3] = rdss.cmd;
+			loRa.buffer[4] = 0x00;
+			if (rdss.cmd == QUERY_STATUS && rdss.len == 9) {
+				data_length = 12;
+				uint16_t lineVoltage = rand() % 610;
+				uint16_t baseCurrent = rand() % 301;
+				uint16_t tunnelCurrent = rand() % 1001;
+				uint16_t unitCurrent = rand() % 301;
+				uint8_t uplinkAgc = rand() % 43;
+				uint8_t downlinkInputPower = rand() % 256;
+				uint8_t downlinkAgc = rand() % 43;
+				uint8_t uplinkOuputPower = rand() % 256;
+
+				loRa.buffer[5] = data_length;
+				loRa.buffer[7] = (lineVoltage >> 8) & 0xFF;
+				loRa.buffer[6] = lineVoltage & 0xFF;
+				loRa.buffer[9] = (baseCurrent >> 8) & 0xFF;
+				loRa.buffer[8] = baseCurrent & 0xFF;
+				loRa.buffer[11] = (tunnelCurrent >> 8) & 0xFF;
+				loRa.buffer[10] = tunnelCurrent & 0xFF;
+				loRa.buffer[13] = (unitCurrent >> 8) & 0xFF;
+				loRa.buffer[12] = unitCurrent & 0xFF;
+				loRa.buffer[14] = uplinkAgc;
+				loRa.buffer[15] = downlinkInputPower;
+				loRa.buffer[16] = downlinkAgc;
+				loRa.buffer[17] = uplinkOuputPower;
+
+				crc = crc_get(&(loRa.buffer[1]), 17);
+				memcpy(crc_frame, &crc, 2);
+				loRa.buffer[18] = crc_frame[0];
+				loRa.buffer[19] = crc_frame[1];
+				loRa.buffer[20] = LTEL_END_MARK;
+				loRa.len = 21;
+				loRa.status = TX_BUFFER_READY;
+				printLoRaStatus(&u1, &loRa);
+				updateMode(&loRa, SLAVE_SENDER);
+				printStatus(&u1, &rdss);
+				transmit(&loRa);
+				printLoRaStatus(&u1, &loRa);
+			}
+			reinit(&rdss);
 			updateMode(&loRa, SLAVE_RECEIVER);
+
 			printLoRaStatus(&u1, &loRa);
-		} else if (rs485.status == UART_VALID) {
-			if (rs485.cmd == QUERY_PARAMETERS_VLAD)
-				if (rs485.len == 9) {
-					encodeVLAD(rs485.buffer, vlad.id);
-					rs485.len = 21;
-					rs485.status = UART_SEND;
-					printStatus(&u1, &rs485);
-					writeTx(&u1);
-					cleanTx(&u1);
-					u1.txLen = 0;
-				}
-			reinit(&rs485);
-			updateMode(&loRa, SLAVE_RECEIVER);
+		} else if (rdss.status == UART_VALID) {
+			uint8_t crc_frame[2];
+			uint16_t crc;
+			uint8_t i = 0;
+			u1.tx[i++] = LTEL_START_MARK;
+			u1.tx[i++] = VLADR;
+			u1.tx[i++] = rdss.id;
+			u1.tx[i++] = rdss.cmd;
+			u1.tx[i++] = 0x00;
+
+			if (rdss.cmd == QUERY_STATUS && rdss.len == 9) {
+				uint16_t lineVoltage = rand() % 610;
+				uint16_t baseCurrent = rand() % 301;
+				uint16_t tunnelCurrent = rand() % 1001;
+				uint16_t unitCurrent = rand() % 301;
+				uint8_t uplinkAgc = rand() % 43;
+				uint8_t downlinkInputPower = rand() % 256;
+				uint8_t downlinkAgc = rand() % 43;
+				uint8_t uplinkOuputPower = rand() % 256;
+
+				u1.tx[i++] = 12;
+				u1.tx[i++] = (lineVoltage >> 8) & 0xFF;
+				u1.tx[i++] = lineVoltage & 0xFF;
+				u1.tx[i++] = (baseCurrent >> 8) & 0xFF;
+				u1.tx[i++] = baseCurrent & 0xFF;
+				u1.tx[i++] = (tunnelCurrent >> 8) & 0xFF;
+				u1.tx[i++] = tunnelCurrent & 0xFF;
+				u1.tx[i++] = (unitCurrent >> 8) & 0xFF;
+				u1.tx[i++] = unitCurrent & 0xFF;
+				u1.tx[i++] = uplinkAgc;
+				u1.tx[i++] = downlinkInputPower;
+				u1.tx[i++] = downlinkAgc;
+				u1.tx[i++] = uplinkOuputPower;
+
+			} else if (rdss.cmd == QUERY_RX_FREQ) {
+				union floatConverter txFreq;
+				txFreq.f = loRa.dlFreq / 1000000.0f;
+				u1.tx[i++] = 4;
+				memcpy(u1.tx + 6, &txFreq.i, sizeof(txFreq.i));
+				i += sizeof(txFreq.i);
+				i++;
+			} else if (rdss.cmd == QUERY_TX_FREQ) {
+				union floatConverter rxFreq;
+				rxFreq.f = loRa.upFreq / 1000000.0f;
+				u1.tx[i++] = 4;
+				memcpy(u1.tx + 6, &rxFreq.i, sizeof(rxFreq.i));
+				i += sizeof(rxFreq.i);
+				i++;
+			} else if (rdss.cmd == QUERY_SPREAD_FACTOR) {
+
+			} else if (rdss.cmd == QUERY_CODING_RATE) {
+
+			} else if (rdss.cmd == QUERY_BANDWIDTH) {
+
+			} else if (rdss.cmd == QUERY_MODULE_ID) {
+
+			} else if (rdss.cmd == SET_TX_FREQ) {
+
+			} else if (rdss.cmd == SET_RX_FREQ) {
+
+			} else if (rdss.cmd == SET_BANDWIDTH) {
+
+			} else if (rdss.cmd == SET_SPREAD_FACTOR) {
+
+			} else if (rdss.cmd == QUERY_CODING_RATE) {
+
+			}
+			crc = crc_get(&(u1.tx[1]), i - 1);
+			memcpy(crc_frame, &crc, 2);
+			u1.tx[i++] = crc_frame[0];
+			u1.tx[i++] = crc_frame[1];
+			u1.tx[i++] = LTEL_END_MARK;
+			u1.txLen = i;
+			rdss.status = UART_SEND;
+			writeTx(&u1);
+			printStatus(&u1, &rdss);
+			reinit(&rdss);
+			cleanTx(&u1);
+			u1.txLen = 0;
+		} else if (rdss.status == LORA_SEND) {
+			printStatus(&u1, &rdss);
+			if (rdss.cmd == QUERY_STATUS)
+				sendQuery(&rdss, &loRa, &u1);
 			printLoRaStatus(&u1, &loRa);
-		} else if (rs485.status == LORA_SEND) {
-			printStatus(&u1, &rs485);
-			if (rs485.cmd == QUERY_PARAMETERS_VLAD)
-				sendQuery(&rs485, &loRa, &u1);
-			printLoRaStatus(&u1, &loRa);
-			reinit(&rs485);
+			reinit(&rdss);
 			updateMode(&loRa, SLAVE_RECEIVER);
 		} else if (u1.isReady) {
-			parseUartSlave(&u1, &rs485);
-			printStatus(&u1, &rs485);
+			parseUartSlave(&u1, &rdss);
+			printStatus(&u1, &rdss);
 		} else if (loRa.len > 0) {
-			parseLoRaSlave(&rs485, &loRa);
-			printStatus(&u1, &rs485);
+			parseLoRaSlave(&rdss, &loRa);
+			printStatus(&u1, &rdss);
 			printLoRaStatus(&u1, &loRa);
 		} else if (loRa.mode == SLAVE_RECEIVER) {
 			if (loRa.operatingMode != RX_CONTINUOUS) {
@@ -655,6 +488,51 @@ static void MX_CRC_Init(void) {
 }
 
 /**
+ * @brief I2C1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_I2C1_Init(void) {
+
+	/* USER CODE BEGIN I2C1_Init 0 */
+
+	/* USER CODE END I2C1_Init 0 */
+
+	/* USER CODE BEGIN I2C1_Init 1 */
+
+	/* USER CODE END I2C1_Init 1 */
+	hi2c1.Instance = I2C1;
+	hi2c1.Init.Timing = 0x00303D5B;
+	hi2c1.Init.OwnAddress1 = 0;
+	hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+	hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+	hi2c1.Init.OwnAddress2 = 0;
+	hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+	hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+	hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+	if (HAL_I2C_Init(&hi2c1) != HAL_OK) {
+		Error_Handler();
+	}
+
+	/** Configure Analogue filter
+	 */
+	if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE)
+			!= HAL_OK) {
+		Error_Handler();
+	}
+
+	/** Configure Digital filter
+	 */
+	if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN I2C1_Init 2 */
+
+	/* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
  * @brief SPI1 Initialization Function
  * @param None
  * @retval None
@@ -754,7 +632,7 @@ static void MX_GPIO_Init(void) {
 	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin | LORA_RST_Pin, GPIO_PIN_RESET);
 
 	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(LORA_DIO1_GPIO_Port, LORA_DIO1_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(DIO1_GPIO_Port, DIO1_Pin, GPIO_PIN_RESET);
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(LORA_BUSSY_GPIO_Port, LORA_BUSSY_Pin, GPIO_PIN_RESET);
@@ -766,18 +644,18 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-	/*Configure GPIO pin : LORA_DIO3_Pin */
-	GPIO_InitStruct.Pin = LORA_DIO3_Pin;
+	/*Configure GPIO pin : DIO3_Pin */
+	GPIO_InitStruct.Pin = DIO3_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init(LORA_DIO3_GPIO_Port, &GPIO_InitStruct);
+	HAL_GPIO_Init(DIO3_GPIO_Port, &GPIO_InitStruct);
 
-	/*Configure GPIO pin : LORA_DIO1_Pin */
-	GPIO_InitStruct.Pin = LORA_DIO1_Pin;
+	/*Configure GPIO pin : DIO1_Pin */
+	GPIO_InitStruct.Pin = DIO1_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(LORA_DIO1_GPIO_Port, &GPIO_InitStruct);
+	HAL_GPIO_Init(DIO1_GPIO_Port, &GPIO_InitStruct);
 
 	/*Configure GPIO pin : LORA_BUSSY_Pin */
 	GPIO_InitStruct.Pin = LORA_BUSSY_Pin;
@@ -789,6 +667,319 @@ static void MX_GPIO_Init(void) {
 }
 
 /* USER CODE BEGIN 4 */
+void USART1_IRQHandler(void) {
+	if (uart1_ptr->rxLen >= RX_BUFFLEN) {
+		cleanRx(uart1_ptr);
+		uart1_ptr->rxLen = 0;
+	}
+	uart1_ptr->rx[uart1_ptr->rxLen++] = readRxReg();
+	if (uart1_ptr->rx[uart1_ptr->rxLen - 1] == LTEL_END_MARK)
+		uart1_ptr->isReady = true;
+	if (uart1_ptr->rx[0] != LTEL_START_MARK) {
+		cleanRx(uart1_ptr);
+		uart1_ptr->rxLen = 0;
+	}
+
+}
+
+void print_parameters(UART1_t *u, Vlad_t vlad) {
+	char *buff = (char*) u->tx;
+	u->txLen = sprintf(buff, "vin %d [V]\r\n", vlad.vin);
+	writeTx(u);
+	//u->txLen = sprintf(buff, "vin2 %d[V]\r\n", vlad.vin2);
+	//writeTx(u);
+	u->txLen = sprintf(buff, "current real %d [A]\r\n",
+			(uint8_t) vlad.current_real);
+	writeTx(u);
+	//u->txLen = sprintf(buff, "current real2  %d[A]\r\n", vlad.current_real2);
+	//writeTx(u);
+	u->txLen = sprintf(buff, "tone level %d[dBm]\r\n", vlad.tone_level);
+	writeTx(u);
+	//u->txLen = sprintf(buff, "tone level2 %d[dBm]\r\n", vlad.tone_level2);
+	//writeTx(u);
+	u->txLen = sprintf(buff, "current %d[A]\r\n", vlad.current);
+	writeTx(u);
+	//u->txLen = sprintf(buff, "current2 %d[A]\r\n", vlad.current2);
+	//writeTx(u);
+	u->txLen = sprintf(buff, "agc150m %d[dBm]\r\n", vlad.agc150m);
+	writeTx(u);
+	u->txLen = sprintf(buff, "level150m %d[dBm]\r\n", vlad.level150m);
+	writeTx(u);
+	u->txLen = sprintf(buff, "agc170m %d[dBm]\r\n", vlad.agc170m);
+	writeTx(u);
+	u->txLen = sprintf(buff, "level170m %d[dBm]\r\n", vlad.level170m);
+	writeTx(u);
+	cleanTx(u);
+}
+
+void printStatus(UART1_t *u1, RDSS_t *rs485) {
+
+	if (!u1->debug)
+		return;
+	char *str = (char*) u1->tx;
+	uint8_t i = 0;
+	switch (rs485->status) {
+	case CRC_ERROR:
+		isValidCrc2(rs485);
+		u1->txLen = sprintf(str, "CRC mismatch:\r\n");
+		writeTx(u1);
+		u1->txLen = 0;
+
+		break;
+	case WRONG_MODULE_ID:
+		u1->txLen = sprintf(str, "ID mismatch - ID %d and ID received %d \r\n",
+				rs485->id, rs485->idReceived);
+		writeTx(u1);
+		u1->txLen = 0;
+		break;
+	case NOT_VALID_FRAME:
+		u1->txLen = sprintf(str, "Not valid start byte \r\n");
+		writeTx(u1);
+		u1->txLen = 0;
+		break;
+	case DATA_OK:
+		u1->txLen = sprintf(str,
+				"Validation ok: ID %02x Cmd %02x Bytes %d Data \r\n",
+				rs485->buffer[2], rs485->buffer[3], rs485->buffer[5]);
+		writeTx(u1);
+		for (int i = DATA_START_INDEX; i < rs485->buffer[5]; i++) {
+			if (i > 250)
+				break;
+			u1->txLen = sprintf(str, "%02X", rs485->buffer[i]);
+			writeTx(u1);
+		}
+		writeTxReg('\n');
+		break;
+	case WAITING:
+		u1->txLen = sprintf(str, "Waiting for new data\r\n");
+		writeTx(u1);
+		u1->txLen = 0;
+		break;
+	case LORA_SEND:
+		u1->txLen = sprintf(str, "Send uart data to loRa ID: %d\r\n",
+				rs485->idReceived);
+		writeTx(u1);
+		u1->txLen = 0;
+		break;
+	case LORA_RECEIVE:
+		u1->txLen = sprintf(str,
+				"Validation ok: ID %02x Cmd %02x Bytes %d Data \r\n",
+				rs485->buffer[2], rs485->buffer[3], rs485->buffer[5]);
+		writeTx(u1);
+		for (i = DATA_START_INDEX; i < rs485->buffer[5]; i++) {
+			if (i > 250)
+				break;
+			u1->txLen = sprintf(str, "%02X", rs485->buffer[i]);
+			writeTx(u1);
+		}
+		if (i > DATA_START_INDEX)
+			writeTxReg('\n');
+		u1->txLen = 0;
+		break;
+	case UART_SEND:
+		u1->txLen = sprintf(str, "Reply vlad data: %d\r\n", rs485->idReceived);
+		writeTx(u1);
+		for (i = 0; i < rs485->len; i++) {
+			if (i > 250)
+				break;
+			u1->txLen = sprintf(str, "%02X", rs485->buffer[i]);
+			writeTx(u1);
+		}
+		if (i > 0)
+			writeTxReg('\n');
+		u1->txLen = 0;
+		break;
+	case UART_VALID:
+		u1->txLen = sprintf(str,
+				"Validation ok: ID %02x Cmd %02x Bytes %d Data \r\n",
+				rs485->buffer[2], rs485->buffer[3], rs485->buffer[5]);
+		writeTx(u1);
+		for (int i = DATA_START_INDEX; i < rs485->buffer[5]; i++) {
+			if (i > 250)
+				break;
+			u1->txLen = sprintf(str, "%02X", rs485->buffer[i]);
+			writeTx(u1);
+		}
+		if (i > DATA_START_INDEX)
+			writeTxReg('\n');
+		u1->txLen = 0;
+		break;
+	default:
+		break;
+
+	}
+	cleanTx(u1);
+
+}
+
+void printLoRaStatus(UART1_t *u1, SX1278_t *loRa) {
+
+	if (!u1->debug)
+		return;
+	char *str = (char*) u1->tx;
+	switch (loRa->status) {
+	case TX_TIMEOUT:
+		u1->txLen = sprintf(str, "Transmission Fail: %d seconds Timeout\r\n",
+				TX_TIMEOUT / 1000);
+		writeTx(u1);
+		break;
+	case TX_DONE:
+		u1->txLen = sprintf(str, "Transmission Done: %lu ms\r\n",
+				loRa->lastTxTime);
+		writeTx(u1);
+		break;
+	case TX_BUFFER_READY:
+		u1->txLen = sprintf(str, "Transmission Buffer: %d bytes data \r\n",
+				loRa->len);
+		writeTx(u1);
+		for (int i = 0; i < loRa->len; i++) {
+			u1->txLen = sprintf(str, "%02X", loRa->buffer[i]);
+			writeTx(u1);
+		}
+		writeTxReg('\n');
+		break;
+	case TX_MODE:
+		if (loRa->mode == MASTER_SENDER)
+			u1->txLen = sprintf(str, "Master Sender Mode\r\n");
+		else if (loRa->mode == SLAVE_SENDER)
+			u1->txLen = sprintf(str, "Slave Sender Mode\r\n");
+		else
+			u1->txLen = sprintf(str, "Unknow Mode\r\n");
+		writeTx(u1);
+
+		break;
+	case RX_DONE:
+		u1->txLen = sprintf(str, "Reception Done: %d bytes\r\n", loRa->len);
+		writeTx(u1);
+		int i = 0;
+		for (i = 0; i < loRa->len; i++) {
+			u1->txLen = sprintf(str, "%02X", loRa->buffer[i]);
+			writeTx(u1);
+		}
+		if (loRa->len > 0)
+			writeTxReg('\n');
+		break;
+	case RX_MODE:
+		if (loRa->mode == MASTER_RECEIVER)
+			u1->txLen = sprintf(str, "Master receiver Mode\r\n");
+		else if (loRa->mode == SLAVE_RECEIVER)
+			u1->txLen = sprintf(str, "Slave receiver Mode\r\n");
+		else
+			u1->txLen = sprintf(str, "Unknow Mode\r\n");
+		writeTx(u1);
+		break;
+	case CRC_ERROR_ACTIVATION:
+		u1->txLen = sprintf(str, "Reception Fail: Crc error activation\r\n");
+		writeTx(u1);
+		break;
+	default:
+		break;
+	}
+	u1->txLen = 0;
+	cleanTx(u1);
+}
+
+void dinamicFrame(SX1278_t *loRa) {
+	uint8_t crc_frame[2];
+	uint16_t crc;
+	uint8_t i;
+	uint8_t len = loRa->len;
+	uint8_t *buff = loRa->buffer;
+
+	if (len > 240)
+		len = 240;
+
+	buff[0] = LTEL_START_MARK;
+	buff[1] = VLADR;
+	buff[2] = ID1;
+	buff[3] = QUERY_STATUS;
+	buff[4] = 0x00;
+	buff[5] = len;
+	for (i = 6; i < len + 6; i++) {
+		buff[i] = i - 6;
+	}
+	crc = crc_get(&(buff[1]), (len + 5));
+	memcpy(crc_frame, &crc, 2);
+	buff[len + 6] = crc_frame[0];
+	buff[len + 7] = crc_frame[1];
+	buff[len + 8] = LTEL_END_MARK;
+
+	loRa->len = len + 9;
+	loRa->status = TX_BUFFER_READY;
+
+}
+
+void parseLoRaMaster(RDSS_t *rs485, SX1278_t *loRa) {
+	fillValidBuffer(&*rs485, loRa->buffer, loRa->len);
+	memset(loRa->buffer, 0, sizeof(loRa->buffer));
+	loRa->len = 0;
+	if (rs485->status == DATA_OK) {
+		rs485->cmd = rs485->buffer[CMD_INDEX];
+		rs485->idReceived = rs485->buffer[MODULE_ID_INDEX];
+		if (rs485->idReceived == rs485->idQuery)
+			rs485->status = LORA_RECEIVE;
+		else
+			rs485->status = WRONG_MODULE_ID;
+
+		rs485->idQuery = 0;
+	}
+}
+
+void parseLoRaSlave(RDSS_t *rs485, SX1278_t *loRa) {
+	fillValidBuffer(&*rs485, loRa->buffer, loRa->len);
+	memset(loRa->buffer, 0, sizeof(loRa->buffer));
+	loRa->len = 0;
+	if (rs485->status == DATA_OK) {
+		rs485->cmd = rs485->buffer[CMD_INDEX];
+		rs485->idReceived = rs485->buffer[MODULE_ID_INDEX];
+		if (rs485->idReceived == rs485->id)
+			rs485->status = LORA_RECEIVE;
+		else
+			rs485->status = WRONG_MODULE_ID;
+
+		rs485->idQuery = 0;
+	}
+}
+
+void parseUartMaster(UART1_t *u1, RDSS_t *rs485) {
+	u1->isReady = false;
+	fillValidBuffer(&*rs485, u1->rx, u1->rxLen);
+	memset(u1->rx, 0, sizeof(u1->rx));
+	u1->rxLen = 0;
+	if (rs485->status == DATA_OK) {
+		rs485->cmd = rs485->buffer[CMD_INDEX];
+		rs485->idReceived = rs485->buffer[MODULE_ID_INDEX];
+		rs485->idQuery = rs485->idReceived;
+		rs485->status = LORA_SEND;
+	}
+}
+
+void parseUartSlave(UART1_t *u1, RDSS_t *rs485) {
+	u1->isReady = false;
+	fillValidBuffer(&*rs485, u1->rx, u1->rxLen);
+	memset(u1->rx, 0, sizeof(u1->rx));
+	u1->rxLen = 0;
+	if (rs485->status == DATA_OK) {
+		rs485->cmd = rs485->buffer[CMD_INDEX];
+		rs485->idReceived = rs485->buffer[MODULE_ID_INDEX];
+		if (rs485->idReceived == rs485->id)
+			rs485->status = UART_VALID;
+		else
+			rs485->status = WRONG_MODULE_ID;
+//	rs485->status = LORA_SEND;
+	}
+}
+
+void sendQuery(RDSS_t *rs485, SX1278_t *loRa, UART1_t *u1) {
+	if (rs485->len != 9)
+		return;
+	rs485->idQuery = rs485->buffer[MODULE_ID_INDEX];
+	loRa->len = rs485->len;
+	updateMode(&*loRa, MASTER_SENDER);
+	memcpy(loRa->buffer, rs485->buffer, rs485->len);
+	printLoRaStatus(&*u1, &*loRa);
+	transmit(&*loRa);
+}
 
 /* USER CODE END 4 */
 

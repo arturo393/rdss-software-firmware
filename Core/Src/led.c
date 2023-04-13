@@ -40,12 +40,12 @@ void led_i2c_toggle(LED_t *l) {
 }
 
 void led_reset(LED_t *l) {
-	l->chCounter = 0;
-	l->clCounter = 0;
-	l->cnCounter = 0;
+//	l->chCounter = 0;
+//	l->clCounter = 0;
+//	l->cnCounter = 0;
 	l->kaCounter = HAL_GetTick();
-	l->sysrpCounter = 0;
-	l->thCounter = 0;
-	l->tokCounter = 0;
+//	l->sysrpCounter = 0;
+//	l->thCounter = 0;
+//	l->tokCounter = 0;
 }
 

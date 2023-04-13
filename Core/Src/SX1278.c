@@ -71,12 +71,12 @@ void setPreambleParameters(SX1278_t *module) {
 
 void setReModemConfig(SX1278_t *module) {
 	uint8_t cmd = 0;
-	cmd = module->LoRa_BW << 4;
-	cmd += module->LoRa_CR << 1;
+	cmd = module->bandwidth << 4;
+	cmd += module->codingRate << 1;
 	cmd += module->headerMode;
 	writeRegister(module->spi, LR_RegModemConfig1, &cmd, 1); //Explicit Enable CRC Enable(0x02) & Error Coding rate 4/5(0x01), 4/6(0x02), 4/7(0x03), 4/8(0x04)
 
-	cmd = module->LoRa_SF << 4;
+	cmd = module->spreadFactor << 4;
 	cmd += module->LoRa_CRC_sum << 2;
 	cmd += module->symbTimeoutMsb;
 	writeRegister(module->spi, LR_RegModemConfig2, &cmd, 1);
@@ -113,12 +113,11 @@ void writeLoRaParameters(SX1278_t *module) {
 	updateLoraLowFreq(module, SLEEP);
 	HAL_Delay(15);
 	setRFFrequency(module);
-	//setLORAWAN(module);
 	writeRegister(module->spi, RegSyncWord, &(module->syncWord), 1);
 	setOutputPower(module);
 	setOvercurrentProtect(module);
 	writeRegister(module->spi, LR_RegLna, &(module->lnaGain), 1);
-	if (module->LoRa_SF == SF_6) {
+	if (module->spreadFactor == SF_6) {
 		module->headerMode = IMPLICIT;
 		module->symbTimeoutMsb = 0x03;
 		setDetectionParameters(module);
@@ -136,9 +135,10 @@ void writeLoRaParameters(SX1278_t *module) {
 }
 
 void updateMode(SX1278_t *module, Lora_Mode_t mode) {
+
 	if (mode == SLAVE_SENDER || mode == MASTER_SENDER) {
 		module->frequency =
-				(mode == SLAVE_SENDER) ? UPLINK_FREQ : DOWNLINK_FREQ;
+				(mode == SLAVE_SENDER) ? module->upFreq : module->dlFreq;
 		module->dioConfig = DIO0_TX_DONE | DIO1_RX_TIMEOUT
 				| DIO2_FHSS_CHANGE_CHANNEL | DIO3_VALID_HEADER;
 		module->flagsMode = 0xff;
@@ -148,7 +148,7 @@ void updateMode(SX1278_t *module, Lora_Mode_t mode) {
 
 	} else if (mode == SLAVE_RECEIVER || mode == MASTER_RECEIVER) {
 		module->frequency =
-				(mode == SLAVE_RECEIVER) ? DOWNLINK_FREQ : UPLINK_FREQ;
+				(mode == SLAVE_RECEIVER) ? module->dlFreq : module->upFreq;
 
 		module->dioConfig = DIO0_RX_DONE | DIO1_RX_TIMEOUT
 				| DIO2_FHSS_CHANGE_CHANNEL | DIO3_VALID_HEADER;
@@ -168,11 +168,7 @@ void updateMode(SX1278_t *module, Lora_Mode_t mode) {
 
 void initLoRaParameters(SX1278_t *module, Lora_Mode_t mode) {
 	module->power = SX1278_POWER_17DBM;
-	module->LoRa_SF = SF_10;
-	module->LoRa_BW = LORABW_62_5KHZ;
-	module->LoRa_CR = LORA_CR_4_6;
 	module->LoRa_CRC_sum = CRC_ENABLE;
-	//module->LoRa_CRC_sum = CRC_DISABLE;
 	module->ocp = OVERCURRENTPROTECT;
 	module->lnaGain = LNAGAIN;
 	module->AgcAutoOn = 12; // for L-TEL PROTOCOL

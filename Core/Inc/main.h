@@ -61,10 +61,10 @@ void Error_Handler(void);
 #define LORA_NSS_GPIO_Port GPIOB
 #define LORA_RST_Pin GPIO_PIN_1
 #define LORA_RST_GPIO_Port GPIOB
-#define LORA_DIO3_Pin GPIO_PIN_2
-#define LORA_DIO3_GPIO_Port GPIOB
-#define LORA_DIO1_Pin GPIO_PIN_8
-#define LORA_DIO1_GPIO_Port GPIOA
+#define DIO3_Pin GPIO_PIN_2
+#define DIO3_GPIO_Port GPIOB
+#define DIO1_Pin GPIO_PIN_8
+#define DIO1_GPIO_Port GPIOA
 #define RS232_TX_Pin GPIO_PIN_9
 #define RS232_TX_GPIO_Port GPIOA
 #define LORA_BUSSY_Pin GPIO_PIN_6

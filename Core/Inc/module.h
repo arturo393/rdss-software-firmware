@@ -27,10 +27,16 @@
 #define pa_state()  READ_BIT(GPIOA->ODR,GPIO_ODR_OD3) ? 1 : 0
 
 typedef enum MODULE_FUNCTION {
-	VLAD = 0x05,
-	LOW_NOISE_AMPLIFIER = 0x08,
-	POWER_AMPLIFIER = 0x09,
-	UHF_TONE = 0x07
+	SERVER,
+	QUAD_BAND,
+	PSU,
+	TETRA,
+	ULADR,
+	VLADR,
+	BDA,
+	LOW_NOISE_AMPLIFIER,
+	POWER_AMPLIFIER,
+	UHF_TONE
 } Function_t;
 
 typedef enum MODULE_ID {
@@ -92,8 +98,7 @@ typedef struct VLAD_MODULE {
 static const uint8_t MODULE_ADDR = 0x08;
 static const uint8_t MODULE_FUNCTION = 0x09;
 
-static const uint8_t LTEL_START_MARK = 0x7e;
-static const uint8_t LTEL_END_MARK = 0x7f;
+
 
 void module_init(Module_pa_t*, Function_t, Id_t);
 void module_calc_parameters(Module_pa_t m, uint16_t *media_array);

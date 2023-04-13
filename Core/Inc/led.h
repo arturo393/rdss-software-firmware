@@ -27,12 +27,12 @@
 
 typedef struct LED{
 	uint32_t kaCounter;
-	uint32_t clCounter;
-	uint32_t cnCounter;
-	uint32_t chCounter;
-	uint32_t sysrpCounter;
-	uint32_t tokCounter;
-	uint32_t thCounter;
+//	uint32_t clCounter;
+//	uint32_t cnCounter;
+//	uint32_t chCounter;
+//	uint32_t sysrpCounter;
+//	uint32_t tokCounter;
+//	uint32_t thCounter;
 }LED_t;
 
 void ledInit(LED_t *led);
