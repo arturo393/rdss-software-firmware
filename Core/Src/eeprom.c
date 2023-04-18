@@ -11,16 +11,18 @@ void m24c64_page_read(uint8_t address, uint8_t page, uint8_t *data) {
 	i2c1MasterFrameRx(CHIP_ADDR, data, 32);
 }
 
-void readPage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
+uint8_t readPage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
 	uint8_t buff[1] = { 0 };
 	uint16_t MemAddress = page << PADDRPOSITION | offset;
+	uint8_t readedBytes = 0;
 
 	//buff[0] = MemAddress >> 8;
 	buff[0] = MemAddress & 0xff;
 
 	i2c1MasterByteTx(CHIP_ADDR, buff, 1);
 	HAL_Delay(5);
-	i2c1MasterFrameRx(CHIP_ADDR, data, size);
+	readedBytes = i2c1MasterFrameRx(CHIP_ADDR, data, size);
+	return readedBytes;
 }
 
 void savePage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {

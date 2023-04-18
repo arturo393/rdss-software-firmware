@@ -13,8 +13,8 @@
 #include "stdlib.h"
 #include "string.h"
 
-#define RX_BUFFLEN 100
-#define TX_BUFFLEN  100
+#define RX_BUFFLEN 50
+#define TX_BUFFLEN  50
 #define SECONDS(x) x*1000
 
 typedef struct UART1 {
@@ -28,7 +28,7 @@ typedef struct UART1 {
 } UART1_t;
 
 uint8_t  cleanByTimeout(UART1_t* uart1,const char* str);
-void uart1Init(uint32_t, uint32_t, UART1_t*);
+UART1_t *uart1Init(uint32_t, uint32_t);
 void writeTxReg(volatile uint8_t);
 void writeTxStr( char*);
 void writeTxBuffer(uint8_t[], uint8_t);

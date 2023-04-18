@@ -11,8 +11,8 @@
 #ifndef INC_I2C1_H_
 #define INC_I2C1_H_
 
-#define WRITE 0
-#define READ 1
+#define I2C_WRITE 0
+#define I2C_READ 1
 #define I2C1_OWN_ADDRESS 0x5C
 #define I2C_TIMEOUT_MS 20
 #define I2C_RX_BUFFER_SIZE 20
@@ -40,14 +40,15 @@ uint32_t crc_value;
 }I2C_t;
 
 void i2c1MasterInit();
+//void i2cMasterInit(I2C_TypeDef *i2c);
 void i2c1SlaveInit(I2C_t *i2c);
 void i2c1GpioInit();
 void i2c2GpioInit();
-void  i2c1MasterStartTransfer(char,uint8_t,uint8_t);
+void  i2c1MasterStartTransfer(uint8_t,uint8_t,uint8_t);
 char i2c1MasterByteRx(char ,uint8_t);
 void i2c1MasterByteTx(uint8_t,uint8_t*,uint8_t);
 void  i2c1AddresScanner(uint8_t *addr,uint8_t max_addr);
-void  i2c1MasterFrameRx(char saddr, uint8_t *rcv,  uint8_t N);
+uint8_t  i2c1MasterFrameRx(uint8_t saddr, uint8_t *rcv,  uint8_t N);
 uint8_t i2c1SlaveTx(I2C_t *i2c);
 uint8_t i2c1SlaveRx(I2C_t *i2c);
 void i2cCleanBuffer(I2C_t *i2c);

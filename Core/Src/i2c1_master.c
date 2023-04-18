@@ -15,59 +15,48 @@ void i2cCleanBuffer(I2C_t *i2c) {
 }
 
 void i2c1MasterInit() {
+	// Enable GPIOB clock
+	SET_BIT(RCC->IOPENR, RCC_IOPENR_GPIOBEN);
 
-	i2c1GpioInit();
-	/* clock enable */
+	// Set SCL and SDA pins as alternate function
+	CLEAR_BIT(GPIOB->MODER, GPIO_MODER_MODE6_0 | GPIO_MODER_MODE7_0);
+	SET_BIT(GPIOB->MODER, GPIO_MODER_MODE6_1 | GPIO_MODER_MODE7_1);
+
+	// Set SCL and SDA pins as open-drain
+	SET_BIT(GPIOB->OTYPER, GPIO_OTYPER_OT6 | GPIO_OTYPER_OT7);
+
+	// Set alternate function to I2C
+	CLEAR_BIT(GPIOB->AFR[0],
+			GPIO_AFRL_AFSEL6 | GPIO_AFRL_AFSEL6_1 | GPIO_AFRL_AFSEL6_2 | GPIO_AFRL_AFSEL6_3);
+	SET_BIT(GPIOB->AFR[0], GPIO_AFRL_AFSEL6_1 | GPIO_AFRL_AFSEL6_2);
+	CLEAR_BIT(GPIOB->AFR[0],
+			GPIO_AFRL_AFSEL7 | GPIO_AFRL_AFSEL7_1 | GPIO_AFRL_AFSEL7_2 | GPIO_AFRL_AFSEL7_3);
+	SET_BIT(GPIOB->AFR[0], GPIO_AFRL_AFSEL7_1 | GPIO_AFRL_AFSEL7_2);
+
+	// Enable I2C1 clock
 	SET_BIT(RCC->APBENR1, RCC_APBENR1_I2C1EN);
-	/* peripherial disable */
+
+	// Disable I2C1
 	CLEAR_BIT(I2C1->CR1, I2C_CR1_PE);
-	/* set timing */
+
+	// Set I2C1 timing
 	I2C1->TIMINGR = 0x00303D5B;
-	/* */
+
+	// Disable I2C1 own address
 	CLEAR_BIT(I2C1->OAR1, I2C_OAR1_OA1EN);
 	CLEAR_BIT(I2C1->OAR2, I2C_OAR2_OA2EN);
 
-	/*tx and rx interrupt enable */
-	SET_BIT(I2C1->CR1, I2C_CR1_RXIE);
-	SET_BIT(I2C1->CR1, I2C_CR1_TXIE);
+	// Enable I2C1 RX and TX interrupts
+	SET_BIT(I2C1->CR1, I2C_CR1_RXIE | I2C_CR1_TXIE);
 
-	/* peripherial enable */
+	// Enable I2C1
 	SET_BIT(I2C1->CR1, I2C_CR1_PE);
-}
-
-void i2c1GpioInit() {
-
-	SET_BIT(RCC->IOPENR, RCC_IOPENR_GPIOBEN);
-	/* SCL PB6  as alternate */
-	CLEAR_BIT(GPIOB->MODER, GPIO_MODER_MODE6_0);
-	SET_BIT(GPIOB->MODER, GPIO_MODER_MODE6_1);
-	/* SDA PB7 as alternate */
-	CLEAR_BIT(GPIOB->MODER, GPIO_MODER_MODE7_0);
-	SET_BIT(GPIOB->MODER, GPIO_MODER_MODE7_1);
-	/* SCL PB6  as open-drain */
-	SET_BIT(GPIOB->OTYPER, GPIO_OTYPER_OT6);
-	/* SDC PB7  as open-drain */
-	SET_BIT(GPIOB->OTYPER, GPIO_OTYPER_OT7);
-	/* SCL PB6 High Speed output */
-	//SET_BIT(GPIOB->OSPEEDR, GPIO_OSPEEDR_OSPEED6_1 | GPIO_OSPEEDR_OSPEED6_0);
-	/* SDC PB7  High Speed output */
-	//SET_BIT(GPIOB->OSPEEDR, GPIO_OSPEEDR_OSPEED7_1 |GPIO_OSPEEDR_OSPEED7_0);
-
-	CLEAR_BIT(GPIOB->AFR[0], GPIO_AFRL_AFSEL6);
-	SET_BIT(GPIOB->AFR[0], GPIO_AFRL_AFSEL6 << 1);
-	SET_BIT(GPIOB->AFR[0], GPIO_AFRL_AFSEL6<<2);
-	CLEAR_BIT(GPIOB->AFR[0], GPIO_AFRL_AFSEL6<<3);
-
-	CLEAR_BIT(GPIOB->AFR[0], GPIO_AFRL_AFSEL7);
-	SET_BIT(GPIOB->AFR[0], GPIO_AFRL_AFSEL7<<1);
-	SET_BIT(GPIOB->AFR[0], GPIO_AFRL_AFSEL7<<2);
-	CLEAR_BIT(GPIOB->AFR[0], GPIO_AFRL_AFSEL7<<3);
 }
 
 char i2c2MasterByteRx(char saddr, uint8_t N) {
 	uint32_t counter = HAL_GetTick();
 	bool timeout = false;
-	i2c1MasterStartTransfer(saddr, READ, N);
+	i2c1MasterStartTransfer(saddr, I2C_READ, N);
 
 	char data = 0;
 	for (int i = 0; i < N; i++) {
@@ -87,16 +76,17 @@ char i2c2MasterByteRx(char saddr, uint8_t N) {
 	return data;
 }
 
-void i2c1MasterFrameRx(char saddr, uint8_t *rcv, uint8_t N) {
+uint8_t i2c1MasterFrameRx(uint8_t saddr, uint8_t *rcv, uint8_t N) {
 	uint32_t counter = HAL_GetTick();
 	bool timeout = false;
-	i2c1MasterStartTransfer(saddr, READ, N);
+	uint8_t i = 0;
+	i2c1MasterStartTransfer(saddr, I2C_READ, N);
 
-	for (int i = 0; i < N; i++) {
+	for (i = 0; i < N; i++) {
 		while (!READ_BIT(I2C1->ISR, I2C_ISR_RXNE) & !timeout) {
 			if (HAL_GetTick() - counter > I2C_TIMEOUT_MS) {
 				CLEAR_BIT(I2C1->CR1, I2C_CR1_PE);
-				return;
+				return i;
 			}
 		}
 		rcv[i] = READ_REG(I2C1->RXDR);
@@ -105,9 +95,10 @@ void i2c1MasterFrameRx(char saddr, uint8_t *rcv, uint8_t N) {
 	while (!(READ_BIT(I2C1->ISR, I2C_ISR_STOPF))) {
 	}
 	SET_BIT(I2C1->ICR, I2C_ICR_STOPCF);
+	return i;
 }
 
-void i2c1MasterStartTransfer(char saddr, uint8_t transfer_request, uint8_t N) {
+void i2c1MasterStartTransfer(uint8_t saddr, uint8_t transfer_request, uint8_t N) {
 	/* peripherial disable */
 	SET_BIT(I2C1->CR1, I2C_CR1_PE);
 	/* set slave address */
@@ -132,20 +123,20 @@ void i2c1MasterStartTransfer(char saddr, uint8_t transfer_request, uint8_t N) {
 void i2c1AddresScanner(uint8_t *addr, uint8_t max_addr) {
 	uint32_t counter = HAL_GetTick();
 	uint8_t j = 0;
-	bool timeout = false;
+	bool waintUntilTimeout = false;
 
 	for (int i = 1; i < max_addr; i++) {
-		i2c1MasterStartTransfer(i << 1 | 1, READ, 1);
-		timeout = false;
+		i2c1MasterStartTransfer(i << 1 | 1, I2C_READ, 1);
+		waintUntilTimeout = false;
 
-		while (!READ_BIT(I2C1->ISR, I2C_ISR_RXNE) & !timeout) {
+		while (!READ_BIT(I2C1->ISR, I2C_ISR_RXNE) & !waintUntilTimeout) {
 			if (HAL_GetTick() - counter > 50) {
 				counter = HAL_GetTick();
-				timeout = true;
+				waintUntilTimeout = true;
 			}
 		}
 
-		if (!timeout) {
+		if (!waintUntilTimeout) {
 			addr[j++] = i;
 			READ_REG(I2C1->RXDR);
 		}
@@ -153,14 +144,14 @@ void i2c1AddresScanner(uint8_t *addr, uint8_t max_addr) {
 
 }
 
-void i2c1MasterByteTx(uint8_t saddr, uint8_t *data, uint8_t N) {
-	i2c1MasterStartTransfer(saddr, WRITE, N);
-	uint32_t counter = HAL_GetTick();
+void i2c1MasterByteTx(uint8_t slave_address, uint8_t *data, uint8_t num_bytes) {
+	i2c1MasterStartTransfer(slave_address, I2C_WRITE, num_bytes);
+	uint32_t startTick = HAL_GetTick();
 
-	for (int i = 0; i < N; i++) {
+	for (int i = 0; i < num_bytes; i++) {
 		while (!READ_BIT(I2C1->ISR, I2C_ISR_TXIS)) {
 
-			if (HAL_GetTick() - counter > I2C_TIMEOUT_MS) {
+			if (HAL_GetTick() - startTick > I2C_TIMEOUT_MS) {
 				CLEAR_BIT(I2C1->CR1, I2C_CR1_PE);
 				return;
 			}
@@ -223,11 +214,10 @@ void i2c1SlaveDelayedReset(I2C_t *i2c_slave, uint32_t timeout) {
 bool i2c1SlaveAddrsMatch(I2C_t *i2c_slave) {
 	uint32_t I2C_InterruptStatus = I2C1->ISR;
 	/* Get interrupt status */
-	if ((I2C_InterruptStatus & I2C_ISR_ADDR)
-			== I2C_ISR_ADDR) {
+	if ((I2C_InterruptStatus & I2C_ISR_ADDR) == I2C_ISR_ADDR) {
 		I2C1->ICR |= I2C_ICR_ADDRCF;
 		i2c_slave->rx_count = 0;
-	return true;
+		return true;
 	}
 	return false;
 }
@@ -250,5 +240,4 @@ void i2c1SalveRx(I2C_t *i2c_slave) {
 	if ((I2C_InterruptStatus & I2C_ISR_RXNE) == I2C_ISR_RXNE)
 		i2c_slave->data_rx[i2c_slave->rx_count++] = I2C1->RXDR;
 }
-
 

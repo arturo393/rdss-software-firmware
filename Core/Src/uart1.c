@@ -42,8 +42,10 @@ void uart1_gpio_init() {
 	CLEAR_BIT(GPIOA->AFR[1], GPIO_AFRH_AFSEL9_3);
 }
 
-void uart1Init(uint32_t pclk, uint32_t baud_rate, UART1_t *u) {
+UART1_t* uart1Init(uint32_t pclk, uint32_t baud_rate) {
 	uint32_t br_value = 0;
+	UART1_t * u1;
+	u1 = malloc(sizeof(UART1_t));
 
 	uart1_gpio_init();
 
@@ -60,7 +62,7 @@ void uart1Init(uint32_t pclk, uint32_t baud_rate, UART1_t *u) {
 	USART1->BRR = (uint16_t) br_value;
 	/* transmitter enable*/
 	USART1->CR1 = USART_CR1_TE | USART_CR1_RE;
-	u->txLen = 0;
+	u1->txLen = 0;
 
 	//uart1_clean_buffer(u);
 
@@ -70,6 +72,7 @@ void uart1Init(uint32_t pclk, uint32_t baud_rate, UART1_t *u) {
 	SET_BIT(USART1->CR1, USART_CR1_RXNEIE_RXFNEIE);
 	NVIC_EnableIRQ(USART1_IRQn);
 	SET_BIT(USART1->CR1, USART_CR1_UE);
+	return u1;
 }
 
 void uart1_dma_init() {
@@ -147,10 +150,10 @@ void writeTxStr(char *str) {
 		writeTxReg(str[i]);
 }
 
-void writeTxBuffer(uint8_t str[], uint8_t len) {
+void writeTxBuffer(uint8_t *str, uint8_t len) {
 	for (uint8_t i = 0; i < len; i++) {
 		writeTxReg(str[i]);
-		str[i] = (char) '\0';
+		str[i] = '\0';
 	}
 }
 

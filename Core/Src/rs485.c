@@ -30,7 +30,7 @@ void rdssInit(RDSS_t *r, uint8_t id) {
 	r->status = WAITING;
 	r->cmd = NONE;
 	r->id = 6;
-	memset(r->buffer, 0, 100);
+	memset(r->buffer, 0, RDSS_BUFFER_SIZE);
 	/* PB9 DE485 as output  */
 	SET_BIT(GPIOB->MODER, GPIO_MODER_MODE9_0);
 	CLEAR_BIT(GPIOB->MODER, GPIO_MODER_MODE9_1);
@@ -251,3 +251,66 @@ void reinit(RDSS_t *rs485) {
 	rs485->len = 0;
 }
 
+void encodeVlad(uint8_t* buff){
+	uint16_t lineVoltage = rand() % 610;
+	uint16_t baseCurrent = rand() % 301;
+	uint16_t tunnelCurrent = rand() % 1001;
+	uint16_t unitCurrent = rand() % 301;
+	uint8_t uplinkAgc = rand() % 43;
+	uint8_t downlinkInputPower = rand() % 130;
+	uint8_t downlinkAgc = rand() % 43;
+	uint8_t uplinkOuputPower = rand() % 130;
+
+	buff[7] = (lineVoltage >> 8) & 0xFF;
+	buff[6] = lineVoltage & 0xFF;
+	buff[9] = (baseCurrent >> 8) & 0xFF;
+	buff[8] = baseCurrent & 0xFF;
+	buff[11] = (tunnelCurrent >> 8) & 0xFF;
+	buff[10] = tunnelCurrent & 0xFF;
+	buff[13] = (unitCurrent >> 8) & 0xFF;
+	buff[12] = unitCurrent & 0xFF;
+	buff[14] = uplinkAgc;
+	buff[15] = downlinkInputPower;
+	buff[16] = downlinkAgc;
+	buff[17] = uplinkOuputPower;
+}
+
+uint8_t setCrc(uint8_t* buff,uint8_t i){
+	uint8_t crc_frame[2];
+	uint16_t crc;
+	crc = crc_get(&(buff[1]), i - 1);
+	memcpy(crc_frame, &crc, 2);
+	buff[i++] = crc_frame[0];
+	buff[i++] = crc_frame[1];
+	return i;
+}
+
+uint8_t setRdssStartData(RDSS_t *rdss, uint8_t *buffer) {
+	uint8_t i = 0;
+	if (rdss->cmd == 0)
+		return i;
+	if (rdss->id == 0)
+		return i;
+	buffer[i++] = LTEL_START_MARK;
+	buffer[i++] = VLADR;
+	buffer[i++] = rdss->id;
+	buffer[i++] = rdss->cmd;
+	buffer[i++] = 0x00;
+	return i;
+}
+
+float freqDecode(uint8_t *buffer) {
+	union floatConverter freq;
+	freq.i = 0;
+	freq.i |= (buffer[0]);
+	freq.i |= (buffer[1] << 8);
+	freq.i |= (buffer[2] << 16);
+	freq.i |= (buffer[3] << 24);
+	return freq.f * 1000000.0f;
+}
+
+void freqEncode(uint8_t *buffer, uint32_t freqIn) {
+	union floatConverter freqOut;
+	freqOut.f = freqIn / 1000000.0f;
+	memcpy(buffer, &freqOut.i, sizeof(freqOut.i));
+}

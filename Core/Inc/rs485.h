@@ -20,6 +20,7 @@
 #define SIGMA_FRAME_SIZE 14
 #define LTEL_START_MARK 0x7e
 #define LTEL_END_MARK  0x7f
+#define RDSS_BUFFER_SIZE 50
 
 typedef enum RS485_CMD {
 	NONE,
@@ -87,15 +88,15 @@ union floatConverter {
 typedef struct RS485 {
 	Rs485_cmd_t cmd;
 	uint8_t len;
-	uint8_t buffer[256];
+	uint8_t buffer[RDSS_BUFFER_SIZE];
 	uint16_t crcCalculated;
 	uint16_t crcReceived;
 	uint8_t idQuery;
 	uint8_t idReceived;
 	uint8_t id;
 	Rs485_status_t status;
-	Rs485_status_t lastStatus;
 } RDSS_t;
+
 uint16_t crc_get(uint8_t *buffer, uint8_t buff_len);
 Rs485_status_t rdssCheckFrame(RDSS_t *r, UART1_t *u);
 Rs485_status_t rs485_check_valid_module(UART1_t *uart1);
@@ -111,5 +112,10 @@ void fillValidBuffer(RDSS_t *r, uint8_t *buff, uint8_t len);
 void rdssInit(RDSS_t*,uint8_t id);
 void rs485Uart1Decode(RDSS_t *rs485, UART1_t *uart1, SX1278_t *loraRx);
 void reinit(RDSS_t *rs485);
+void encodeVlad(uint8_t* buff);
+uint8_t setCrc(uint8_t* buff,uint8_t i);
+uint8_t setRdssStartData(RDSS_t *rdss, uint8_t *buffer);
+float freqDecode(uint8_t *buffer);
+void freqEncode(uint8_t *buffer, uint32_t freqIn);
 #endif /* INC_RS485_H_ */
 
