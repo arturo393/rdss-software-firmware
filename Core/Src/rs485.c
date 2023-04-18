@@ -29,7 +29,7 @@ void rdssInit(RDSS_t *r, uint8_t id) {
 	r->len = 0;
 	r->status = WAITING;
 	r->cmd = NONE;
-	r->id = 6;
+	r->id = id;
 	memset(r->buffer, 0, RDSS_BUFFER_SIZE);
 	/* PB9 DE485 as output  */
 	SET_BIT(GPIOB->MODER, GPIO_MODER_MODE9_0);

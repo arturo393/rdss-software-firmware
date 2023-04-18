@@ -218,6 +218,8 @@ void updateMode(SX1278_t *module, Lora_Mode_t mode) {
 	writeRegister(module->spi, LR_RegIrqFlagsMask, &(module->flagsMode), 1);
 }
 
+
+
 void initLoRaParameters(SX1278_t *module) {
 	module->power = SX1278_POWER_17DBM;
 	module->LoRa_CRC_sum = CRC_ENABLE;
@@ -261,7 +263,7 @@ void waitForTxEnd(SX1278_t *loRa) {
 	}
 }
 
-uint8_t waitForRxDone(SX1278_t *loRa) {
+uint8_t waitForRxDone2(SX1278_t *loRa) {
 	uint32_t timeout = HAL_GetTick();
 	while ((!HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port, LORA_BUSSY_Pin))) {
 		uint8_t flags = readRegister(loRa->spi, LR_RegIrqFlags);
@@ -275,6 +277,23 @@ uint8_t waitForRxDone(SX1278_t *loRa) {
 	}
 	return 0;
 }
+
+uint8_t waitForRxDone(SX1278_t *loRa) {
+    uint32_t timeout = HAL_GetTick();
+    while (!HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port, LORA_BUSSY_Pin)) {
+        uint8_t flags = readRegister(loRa->spi, LR_RegIrqFlags);
+        if (flags & PAYLOAD_CRC_ERROR_MASK) {
+            flags |= (1 << 7);
+            writeRegister(loRa->spi, LR_RegIrqFlags, &flags, 1);
+            flags = readRegister(loRa->spi, LR_RegIrqFlags);
+        }
+        if (HAL_GetTick() - timeout > 2000) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
 
 void setRxFifoAddr(SX1278_t *module) {
 	setLoraLowFreqModeReg(module, SLEEP); //Change modem mode Must in Sleep mode

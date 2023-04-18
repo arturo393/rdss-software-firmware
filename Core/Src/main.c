@@ -133,9 +133,8 @@ int main(void) {
 	u1 = uart1Init(HS16_CLK, BAUD_RATE);
 //	spi1_init();
 	u1->debug = false;
-	//i2c1MasterInit();
 	i2c1MasterInit();
-	rdssInit(&rdss, 6);
+	rdssInit(&rdss, 4);
 	ledInit(&led);
 	loRa = loRaInit(&hspi1);
 	//printLoRaStatus(u1, loRa);
@@ -146,14 +145,13 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-
 		if (rdss.status == LORA_RECEIVE) {
 			uint8_t i = 0;
 			i = setRdssStartData(&rdss, loRa->buffer);
 			if (rdss.cmd == QUERY_STATUS) {
 				encodeVlad(loRa->buffer);
 				i = 18;
-				i = setCrc(u1->tx, i);
+				i = setCrc(loRa->buffer, i);
 				loRa->buffer[i] = LTEL_END_MARK;
 				loRa->len = 21;
 				loRa->status = TX_BUFFER_READY;
