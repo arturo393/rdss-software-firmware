@@ -20,7 +20,7 @@
 typedef struct UART1 {
 	uint8_t rx[RX_BUFFLEN];
 	uint8_t tx[TX_BUFFLEN];
-	uint8_t txLen;
+	uint8_t tx_len;
 	uint8_t rxLen;
 	uint32_t timeout;
 	bool isReady;

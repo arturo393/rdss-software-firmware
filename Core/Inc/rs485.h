@@ -21,6 +21,8 @@
 #define LTEL_START_MARK 0x7e
 #define LTEL_END_MARK  0x7f
 #define RDSS_BUFFER_SIZE 50
+#define LTEL_SET_LENGTH  13
+#define LTEL_QUERY_LENGTH  9
 
 typedef enum RS485_CMD {
 	NONE,

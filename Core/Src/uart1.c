@@ -62,7 +62,7 @@ UART1_t* uart1Init(uint32_t pclk, uint32_t baud_rate) {
 	USART1->BRR = (uint16_t) br_value;
 	/* transmitter enable*/
 	USART1->CR1 = USART_CR1_TE | USART_CR1_RE;
-	u1->txLen = 0;
+	u1->tx_len = 0;
 
 	//uart1_clean_buffer(u);
 
@@ -158,7 +158,7 @@ void writeTxBuffer(uint8_t *str, uint8_t len) {
 }
 
 void writeTx(UART1_t *uart1) {
-	writeTxBuffer(uart1->tx, uart1->txLen);
+	writeTxBuffer(uart1->tx, uart1->tx_len);
 }
 
 void cleanRx(UART1_t *u) {
@@ -169,5 +169,5 @@ void cleanRx(UART1_t *u) {
 
 void cleanTx(UART1_t *u) {
 	memset(u->tx, 0, sizeof(u->tx));
-	u->txLen = 0;
+	u->tx_len = 0;
 }

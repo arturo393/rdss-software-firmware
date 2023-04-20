@@ -38,9 +38,9 @@ void rdssInit(RDSS_t *r, uint8_t id) {
 }
 Rs485_status_t rdssCheckFrame(RDSS_t *r, UART1_t *u) {
 
-	if (u->txLen > (MINIMUN_FRAME_LEN)) {
+	if (u->tx_len > (MINIMUN_FRAME_LEN)) {
 		if (u->rx[0] == LTEL_START_MARK) {
-			if (u->rx[u->txLen - 1] == LTEL_END_MARK)
+			if (u->rx[u->tx_len - 1] == LTEL_END_MARK)
 				return VALID_FRAME;
 			else
 				return START_READING;
@@ -65,7 +65,7 @@ Rs485_status_t rs485_check_CRC_module(UART1_t *uart1) {
 Rs485_status_t rs485_check_valid_module(UART1_t *uart1) {
 	if (uart1->rx[1] == VLADR) {
 		if (uart1->rx[2] == ID1) {
-			for (int i = 3; i < uart1->txLen; i++)
+			for (int i = 3; i < uart1->tx_len; i++)
 				if (uart1->rx[i] == LTEL_END_MARK)
 					return VALID_MODULE;
 		} else

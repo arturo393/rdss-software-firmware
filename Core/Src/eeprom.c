@@ -59,7 +59,7 @@ void m24c64_init_16uvalue(M24C64_ADDR_t addr, uint16_t value) {
 	}
 }
 
-void m24c64_store_16uvalue(M24C64_ADDR_t addr, uint16_t value) {
+void saveU16(M24C64_ADDR_t addr, uint16_t value) {
 	uint8_t buff[2];
 	buff[0] = value >> 8;
 	buff[1] = value & 0xff;
