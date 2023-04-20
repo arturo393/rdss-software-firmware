@@ -30,8 +30,8 @@ typedef enum State{
 }I2CState;
 
 typedef struct I2C{
-uint8_t data_tx[I2C_TX_BUFFER_SIZE];
-uint8_t data_rx[I2C_RX_BUFFER_SIZE];
+uint8_t tx[I2C_TX_BUFFER_SIZE];
+uint8_t rx[I2C_RX_BUFFER_SIZE];
 uint8_t rx_count;
 uint8_t tx_count;
 I2CState state;
@@ -49,12 +49,12 @@ char i2c1MasterByteRx(char ,uint8_t);
 void i2c1MasterByteTx(uint8_t,uint8_t*,uint8_t);
 void  i2c1AddresScanner(uint8_t *addr,uint8_t max_addr);
 uint8_t  i2c1MasterFrameRx(uint8_t saddr, uint8_t *rcv,  uint8_t N);
-uint8_t i2c1SlaveTx(I2C_t *i2c);
+uint8_t i2c1SlaveTx2(I2C_t *i2c);
 uint8_t i2c1SlaveRx(I2C_t *i2c);
 void i2cCleanBuffer(I2C_t *i2c);
 uint8_t isCrcValid(I2C_t *i2c);
 void i2c1SlaveDelayedReset(I2C_t *i2c_slave, uint32_t timeout);
 bool i2c1SlaveAddrsMatch(I2C_t *i2c_slave);
-void i2c1SalveTx(const I2C_t *i2c_slave);
+void i2c1SlaveTx(const I2C_t *i2c_slave);
 void i2c1SalveRx(I2C_t *i2c_slave);
 #endif /* INC_I2C1_H_ */
