@@ -88,7 +88,18 @@ void parseUartMaster(UART1_t *u1, RDSS_t *rs485);
 void parseUartSlave(UART1_t *u1, RDSS_t *rs485);
 void sendQuery(RDSS_t *rs485, SX1278_t *loRa, UART1_t *u1);
 uint8_t setBufferWithLtelCmd(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa);
+uint8_t queryVladStatus(uint8_t i);
+void i2c_address_scanner(I2C_HandleTypeDef *hi2c, uint8_t *addresses, uint8_t *address_count) {
+    uint8_t count = 0;
 
+    for (uint8_t address = 0; address < 128; address++) {
+        if (HAL_I2C_IsDeviceReady(hi2c, (address << 1), 1, 100) == HAL_OK) {
+            addresses[count++] = address;
+        }
+    }
+
+    *address_count = count;
+}
 /* USER CODE END 0 */
 
 /**
@@ -125,12 +136,20 @@ int main(void) {
 	MX_SPI1_Init();
 	// MX_USART1_UART_Init();
 	MX_CRC_Init();
-	MX_I2C1_Init();
+//	MX_I2C1_Init();
 	/* USER CODE BEGIN 2 */
-	u1 = uart1Init(HS16_CLK, BAUD_RATE);
+
+    uint8_t addresses[128]={0};
+    uint8_t address_count;
+
+    // Initialize the I2C peripheral (hi2c1) here
+
+    u1 = uart1Init(HS16_CLK, BAUD_RATE);
 //	spi1_init();
 	u1->debug = false;
 	i2c1MasterInit();
+	uint8_t addr[5]={0};
+	uint8_t addr_count = 0;
 	rdssInit(&rdss, 2);
 	ledInit(&led);
 	loRa = loRaInit(&hspi1);
@@ -208,29 +227,8 @@ int main(void) {
 				//printLoRaStatus(u1, loRa);
 			}
 
-		} else if (HAL_GetTick() - startTick > 5000) {
-			uint32_t crc_value = 0;
-			uint8_t *crc_value_ptr;
-			uint8_t i = 0, ret;
-			uint8_t data[2];
-
-			data[0] = 0x11;
-			data[1] = attenuation++;
-			if (attenuation == 32)
-				attenuation = 0;
-			uint8_t buff[LTEL_QUERY_LENGTH] = { 0x7E, 0x05, 0x00, 0x11, 0x00,
-					counter++, 0x04, 0x57, 0x7F };
-			uint8_t rx[20] = { 0 };
-			i2c1MasterByteTx(0x08, buff, sizeof(buff));
-			HAL_Delay(5);
-			i2c1MasterFrameRx(0x08, rx, sizeof(rx));
-			u1->tx_len = sizeof(rx);
-			memcpy(u1->tx, rx, u1->tx_len);
-			//		writeTx(u1);
-			u1->tx_len = 0;
-			startTick = HAL_GetTick();
-			if (counter == 255)
-				counter = 0;
+		}
+		if (HAL_GetTick() - startTick > 5000) {
 
 		}
 	}
@@ -860,14 +858,15 @@ void sendQuery(RDSS_t *rs485, SX1278_t *loRa, UART1_t *u1) {
 
 uint8_t setBufferWithLtelCmd(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa) {
 	if (rdss->len != LTEL_QUERY_LENGTH && rdss->len != LTEL_SET_LENGTH)
-	    return 0;
+		return 0;
 
 	uint8_t i = 0;
-	i = setRdssStartData(&*rdss, buffer);
+
+	i = setRdssStartData(rdss, buffer);
+
 	switch (rdss->cmd) {
 	case QUERY_STATUS:
-		encodeVlad(buffer);
-		i = 18;
+		i = queryVladStatus(i);
 		break;
 	case QUERY_RX_FREQ:
 		buffer[i++] = 4;
@@ -932,6 +931,61 @@ uint8_t setBufferWithLtelCmd(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa) {
 	i = setCrc(buffer, i);
 	buffer[i++] = LTEL_END_MARK;
 	rdss->status = UART_SEND;
+	return i;
+}
+
+uint8_t queryVladStatus(uint8_t i) {
+	uint16_t crc_value = 0;
+	uint8_t crc_frame[2] = { 0 };
+	uint8_t slave_address = 0;
+	uint8_t query[3] = { 0 };
+	uint16_t values[11] = { 0 };
+	union floatConverter uc_temperature;
+
+	slave_address = 0x08;
+	crc_value = crc_get(query, 1);
+	memcpy(crc_frame, &crc_value, 2);
+	query[0] = 0x10;
+	query[1] = crc_frame[0];
+	query[2] = crc_frame[1];
+	if (!i2c1MasterTransmit(slave_address, query, sizeof(query), 200)) {
+		if (READ_BIT(I2C1->ISR, I2C_ISR_BUSY)) {
+			CLEAR_BIT(I2C1->CR1, I2C_CR1_PE);
+			SET_BIT(I2C1->ICR, I2C_ICR_STOPCF);
+			HAL_Delay(1);
+			SET_BIT(I2C1->CR1, I2C_CR1_PE);
+		}
+		return i;
+	}
+	uint8_t rx_buffer[26] = { 0 };
+	if (!i2c1MasterReceive(slave_address, rx_buffer, sizeof(rx_buffer), 200)) {
+		if (READ_BIT(I2C1->ISR, I2C_ISR_BUSY)) {
+			CLEAR_BIT(I2C1->CR1, I2C_CR1_PE);
+			SET_BIT(I2C1->ICR, I2C_ICR_STOPCF);
+			HAL_Delay(1);
+			SET_BIT(I2C1->CR1, I2C_CR1_PE);
+		}
+		return i;
+	}
+	u1->tx_len = sizeof(rx_buffer);
+
+	for (int j = 0; j < 11; j++) {
+		values[j] = (rx_buffer[i + 1] << 8) | rx_buffer[i];
+		i += 2;
+	}
+
+	uint16_t level152m = values[0];
+	uint16_t level172m = values[1];
+	uint16_t agc152m = values[2];
+	uint16_t agc172m = values[3];
+	uint16_t ref152m = values[4];
+	uint16_t tone_level = values[5];
+	uint16_t vin = values[6];
+	uint16_t v_5v = values[7];
+	uint16_t current = values[8];
+	uc_temperature.i = (values[9] & 0xFFFF) | ((values[10] & 0xFFFF) << 16);
+	i = 18;
+
 	return i;
 }
 
