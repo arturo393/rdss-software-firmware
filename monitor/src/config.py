@@ -3,6 +3,10 @@ BASE_PATH = "/opt/rdss/monitor/"
 FORMAT = 'utf-8'
 POLLING_SLEEP = 2
 LOGGING_FILE = "monitor.log"
+AGC_DATA = BASE_PATH+"agcdata.csv"
+POWER_DATA = BASE_PATH+"power.csv"
+VOLTAGE_DATA = BASE_PATH+"voltage.csv"
+CURRENT_DATA = BASE_PATH+"current.csv"
 
 # Variables parches para gráficos
 MAX_DEVICES = 255
