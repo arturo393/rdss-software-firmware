@@ -319,44 +319,51 @@ def sendCmd(ser, cmd, createdevice):
             tranformData.append((deviceData[7] / 1.0))
 
         # -----------------------------------------------------
-        voltage = round(f_voltage_convert(tranformData[0]),2)
-        current = round(f_current_convert(tranformData[3]),3)
+        if(tranformData[0] == 0.0):
+            voltage = 0
+        else:
+            voltage = round(f_voltage_convert(tranformData[0]),2)
+        if(tranformData[3] == 0.0):
+            current = 0
+        else:
+            current = round(f_current_convert(tranformData[3]),3)
         
         # -----------------------------------------------------
-
-        x, y = symbols('x y')
-        agcUpl = tranformData[4]
-        agcDwl = tranformData[6]
-        dlPower = tranformData[7]
+        if(tranformData[7] == 0):
+            dlPower = 0
+        else: 
+            dlPower = round(f_power_convert(tranformData[7]),2)
+        if(tranformData[4] == 0):
+            agcUpl = 0
+        else:
+            agcUpl = round(f_agc_convert(tranformData[4]),2)
+        if(tranformData[6] == 0):
+            agcDwl = 0
+        else:
+            agcDwl = round(f_agc_convert(tranformData[6]),2)
         
-
-        dlPower = round(f_power_convert(tranformData[7]),2)
         if(dlPower < -100):
             dlPower = -49
         elif(dlPower > 1):
             dlPower = 0.2
 
-        solutionAgcUpl = int(convert(agcUpl,0.5,4.2,40.51,0.01))
-        solutionAgcDwl = int(convert(agcDwl,0.5,4.2,40.51,0.01))
-
-        if(agcDwl < 0):
+        if(agcDwl <= 0):
             agcDwl = 0
         elif(agcDwl > 30):
             agcDwl = 30
 
-        if(agcUpl < 0):
-            agcUpl = -0
+        if(agcUpl <= 0):
+            agcUpl = 0
         elif(agcUpl > 30):
             agcUpl = 30
 
-        agcUpl = round(f_agc_convert(agcUpl),2)
-        agcDwl = round(f_agc_convert(agcDwl),2)
+
 
     
         logging.debug("Voltage:"+str(tranformData[0])+" "+str(voltage))
         logging.debug("Current:"+str(tranformData[3])+" "+str(current))
-        logging.debug("AGC Uplink:"+str(tranformData[4])+" "+str(agcUpl)+" "+str(solutionAgcUpl))
-        logging.debug("AGC Downlink:"+str(tranformData[6])+" "+str(agcDwl)+" "+str(solutionAgcDwl))
+        logging.debug("AGC Uplink:"+str(tranformData[4])+" "+str(agcUpl))
+        logging.debug("AGC Downlink:"+str(tranformData[6])+" "+str(agcDwl))
         logging.debug("Downlink Output Power:"+str(tranformData[7])+" "+str(dlPower))
 
         # if (tranformData[4] >= 3.8 or tranformData[4] < 1.1):
