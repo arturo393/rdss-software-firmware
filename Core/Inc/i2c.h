@@ -6,7 +6,7 @@
  */
 
 #include "main.h"
-#include "stdbool.h"
+#include <stdbool.h>
 
 #ifndef INC_I2C1_H_
 #define INC_I2C1_H_

@@ -21,17 +21,17 @@ extern "C" {
 
 
 #include "main.h"
-#include <i2c.h>
+#include "i2c.h"
 #include "string.h"
 
-#define CHIP_ADDR 0xa0
+#define CHIP_ADDR 0x50
 #define PAGE_SIZE 16
 #define PAGE_NUM 32
 #define IS_READY 0xaa
 #define PADDRPOSITION 3
 
 // EEPROM ADDRESS (8bits)
-#define EEPROM_ADDR 0xA0
+#define EEPROM_ADDR 0x50
 //#define EEPROM_ADDR 0x50
 
 #define BASE_ADDR 0x03
@@ -73,11 +73,12 @@ typedef enum{
 typedef struct M24C64 {
 	M24C64_ADDR_t  addrs;
 	 uint8_t data[PAGESIZE];
+	 I2C_HandleTypeDef *hi2c;
 } M24C64_t;
 
 
 void m24c64_page_read(uint8_t address,uint8_t page, uint8_t *data);
-uint8_t readPage(uint8_t page, uint8_t *data, uint8_t offset,uint8_t size);
+bool readPage(uint8_t page, uint8_t *data, uint8_t offset,uint8_t size);
 
 void savePage(uint8_t page, uint8_t *data, uint8_t offset,uint8_t size);
 void m24c64_init_16uvalue(M24C64_ADDR_t addr,uint16_t value);

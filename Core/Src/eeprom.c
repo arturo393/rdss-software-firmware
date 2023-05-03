@@ -11,18 +11,17 @@ void m24c64_page_read(uint8_t address, uint8_t page, uint8_t *data) {
 	i2c1MasterFrameRx(CHIP_ADDR, data, 32);
 }
 
-uint8_t readPage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
+bool readPage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
 	uint8_t buff[1] = { 0 };
 	uint16_t MemAddress = page << PADDRPOSITION | offset;
-	uint8_t readedBytes = 0;
+	buff[0] = (uint8_t) MemAddress & 0xff;
 
-	//buff[0] = MemAddress >> 8;
-	buff[0] = MemAddress & 0xff;
-
-	i2c1MasterByteTx(CHIP_ADDR, buff, 1);
+	if (!i2c1MasterTransmit(CHIP_ADDR, buff, 1, 1000))
+		return false;
 	HAL_Delay(5);
-	readedBytes = i2c1MasterFrameRx(CHIP_ADDR, data, size);
-	return readedBytes;
+	if (!i2c1MasterReceive(CHIP_ADDR, data, size, 1000))
+		return false;
+	return true;
 }
 
 void savePage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
@@ -40,11 +39,11 @@ void savePage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
 		}
 
 	if (notEqual) {
-		buff[0] = (page << PADDRPOSITION | offset) & 0xff;
+		buff[0] = (uint8_t) (page << PADDRPOSITION | offset) & 0xff;
 		for (i = 0; i < size; i++) {
 			buff[i + 1] = data[i];
 		}
-		i2c1MasterByteTx(CHIP_ADDR, buff, size + 1);
+		i2c1MasterTransmit(CHIP_ADDR, buff, size + 1, 1000);
 	}
 	HAL_Delay(6);
 }
