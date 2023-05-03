@@ -82,11 +82,6 @@ typedef enum RS485_i {
 	DATA_START_INDEX
 } Rs485_i;
 
-union floatConverter {
-    uint32_t i;
-    float f;
-};
-
 typedef struct RS485 {
 	Rs485_cmd_t cmd;
 	uint8_t len;
@@ -106,7 +101,6 @@ Rs485_status_t rs485_check_CRC_module(UART1_t *uart1);
 Rs485_status_t isValidFrame(uint8_t *frame, uint8_t lenght);
 Rs485_status_t isValidModule(uint8_t *frame, uint8_t lenght);
 Rs485_status_t isValidCrc(uint8_t *frame, uint8_t len);
-Rs485_status_t isValidCrc2(RDSS_t *rs485);
 Rs485_status_t isValidId(RDSS_t *r);
 Rs485_status_t checkBuffer(RDSS_t *rs485);
 void fillValidBuffer(RDSS_t *r, uint8_t *buff, uint8_t len);
@@ -115,7 +109,7 @@ void rdssInit(RDSS_t*,uint8_t id);
 void rs485Uart1Decode(RDSS_t *rs485, UART1_t *uart1, SX1278_t *loraRx);
 void reinit(RDSS_t *rs485);
 void encodeVlad(uint8_t* buff);
-uint8_t setCrc(uint8_t* buff,uint8_t i);
+uint8_t setCrc(uint8_t* buff,uint8_t size);
 uint8_t setRdssStartData(RDSS_t *rdss, uint8_t *buffer);
 float freqDecode(uint8_t *buffer);
 void freqEncode(uint8_t *buffer, uint32_t freqIn);
