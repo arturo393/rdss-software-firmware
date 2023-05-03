@@ -41,6 +41,6 @@ void led_enable_kalive(LED_t *l);
 void led_reset(LED_t *l);
 void led_current_update(int16_t current);
 uint8_t led_temperature_update(uint8_t tempearture);
-void led_i2c_toggle(LED_t *l);
+void led_i2c_toggle();
 
 #endif /* INC_LED_H_ */

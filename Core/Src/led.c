@@ -32,12 +32,6 @@ void led_enable_kalive(LED_t *l) {
 			SYS_RP_LED_ON();
 	}
 }
-void led_i2c_toggle(LED_t *l) {
-	if (READ_BIT(GPIOB->ODR, GPIO_ODR_OD1))
-		i2c1_irq_led_off();
-	else
-		i2c1_irq_led_on();
-}
 
 void led_reset(LED_t *l) {
 //	l->chCounter = 0;
