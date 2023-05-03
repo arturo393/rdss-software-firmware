@@ -26,6 +26,11 @@
 #define pa_off() CLEAR_BIT(GPIOA->ODR,GPIO_ODR_OD3)
 #define pa_state()  READ_BIT(GPIOA->ODR,GPIO_ODR_OD3) ? 1 : 0
 
+static const float ADC_CONSUMPTION_CURRENT_FACTOR = 0.06472492f;
+static const float ADC_LINE_CURRENT_FACTOR = 0.0010989f;
+static const float ADC_VOLTAGE_FACTOR = 0.01387755f;
+static const float ADC_V5V_FACTOR = 0.00161246f;
+
 typedef enum MODULE_FUNCTION {
 	SERVER,
 	QUAD_BAND,
@@ -72,21 +77,29 @@ typedef struct TONE_UHF_MODULE {
 	Function_t function;
 } Tone_uhf_t;
 
+union floatConverter {
+    uint32_t i;
+    float f;
+};
+
 typedef struct VLAD_MODULE {
-	uint16_t agc150m;
-	uint16_t ref150m;
-	uint16_t level150m;  // downlink 150 mhz
-	uint16_t agc170m;
-	uint16_t ref170m;
-	uint16_t level170m; //uplink 170 mhz
+	uint16_t agc152m;
+	uint16_t ref152m;
+	uint16_t level152m;  // downlink 150 mhz
+	uint16_t agc172m;
+	uint16_t level172m; //uplink 170 mhz
 	uint16_t tone_level;
 	uint16_t v_5v;
 	uint16_t vin;
 	uint16_t current;
+	float agc152m_real;
+	float agc172m_real;
+	int8_t level152m_real;
+	int8_t level172m_real;
 	float v_5v_real;
 	float vin_real;
 	float current_real;
-	int32_t uc_temperature;
+	union floatConverter uc_temperature;
 	uint8_t remote_attenuation;
 	bool is_remote_attenuation;
 	bool is_attenuation_updated;
@@ -105,7 +118,10 @@ void module_calc_parameters(Module_pa_t m, uint16_t *media_array);
 void pa_sample_timer3_init();
 void module_pa_state_update(Module_pa_t *pa);
 void toneUhfInit(Function_t funcion, Id_t id, Tone_uhf_t *uhf);
-void vladInit(Function_t funcion, Id_t id, Vlad_t *vlad);
-void encodeVLAD(uint8_t *frame,Id_t id);
+Vlad_t* vladInit(uint8_t id);
+uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t*vlad);
+uint8_t isValidCrc(uint8_t *buffer, uint8_t len);
+uint16_t crc_get(uint8_t *buffer, uint8_t buff_len);
+void vladReset(Vlad_t *vlad);
 
 #endif /* INC_LTEL_H_ */

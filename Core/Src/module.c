@@ -33,13 +33,14 @@ void toneUhfInit(Function_t funcion, Id_t id, Tone_uhf_t *uhf) {
 	uhf->id = id;
 }
 
-void vladInit(Function_t funcion, Id_t id, Vlad_t *vlad) {
-	vlad->agc150m = 0;
-	vlad->ref150m = 0;
-	vlad->level150m = 0;  // downlink 150 mhz
-	vlad->agc170m = 0;
-	vlad->ref170m = 0;
-	vlad->level170m = 0; //uplink 170 mhz
+Vlad_t* vladInit(uint8_t id) {
+	Vlad_t *vlad;
+	vlad = malloc(sizeof(Vlad_t));
+	vlad->agc152m = 0;
+	vlad->ref152m = 0;
+	vlad->level152m = 0;  // downlink 150 mhz
+	vlad->agc172m = 0;
+	vlad->level172m = 0; //uplink 170 mhz
 	vlad->tone_level = 0;
 	vlad->v_5v = 0;
 	vlad->vin = 0;
@@ -47,44 +48,38 @@ void vladInit(Function_t funcion, Id_t id, Vlad_t *vlad) {
 	vlad->v_5v_real = 0;
 	vlad->vin_real = 0;
 	vlad->current_real = 0;
-	vlad->uc_temperature = 0;
+	vlad->uc_temperature.i = 0;
 	vlad->remote_attenuation = 0;
 	vlad->is_remote_attenuation = false;
 	vlad->is_attenuation_updated = false;
 	vlad->calc_en = false;
-	vlad->function = funcion;
+	vlad->function = VLADR;
 	vlad->id = id;
+	return vlad;
 }
 
-void encodeVLAD(uint8_t *frame, Id_t id) {
-	uint8_t crc_frame[2];
-	uint16_t crc;
+uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad) {
 	uint8_t data_length = 12;
-
-	frame[0] = LTEL_START_MARK;
-	frame[1] = VLADR;
-	frame[2] = id;
-	frame[3] = 0x11;
-	frame[4] = 0x00;
-	frame[5] = data_length;
-	frame[6] = 0x00;
-	frame[7] = rand() % 10;
-	frame[8] = rand() % 256;
-	frame[9] = rand() % 256;
-	frame[10] = rand() % 256;
-	frame[11] = rand() % 256;
-	frame[12] = rand() % 256;
-	frame[13] = rand() % 256;
-	frame[14] = rand() % 256;
-	frame[15] = rand() % 256;
-	frame[16] = rand() % 256;
-	frame[17] = rand() % 256;
-
-	crc = crc_get(&(frame[1]), 17);
-	memcpy(crc_frame, &crc, 2);
-	frame[18] = crc_frame[0];
-	frame[19] = crc_frame[1];
-	frame[20] = LTEL_END_MARK;
+	uint8_t index = 0;
+	uint16_t line_voltage = (uint16_t) vlad->vin_real * 10;
+	uint16_t line_current = (uint16_t) vlad->current_real * 1000;
+	uint8_t downlink_agc_value = (uint8_t) (vlad->agc152m_real * 10);
+	uint8_t uplink_agc_value = (uint8_t) (vlad->agc172m_real * 10);
+	uint8_t vladRev23Id = 0xff;
+	frame[index++] = data_length;
+	frame[index++] = (uint8_t) line_voltage;
+	frame[index++] = (uint8_t) line_voltage >> 8;
+	frame[index++] = (uint8_t) line_current;
+	frame[index++] = (uint8_t) line_current >> 8;
+	frame[index++] = (uint8_t) vladRev23Id;
+	frame[index++] = (uint8_t) vladRev23Id >> 8;
+	frame[index++] = (uint8_t) line_current;
+	frame[index++] = (uint8_t) line_current >> 8;
+	frame[index++] = (uint8_t) downlink_agc_value;
+	frame[index++] = (uint8_t) vlad->level152m_real;
+	frame[index++] = (uint8_t) uplink_agc_value;
+	frame[index++] = (uint8_t) vlad->level172m_real;
+	return index;
 }
 
 void module_init(Module_pa_t *module, Function_t funcion, Id_t id) {
@@ -124,3 +119,19 @@ void module_pa_state_update(Module_pa_t *pa) {
 		pa_off();
 }
 
+float current_calc(uint16_t _current) {
+	return ADC_CONSUMPTION_CURRENT_FACTOR * _current / 4095.0f;
+}
+
+void vladReset(Vlad_t *vlad) {
+	vlad->level152m = 0;
+	vlad->level172m = 0;
+	vlad->agc152m = 0;
+	vlad->agc172m = 0;
+	vlad->ref152m = 0;
+	vlad->tone_level = 0;
+	vlad->vin = 0;
+	vlad->v_5v = 0;
+	vlad->current = 0;
+	vlad->uc_temperature.i = 0;
+}
