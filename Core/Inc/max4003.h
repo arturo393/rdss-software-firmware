@@ -11,8 +11,8 @@
 #include "main.h"
 #include "stdbool.h"
 
-#define MAX4003_VOLTAGE_MAX 0.5f
-#define MAX4003_VOLTAGE_MIN 4.2f
+#define MAX4003_VOLTAGE_MAX 4.2f
+#define MAX4003_VOLTAGE_MIN 0.5f
 
 #define MAX4003_DBM_MAX 0
 #define MAX4003_DBM_MIN (int8_t )-30

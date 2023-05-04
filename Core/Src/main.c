@@ -25,7 +25,6 @@
 #include "SX1278.h"
 #include "led.h"
 #include "uart1.h"
-#include "rs485.h"
 #include "module.h"
 #include <string.h>
 #include "spi.h"
@@ -36,7 +35,6 @@
 /* USER CODE BEGIN PTD */
 #define HS16_CLK 16000000
 #define BAUD_RATE 115200
-#define VLAD_READ_TIMER 5000
 
 /* USER CODE END PTD */
 
@@ -88,10 +86,10 @@ void parseLoRaMaster(RDSS_t *rs485, SX1278_t *loRa);
 void parseLoRaSlave(RDSS_t *rs485, SX1278_t *loRa);
 void parseUartMaster(UART1_t *u1, RDSS_t *rs485);
 void parseUartSlave(UART1_t *u1, RDSS_t *rs485);
-void sendLoRaMasterQuery(RDSS_t *rs485, SX1278_t *loRa, UART1_t *u1);
+void sendLoRaMasterQuery(RDSS_t *rs485, SX1278_t *loRa);
 uint8_t setBufferWithLtelCmd(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa,
 		Vlad_t *vlad);
-uint8_t queryVladStatus(Vlad_t *vlad, UART1_t *u1);
+
 uint8_t processReceivedLoraCommand(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad,
 		UART1_t *u1);
 void processReceivedUartCommand(Vlad_t *vlad, UART1_t *u1, RDSS_t *rdss,
@@ -108,7 +106,6 @@ int main(void) {
 	/* USER CODE BEGIN 1 */
 	LED_t led;
 	RDSS_t rdss;
-	uint32_t vladTicks, i2c1Ticks;
 	rs485_ptr = &rdss;
 	/* USER CODE END 1 */
 
@@ -145,10 +142,6 @@ int main(void) {
 	rdssInit(&rdss, 2);
 	ledInit(&led);
 	loRa = loRaInit(&hspi1);
-
-	vladTicks = HAL_GetTick();
-	i2c1Ticks = HAL_GetTick();
-
 	printLoRaStatus(u1, loRa);
 	/* USER CODE END 2 */
 
@@ -163,7 +156,7 @@ int main(void) {
 		case LORA_SEND:
 			printStatus(u1, &rdss);
 			if (rdss.cmd == QUERY_STATUS)
-				sendLoRaMasterQuery(&rdss, loRa, u1);
+				sendLoRaMasterQuery(&rdss, loRa);
 			printLoRaStatus(u1, loRa);
 			reinit(&rdss);
 			break;
@@ -184,8 +177,8 @@ int main(void) {
 			break;
 		}
 
-		if (HAL_GetTick() - vladTicks > VLAD_READ_TIMER) {
-			if (queryVladStatus(vlad, u1) > 0) {
+		if (HAL_GetTick() - vlad->ticks > VLAD_READ_TIMER) {
+			if (queryVladStatus(vlad) > 0) {
 				vlad->v_5v_real = (float) vlad->v_5v * ADC_V5V_FACTOR;
 				vlad->vin_real = (float) vlad->vin * ADC_VOLTAGE_FACTOR;
 				vlad->current_real = (float) vlad->current
@@ -197,7 +190,7 @@ int main(void) {
 			} else {
 				vladReset(vlad);
 			}
-			vladTicks = HAL_GetTick();
+			vlad->ticks = HAL_GetTick();
 		}
 	}
 	/* USER CODE END WHILE */
@@ -568,56 +561,56 @@ void printStatus(UART1_t *u1, RDSS_t *rdss) {
 	uint8_t i = 0;
 	switch (rdss->status) {
 	case CRC_ERROR:
-		isValidCrc(rdss->buffer, rdss->len);
-		u1->tx_len = sprintf(str, "CRC mismatch:\r\n");
+		checkValidCrc(rdss->buffer, rdss->len);
+		u1->tx_len =(uint8_t) sprintf(str, "CRC mismatch:\r\n");
 		writeTx(u1);
 		u1->tx_len = 0;
 
 		break;
 	case WRONG_MODULE_ID:
-		u1->tx_len = sprintf(str, "ID mismatch - ID %d and ID received %d \r\n",
+		u1->tx_len = (uint8_t) sprintf(str, "ID mismatch - ID %d and ID received %d \r\n",
 				rdss->id, rdss->idReceived);
 		writeTx(u1);
 		u1->tx_len = 0;
 		break;
 	case NOT_VALID_FRAME:
-		u1->tx_len = sprintf(str, "Not valid start byte \r\n");
+		u1->tx_len = (uint8_t) sprintf(str, "Not valid start byte \r\n");
 		writeTx(u1);
 		u1->tx_len = 0;
 		break;
 	case DATA_OK:
-		u1->tx_len = sprintf(str,
+		u1->tx_len = (uint8_t) sprintf(str,
 				"Validation ok: ID %02x Cmd %02x Bytes %d Data \r\n",
 				rdss->buffer[2], rdss->buffer[3], rdss->buffer[5]);
 		writeTx(u1);
 		for (int i = DATA_START_INDEX; i < rdss->buffer[5]; i++) {
 			if (i > 250)
 				break;
-			u1->tx_len = sprintf(str, "%02X", rdss->buffer[i]);
+			u1->tx_len = (uint8_t) sprintf(str, "%02X", rdss->buffer[i]);
 			writeTx(u1);
 		}
 		writeTxReg('\n');
 		break;
 	case WAITING:
-		u1->tx_len = sprintf(str, "Waiting for new data\r\n");
+		u1->tx_len = (uint8_t) sprintf(str, "Waiting for new data\r\n");
 		writeTx(u1);
 		u1->tx_len = 0;
 		break;
 	case LORA_SEND:
-		u1->tx_len = sprintf(str, "Send uart data to loRa ID: %d\r\n",
+		u1->tx_len = (uint8_t) sprintf(str, "Send uart data to loRa ID: %d\r\n",
 				rdss->idReceived);
 		writeTx(u1);
 		u1->tx_len = 0;
 		break;
 	case LORA_RECEIVE:
-		u1->tx_len = sprintf(str,
+		u1->tx_len = (uint8_t) sprintf(str,
 				"Validation ok: ID %02x Cmd %02x Bytes %d Data \r\n",
 				rdss->buffer[2], rdss->buffer[3], rdss->buffer[5]);
 		writeTx(u1);
 		for (i = DATA_START_INDEX; i < rdss->buffer[5]; i++) {
 			if (i > 250)
 				break;
-			u1->tx_len = sprintf(str, "%02X", rdss->buffer[i]);
+			u1->tx_len =(uint8_t) sprintf(str, "%02X", rdss->buffer[i]);
 			writeTx(u1);
 		}
 		if (i > DATA_START_INDEX)
@@ -625,12 +618,12 @@ void printStatus(UART1_t *u1, RDSS_t *rdss) {
 		u1->tx_len = 0;
 		break;
 	case UART_SEND:
-		u1->tx_len = sprintf(str, "Reply vlad data: %d\r\n", rdss->idReceived);
+		u1->tx_len = (uint8_t)sprintf(str, "Reply vlad data: %d\r\n", rdss->idReceived);
 		writeTx(u1);
 		for (i = 0; i < rdss->len; i++) {
 			if (i > 250)
 				break;
-			u1->tx_len = sprintf(str, "%02X", rdss->buffer[i]);
+			u1->tx_len = (uint8_t) sprintf(str, "%02X", rdss->buffer[i]);
 			writeTx(u1);
 		}
 		if (i > 0)
@@ -638,14 +631,14 @@ void printStatus(UART1_t *u1, RDSS_t *rdss) {
 		u1->tx_len = 0;
 		break;
 	case UART_VALID:
-		u1->tx_len = sprintf(str,
+		u1->tx_len =  (uint8_t)sprintf(str,
 				"Validation ok: ID %02x Cmd %02x Bytes %d Data \r\n",
 				rdss->buffer[2], rdss->buffer[3], rdss->buffer[5]);
 		writeTx(u1);
 		for (int i = DATA_START_INDEX; i < rdss->buffer[5]; i++) {
 			if (i > 250)
 				break;
-			u1->tx_len = sprintf(str, "%02X", rdss->buffer[i]);
+			u1->tx_len = (uint8_t) sprintf(str, "%02X", rdss->buffer[i]);
 			writeTx(u1);
 		}
 		if (i > DATA_START_INDEX)
@@ -819,7 +812,7 @@ void parseUartSlave(UART1_t *u1, RDSS_t *rs485) {
 	}
 }
 
-void sendLoRaMasterQuery(RDSS_t *rs485, SX1278_t *loRa, UART1_t *u1) {
+void sendLoRaMasterQuery(RDSS_t *rs485, SX1278_t *loRa) {
 	if (rs485->len != LTEL_QUERY_LENGTH)
 		return;
 	rs485->idQuery = rs485->buffer[MODULE_ID_INDEX];
@@ -908,51 +901,7 @@ uint8_t setBufferWithLtelCmd(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa,
 	return index;
 }
 
-uint8_t queryVladStatus(Vlad_t *vlad, UART1_t *u1) {
-	uint8_t slave_address = 0x08;
-	uint8_t query = 0x10;
-	uint8_t query_size = 23;
-	uint8_t index = 0;
-	uint8_t buffer[23];
 
-	if (!i2c1MasterTransmit(slave_address, &query, sizeof(query), 200))
-		return index;
-	HAL_Delay(6);
-	if (!i2c1MasterReceive(slave_address, buffer, query_size, 2000))
-		return index;
-
-	vlad->level152m = (uint16_t) buffer[index++];
-	vlad->level152m |= (uint16_t) (buffer[index++] << 8);
-	vlad->level172m = (uint16_t) buffer[index++];
-	vlad->level172m |= (uint16_t) (buffer[index++] << 8);
-	vlad->agc152m = (uint16_t) buffer[index++];
-	vlad->agc152m |= (uint16_t) (buffer[index++] << 8);
-	vlad->agc172m = (uint16_t) buffer[index++];
-	vlad->agc172m |= (uint16_t) (buffer[index++] << 8);
-	vlad->ref152m = (uint16_t) buffer[index++];
-	vlad->ref152m |= (uint16_t) (buffer[index++] << 8);
-	vlad->tone_level = (uint16_t) buffer[index++];
-	vlad->tone_level |= (uint16_t) (buffer[index++] << 8);
-	vlad->vin = (uint16_t) buffer[index++];
-	vlad->vin |= (uint16_t) (buffer[index++] << 8);
-	vlad->v_5v = (uint16_t) buffer[index++];
-	vlad->v_5v |= (uint16_t) (buffer[index++] << 8);
-	vlad->current = (uint16_t) buffer[index++];
-	vlad->current |= (uint16_t) (buffer[index++] << 8);
-	vlad->uc_temperature.i = buffer[index++];
-	vlad->uc_temperature.i |= buffer[index++] << 8;
-	vlad->uc_temperature.i |= buffer[index++] << 16;
-	vlad->uc_temperature.i |= buffer[index++] << 24;
-
-	memcpy(u1->tx, buffer, index);
-	for (uint8_t i = 0; i < index; i++) {
-		u1->tx_len = sprintf(u1->tx, "buffer[%d] = %d\n", i, buffer[i]);
-		writeTx(u1);
-	}
-	writeTxReg('\r\n');
-	u1->tx_len = 0;
-	return index;
-}
 
 uint8_t processReceivedLoraCommand(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad,
 		UART1_t *u1) {

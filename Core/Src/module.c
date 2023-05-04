@@ -7,7 +7,7 @@
 
 #include <module.h>
 
-void pa_init(Function_t funcion, Id_t id, Module_pa_t *module) {
+void pa_init(Function_t funcion, Id_t id, PA_t *module) {
 	module->function = funcion;
 	module->id = id;
 	module->att = 0;
@@ -15,10 +15,10 @@ void pa_init(Function_t funcion, Id_t id, Module_pa_t *module) {
 	module->pin = 0;
 	module->pout = 0;
 	module->temperature = 0;
-	module->enable = false;
+	module->isEnable = false;
 	module->calc_en = true;
 	pa_sample_timer3_init();
-	pa_off();
+	powerAmplifierOff();
 	/* PA3  PA_HAB as output - ENABLE - DISABLE PA */
 	SET_BIT(GPIOA->MODER, GPIO_MODER_MODE3_0);
 	CLEAR_BIT(GPIOA->MODER, GPIO_MODER_MODE3_1);
@@ -55,6 +55,7 @@ Vlad_t* vladInit(uint8_t id) {
 	vlad->calc_en = false;
 	vlad->function = VLADR;
 	vlad->id = id;
+	vlad->ticks = HAL_GetTick();
 	return vlad;
 }
 
@@ -82,10 +83,6 @@ uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad) {
 	return index;
 }
 
-void module_init(Module_pa_t *module, Function_t funcion, Id_t id) {
-
-}
-
 void pa_sample_timer3_init() {
 	/*enable clock access to timer 2 */
 	SET_BIT(RCC->APBENR1, RCC_APBENR1_TIM3EN);
@@ -96,27 +93,33 @@ void pa_sample_timer3_init() {
 	SET_BIT(TIM3->CR1, TIM_CR1_ARPE);
 	/* clear counter */
 	TIM3->CNT = 0;
-	/*enable timer 3*/
+	/*isEnable timer 3*/
 	SET_BIT(TIM3->CR1, TIM_CR1_CEN);
 	SET_BIT(TIM3->DIER, TIM_DIER_UIE);
 	NVIC_EnableIRQ(TIM3_IRQn);
 	CLEAR_BIT(TIM3->SR, TIM_SR_UIF);
 }
 
-void module_pa_state_update(Module_pa_t *pa) {
-	if (pa->enable == ON) {
-		if (pa->temperature_out > MAX_TEMPERATURE)
-			pa_off();
-		if (pa->temperature_out < SAFE_TEMPERATURE) {
-			pa_on();
-			if (pa->vswr > MAX_VSWR)
-				pa_off();
-			if (pa->vswr < MAX_VSWR)
-				pa_on();
+void updatePAState(PA_t *modulePA) {
+	const uint8_t maxTemp = 100;
+	const uint8_t safeTemp = 50;
+	const float maxVSWR = 1.7f;
+	const float minVSWR = 1.0f;
+	if (modulePA->isEnable == ON) {
+		if (modulePA->outsideTemp > maxTemp) {
+			powerAmplifierOff();
+		} else if (modulePA->outsideTemp < safeTemp) {
+			powerAmplifierOn();
+			if (modulePA->vswr > maxVSWR) {
+				powerAmplifierOff();
+			} else if (modulePA->vswr < minVSWR) {
+				powerAmplifierOn();
+			}
 		}
+
+	} else if (modulePA->isEnable == OFF) {
+		powerAmplifierOff();
 	}
-	if (pa->enable == OFF)
-		pa_off();
 }
 
 float current_calc(uint16_t _current) {
@@ -134,4 +137,54 @@ void vladReset(Vlad_t *vlad) {
 	vlad->v_5v = 0;
 	vlad->current = 0;
 	vlad->uc_temperature.i = 0;
+}
+
+uint8_t queryVladStatus(Vlad_t *vlad) {
+	uint8_t slave_address = 0x08;
+	uint8_t query = 0x10;
+	uint8_t query_size = 23;
+	uint8_t index = 0;
+	uint8_t buffer[23];
+
+	if (!i2c1MasterTransmit(slave_address, &query, sizeof(query), 200))
+		return index;
+	HAL_Delay(6);
+	if (!i2c1MasterReceive(slave_address, buffer, query_size, 2000))
+		return index;
+
+	uint16_t *vlad_values[] = { &vlad->level152m, &vlad->level172m,
+			&vlad->agc152m, &vlad->agc172m, &vlad->ref152m, &vlad->tone_level,
+			&vlad->vin, &vlad->v_5v, &vlad->current };
+	size_t num_values = sizeof(vlad_values) / sizeof(vlad_values[0]);
+
+	for (size_t i = 0; i < num_values; i++) {
+		*vlad_values[i] = (uint16_t) buffer[index++];
+		*vlad_values[i] |= (uint16_t) (buffer[index++] << 8);
+	}
+
+	vlad->uc_temperature.i = buffer[index++];
+	vlad->uc_temperature.i |= buffer[index++] << 8;
+	vlad->uc_temperature.i |= buffer[index++] << 16;
+	vlad->uc_temperature.i |= buffer[index++] << 24;
+
+	return index;
+}
+
+void updateVladData(Vlad_t *vlad) {
+    const uint32_t vladReadInterval = VLAD_READ_TIMER;
+
+    if (HAL_GetTick() - vlad->ticks > vladReadInterval) {
+        if (queryVladStatus(vlad) > 0) {
+            vlad->v_5v_real = (float) vlad->v_5v * ADC_V5V_FACTOR;
+            vlad->vin_real = (float) vlad->vin * ADC_VOLTAGE_FACTOR;
+            vlad->current_real = (float) vlad->current * ADC_LINE_CURRENT_FACTOR;
+            vlad->agc152m_real = max4003_get_fix_voltage(vlad->agc152m);
+            vlad->agc172m_real = max4003_get_fix_voltage(vlad->agc172m);
+            vlad->level152m_real = max4003_get_fix_dbm(vlad->level152m);
+            vlad->level172m_real = max4003_get_fix_dbm(vlad->level172m);
+        } else {
+            vladReset(vlad);
+        }
+        vlad->ticks = HAL_GetTick();
+    }
 }

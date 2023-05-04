@@ -4,6 +4,9 @@
  *  Created on: 27-09-2022
  *      Author: sigmadev
  */
+#ifndef __MODULE_H_
+#define __MODULE_H_
+
 
 #include "main.h"
 #include "stdbool.h"
@@ -14,22 +17,17 @@
 #include <stdlib.h>
 #include <time.h>
 
-#ifndef INC_LTEL_H_
-#define INC_LTEL_H_
-
-#define MAX_TEMPERATURE 100
-#define SAFE_TEMPERATURE 50
-#define MAX_VSWR 1.7
-#define SAFE_VSWR 1.0
-
 #define pa_on() SET_BIT(GPIOA->ODR,GPIO_ODR_OD3)
 #define pa_off() CLEAR_BIT(GPIOA->ODR,GPIO_ODR_OD3)
 #define pa_state()  READ_BIT(GPIOA->ODR,GPIO_ODR_OD3) ? 1 : 0
 
-static const float ADC_CONSUMPTION_CURRENT_FACTOR = 0.06472492f;
-static const float ADC_LINE_CURRENT_FACTOR = 0.0010989f;
-static const float ADC_VOLTAGE_FACTOR = 0.01387755f;
-static const float ADC_V5V_FACTOR = 0.00161246f;
+#define VLAD_READ_TIMER 5000
+#define MODULE_ADDR  0x08
+
+#define ADC_CONSUMPTION_CURRENT_FACTOR  0.06472492f
+#define ADC_LINE_CURRENT_FACTOR  0.0010989f
+#define ADC_VOLTAGE_FACTOR  0.01387755f
+#define ADC_V5V_FACTOR  0.00161246f
 
 typedef enum MODULE_FUNCTION {
 	SERVER,
@@ -59,14 +57,14 @@ typedef struct PA_MODULE {
 	uint8_t voltage;
 	int8_t pin;
 	uint16_t current;
-	State_t enable;
+	State_t isEnable;
 	float temperature;
-	float temperature_out;
+	float outsideTemp;
 	float vswr;
 	Id_t id;
 	Function_t function;
 	bool calc_en;
-} Module_pa_t;
+} PA_t;
 
 typedef struct TONE_UHF_MODULE {
 	unsigned long FreqOut;
@@ -106,22 +104,22 @@ typedef struct VLAD_MODULE {
 	Id_t id;
 	Function_t function;
 	bool calc_en;
+	uint32_t ticks;
 } Vlad_t;
 
-static const uint8_t MODULE_ADDR = 0x08;
-static const uint8_t MODULE_FUNCTION = 0x09;
 
 
-
-void module_init(Module_pa_t*, Function_t, Id_t);
-void module_calc_parameters(Module_pa_t m, uint16_t *media_array);
+void module_init(PA_t*, Function_t, Id_t);
+void module_calc_parameters(PA_t m, uint16_t *media_array);
 void pa_sample_timer3_init();
-void module_pa_state_update(Module_pa_t *pa);
+void updatePAState(PA_t *pa);
 void toneUhfInit(Function_t funcion, Id_t id, Tone_uhf_t *uhf);
 Vlad_t* vladInit(uint8_t id);
 uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t*vlad);
 uint8_t isValidCrc(uint8_t *buffer, uint8_t len);
 uint16_t crc_get(uint8_t *buffer, uint8_t buff_len);
 void vladReset(Vlad_t *vlad);
+uint8_t queryVladStatus(Vlad_t *vlad);
+void updateVladData(Vlad_t *vlad);
 
 #endif /* INC_LTEL_H_ */

@@ -20,20 +20,6 @@ void rdssInit(RDSS_t *r, uint8_t id) {
 	CLEAR_BIT(GPIOB->MODER, GPIO_MODER_MODE9_1);
 
 }
-Rs485_status_t rdssCheckFrame(RDSS_t *r, UART1_t *u) {
-
-	if (u->tx_len > (MINIMUN_FRAME_LEN)) {
-		if (u->rx[0] == LTEL_START_MARK) {
-			if (u->rx[u->tx_len - 1] == LTEL_END_MARK)
-				return VALID_FRAME;
-			else
-				return START_READING;
-		} else
-			return NOT_VALID_FRAME;
-	} else
-
-		return WAITING;
-}
 
 Rs485_status_t rs485_check_CRC_module(UART1_t *uart1) {
 	unsigned long crc_cal;
@@ -84,11 +70,13 @@ Rs485_status_t isValidFrame(uint8_t *frame, uint8_t lenght) {
 		return WAITING;
 }
 
-Rs485_status_t isValidCrc(uint8_t *frame, uint8_t len) {
-  uint16_t crc_cal, crc_save;
-  crc_save = frame[len - 2] << 8 | frame[len - 3];
-  crc_cal = crc_get(&frame[1], len - 4);
-  return crc_cal == crc_save ? DATA_OK : CRC_ERROR;
+Rs485_status_t checkValidCrc(uint8_t *frame, uint8_t len) {
+    uint16_t calculatedCrc, savedCrc;
+    savedCrc = ((uint16_t) frame[len - 2] << 8);
+    savedCrc |=	(uint16_t) frame[len - 3];
+    calculatedCrc = crc_get(&frame[1], len - 4);
+
+    return (calculatedCrc == savedCrc) ? DATA_OK : CRC_ERROR;
 }
 
 uint16_t crc_get(uint8_t *buffer, uint8_t buff_len) {
@@ -133,7 +121,7 @@ Rs485_status_t isValid(uint8_t *buff,uint8_t len) {
 	status = isValidModule(buff,len);
 	if (!(status == VALID_MODULE))
 		return status;
-	status = isValidCrc(buff,len);
+	status = checkValidCrc(buff,len);
 	if (!(status == DATA_OK))
 		return status;
 	return status;
@@ -154,7 +142,7 @@ Rs485_status_t checkBuffer(RDSS_t *rs485) {
 	rs485->status = isValidModule(rs485->buffer, rs485->len);
 	if (!(rs485->status == VALID_MODULE))
 		return rs485->status;
-	rs485->status = isValidCrc(rs485->buffer,rs485->len);
+	rs485->status = checkValidCrc(rs485->buffer,rs485->len);
 	if (!(rs485->status == DATA_OK))
 		return rs485->status;
 	rs485->status = isValidId(rs485);
@@ -173,23 +161,23 @@ void reinit(RDSS_t *rs485) {
 }
 
 void encodeVlad(uint8_t* buff){
-	uint16_t lineVoltage = rand() % 610;
-	uint16_t baseCurrent = rand() % 301;
-	uint16_t tunnelCurrent = rand() % 1001;
-	uint16_t unitCurrent = rand() % 301;
-	uint8_t uplinkAgc = rand() % 43;
-	uint8_t downlinkInputPower = rand() % 130;
-	uint8_t downlinkAgc = rand() % 43;
-	uint8_t uplinkOuputPower = rand() % 130;
+	uint16_t lineVoltage = (uint16_t) rand() % 610;
+	uint16_t baseCurrent = (uint16_t)  rand() % 301;
+	uint16_t tunnelCurrent = (uint16_t) rand() % 1001;
+	uint16_t unitCurrent = (uint16_t) rand() % 301;
+	uint8_t uplinkAgc = (uint8_t) rand() % 43;
+	uint8_t downlinkInputPower = (uint8_t) rand() % 130;
+	uint8_t downlinkAgc = (uint8_t) rand() % 43;
+	uint8_t uplinkOuputPower = (uint8_t) rand() % 130;
 
-	buff[7] = (lineVoltage >> 8) & 0xFF;
-	buff[6] = lineVoltage & 0xFF;
-	buff[9] = (baseCurrent >> 8) & 0xFF;
-	buff[8] = baseCurrent & 0xFF;
-	buff[11] = (tunnelCurrent >> 8) & 0xFF;
-	buff[10] = tunnelCurrent & 0xFF;
-	buff[13] = (unitCurrent >> 8) & 0xFF;
-	buff[12] = unitCurrent & 0xFF;
+	buff[7] = (uint8_t)(lineVoltage >> 8) & 0xFF;
+	buff[6] = (uint8_t) lineVoltage & 0xFF;
+	buff[9] = (uint8_t)(baseCurrent >> 8) & 0xFF;
+	buff[8] = (uint8_t)baseCurrent & 0xFF;
+	buff[11] = (uint8_t)(tunnelCurrent >> 8) & 0xFF;
+	buff[10] = (uint8_t)tunnelCurrent & 0xFF;
+	buff[13] = (uint8_t)(unitCurrent >> 8) & 0xFF;
+	buff[12] = (uint8_t)unitCurrent & 0xFF;
 	buff[14] = uplinkAgc;
 	buff[15] = downlinkInputPower;
 	buff[16] = downlinkAgc;
@@ -199,7 +187,6 @@ void encodeVlad(uint8_t* buff){
 uint8_t setCrc(uint8_t* buff,uint8_t size){
 	uint8_t crc_frame[2];
 	uint16_t crc;
-	uint8_t i= 0;
 	crc = crc_get(buff+1, size-1);
 	memcpy(crc_frame, &crc, 2);
 	buff[size++] = crc_frame[0];
@@ -221,14 +208,16 @@ uint8_t setRdssStartData(RDSS_t *rdss, uint8_t *buffer) {
 	return i;
 }
 
-float freqDecode(uint8_t *buffer) {
+uint32_t freqDecode(uint8_t *buffer) {
 	union floatConverter freq;
 	freq.i = 0;
 	freq.i |= (buffer[0]);
 	freq.i |= (buffer[1] << 8);
 	freq.i |= (buffer[2] << 16);
 	freq.i |= (buffer[3] << 24);
-	return freq.f * 1000000.0f;
+	freq.f = freq.f * 1000000.0f;
+
+	return freq.i;
 }
 
 void freqEncode(uint8_t *buffer, uint32_t freqIn) {

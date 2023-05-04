@@ -50,8 +50,6 @@ typedef enum RS485_CMD {
 	SET_PARAMETERS,
 	SET_PARAMETER_FREQBASE,
 	QUERY_PARAMETER_PdBm,
-	MODULE_RESET = 0X88,
-	SET_MODE,
 } Rs485_cmd_t;
 
 typedef enum RS485_STATUS {
@@ -100,7 +98,7 @@ Rs485_status_t rs485_check_valid_module(UART1_t *uart1);
 Rs485_status_t rs485_check_CRC_module(UART1_t *uart1);
 Rs485_status_t isValidFrame(uint8_t *frame, uint8_t lenght);
 Rs485_status_t isValidModule(uint8_t *frame, uint8_t lenght);
-Rs485_status_t isValidCrc(uint8_t *frame, uint8_t len);
+Rs485_status_t checkValidCrc(uint8_t *frame, uint8_t len);
 Rs485_status_t isValidId(RDSS_t *r);
 Rs485_status_t checkBuffer(RDSS_t *rs485);
 void fillValidBuffer(RDSS_t *r, uint8_t *buff, uint8_t len);
@@ -111,7 +109,7 @@ void reinit(RDSS_t *rs485);
 void encodeVlad(uint8_t* buff);
 uint8_t setCrc(uint8_t* buff,uint8_t size);
 uint8_t setRdssStartData(RDSS_t *rdss, uint8_t *buffer);
-float freqDecode(uint8_t *buffer);
+uint32_t freqDecode(uint8_t *buffer);
 void freqEncode(uint8_t *buffer, uint32_t freqIn);
 #endif /* INC_RS485_H_ */
 
