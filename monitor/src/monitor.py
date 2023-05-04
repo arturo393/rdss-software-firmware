@@ -301,87 +301,45 @@ def sendCmd(ser, cmd, createdevice):
             else:
                 pass
 
-        tranformData = list()
-
         logging.debug("Data read from Serial: {}".format(deviceData))
 
-        tranformData.append(((deviceData[0] / 10.0)))
-        tranformData.append(deviceData[1] / 1000.0)
-        tranformData.append(deviceData[2] / 1000.0)
-        tranformData.append(deviceData[3] / 1000.0)
-        tranformData.append(deviceData[4] / 10.0)
-        tranformData.append(deviceData[5] / 1.0)
-        tranformData.append(deviceData[6] / 10.0)
+        lineVoltage = deviceData[0] / 10.0
+        baseCurrent = deviceData[1] / 1000.0
+        tunnelCurrent = deviceData[2]
+        unitCurrent = deviceData[3] / 1000.0
+        uplinkAgcValue = deviceData[4] / 10.0
+        downlinkInputPower =  deviceData[5] 
+        downlinkAgcValue = deviceData[6] / 10.0
+        downlinkOutputPower = deviceData[7]
+        vladRev23Id = 0xff
 
-        if (deviceData[7] >= cfg.RANGE_MIN_PTX and deviceData[7] <= cfg.RANGE_MAX_PTX):
-            tranformData.append((deviceData[7] / 1.0) - 255)
-        else:
-            tranformData.append((deviceData[7] / 1.0))
 
-        # -----------------------------------------------------
-        if(tranformData[0] == 0.0):
-            voltage = 0
+        if tunnelCurrent == vladRev23Id:
+             downlinkInputPower =  deviceData[5] - 128 if deviceData[5] < 128 else deviceData[5] - 256
+             downlinkOutputPower = deviceData[7] - 128 if deviceData[7] < 128 else deviceData[7] - 256
         else:
-            voltage = round(f_voltage_convert(tranformData[0]),2)
-        if(tranformData[3] == 0.0):
-            current = 0
-        else:
-            current = round(f_current_convert(tranformData[3]),3)
+             downlinkOutputPower = round(f_power_convert(downlinkOutputPower),2)
+             downlinkInputPower = round(f_power_convert(downlinkInputPower),2)
+
+        uplinkAgcValue =  round(f_agc_convert(uplinkAgcValue),1)
+        downlinkAgcValue = round(f_agc_convert(downlinkAgcValue),1)
+
+
+        if lineVoltage > 0 :
+            lineVoltage = round(f_voltage_convert(lineVoltage),2)
         
-        # -----------------------------------------------------
-        if(tranformData[7] == 0):
-            dlPower = 0
-        else: 
-            dlPower = round(f_power_convert(tranformData[7]),2)
-        if(tranformData[4] == 0):
-            agcUpl = 0
-        else:
-            agcUpl = round(f_agc_convert(tranformData[4]),2)
-        if(tranformData[6] == 0):
-            agcDwl = 0
-        else:
-            agcDwl = round(f_agc_convert(tranformData[6]),2)
-        
-        if(dlPower < -100):
-            dlPower = -49
-        elif(dlPower > 1):
-            dlPower = 0.2
+        if unitCurrent > 0 :
+            unitCurrent = round(f_current_convert(unitCurrent),3)
 
-        if(agcDwl <= 0):
-            agcDwl = 0
-        elif(agcDwl > 30):
-            agcDwl = 30
-
-        if(agcUpl <= 0):
-            agcUpl = 0
-        elif(agcUpl > 30):
-            agcUpl = 30
-
-
-
-    
-        logging.debug("Voltage:"+str(tranformData[0])+" "+str(voltage))
-        logging.debug("Current:"+str(tranformData[3])+" "+str(current))
-        logging.debug("AGC Uplink:"+str(tranformData[4])+" "+str(agcUpl))
-        logging.debug("AGC Downlink:"+str(tranformData[6])+" "+str(agcDwl))
-        logging.debug("Downlink Output Power:"+str(tranformData[7])+" "+str(dlPower))
-
-        # if (tranformData[4] >= 3.8 or tranformData[4] < 1.1):
-        #     solutionAgcUpl = 0
-        # else:
-        #     solutionAGCUPL = solveset(
-        #         Eq(-0.8728*x**6 + 14.702*x**5 - 99.306*x**4 + 341.63*x**3 - 624.11*x**2 + 561.72*x - 180.8, tranformData[4]), x)
-        #     solutionAgcUpl = str(solutionAGCUPL.args[1])
-        #     solutionAgcUpl = float(solutionAgcUpl[:6])
-
-        # if(tranformData[6] >= 3.8 or tranformData[6] < 1.1):
-        #     solutionAgcDwl = 0
-        # else:
-        #     solutionAGCDWL = solveset(
-        #         Eq(-0.8728*x**6 + 14.702*x**5 - 99.306*x**4 + 341.63*x**3 - 624.11*x**2 + 561.72*x - 180.8, tranformData[6]), x)
-        #     solutionAgcDwl = str(solutionAGCDWL.args[1])
-        #     solutionAgcDwl = float(solutionAgcDwl[:6])
-
+       
+        logging.debug(f"Voltage: {deviceData[0]/10} {lineVoltage:.2f}[V]")
+        logging.debug(f"Unit Current: {deviceData[3]/1000} {unitCurrent:.3f}[A]")
+        logging.debug(f"AGC Uplink: {deviceData[4]/10} {uplinkAgcValue:.1f}[dB]")
+        logging.debug(f"AGC Downlink: {deviceData[6]/10} {downlinkAgcValue:.1f}[dB]")
+        logging.debug(f"Downlink Output Power: {deviceData[7]} {downlinkOutputPower:.2f}[dBm]")
+        logging.debug(f"Downlink Input Power: {deviceData[5]} {downlinkInputPower:.2f}[dBm]")
+        logging.debug(f"Rev32Id: {deviceData[2]} {tunnelCurrent:.2f}")
+      
         # -----------------------------------------------------
         # if(createdevice == True):
         #     pass
@@ -396,11 +354,11 @@ def sendCmd(ser, cmd, createdevice):
 
         finalData = {
             "sampleTime": timeNow,
-            "voltage": voltage,
-            "current": current,
-            "gupl": agcUpl,
-            "gdwl": agcDwl,
-            "power": dlPower
+            "voltage": lineVoltage,
+            "current": unitCurrent,
+            "gupl": uplinkAgcValue,
+            "gdwl": downlinkAgcValue,
+            "power": downlinkOutputPower
         }
 
         return(finalData)
