@@ -150,7 +150,7 @@ void readOperatingMode(SX1278_t *module) {
 	LR_RegOpMode));
 }
 
-void setLoraLowFreqModeReg(SX1278_t *module, SX1278_Status_t mode) {
+void setLoraLowFreqModeReg(SX1278_t *module, OPERATING_MODE_t mode) {
 	uint8_t cmd = LORA_MODE_ACTIVATION | LOW_FREQUENCY_MODE | mode;
 	writeRegister(module->spi, LR_RegOpMode, &cmd, 1);
 	module->operatingMode = mode;

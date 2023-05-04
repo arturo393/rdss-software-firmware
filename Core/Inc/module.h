@@ -14,6 +14,7 @@
 #include <string.h>
 #include "math.h"
 #include "rs485.h"
+#include "max4003.h"
 #include <stdlib.h>
 #include <time.h>
 

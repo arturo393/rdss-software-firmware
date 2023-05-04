@@ -171,20 +171,23 @@ uint8_t queryVladStatus(Vlad_t *vlad) {
 }
 
 void updateVladData(Vlad_t *vlad) {
-    const uint32_t vladReadInterval = VLAD_READ_TIMER;
+	const uint32_t vladReadInterval = VLAD_READ_TIMER;
 
-    if (HAL_GetTick() - vlad->ticks > vladReadInterval) {
-        if (queryVladStatus(vlad) > 0) {
-            vlad->v_5v_real = (float) vlad->v_5v * ADC_V5V_FACTOR;
-            vlad->vin_real = (float) vlad->vin * ADC_VOLTAGE_FACTOR;
-            vlad->current_real = (float) vlad->current * ADC_LINE_CURRENT_FACTOR;
-            vlad->agc152m_real = max4003_get_fix_voltage(vlad->agc152m);
-            vlad->agc172m_real = max4003_get_fix_voltage(vlad->agc172m);
-            vlad->level152m_real = max4003_get_fix_dbm(vlad->level152m);
-            vlad->level172m_real = max4003_get_fix_dbm(vlad->level172m);
-        } else {
-            vladReset(vlad);
-        }
-        vlad->ticks = HAL_GetTick();
-    }
+	if (HAL_GetTick() - vlad->ticks > vladReadInterval) {
+		if (queryVladStatus(vlad) > 0) {
+			vlad->v_5v_real = (float) vlad->v_5v * ADC_V5V_FACTOR;
+			vlad->vin_real = (float) vlad->vin * ADC_VOLTAGE_FACTOR;
+			vlad->current_real =
+					(float) vlad->current * ADC_LINE_CURRENT_FACTOR;
+			vlad->agc152m_real = (MAX4003_VOLTAGE_SCOPE * (float) vlad->agc152m
+					+ MAX4003_VOLTAGE_FACTOR);
+			vlad->agc172m_real = (MAX4003_VOLTAGE_SCOPE * (float) vlad->agc172m
+					+ MAX4003_VOLTAGE_FACTOR);
+			vlad->level152m_real = max4003_get_fix_dbm(vlad->level152m);
+			vlad->level172m_real = max4003_get_fix_dbm(vlad->level172m);
+		} else {
+			vladReset(vlad);
+		}
+		vlad->ticks = HAL_GetTick();
+	}
 }

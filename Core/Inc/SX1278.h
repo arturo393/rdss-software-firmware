@@ -330,7 +330,7 @@ void setTranferMode(SX1278_t *module, SX1278_Status_t mode);
 void setLoraLowFreqMode(SX1278_t *module);
 void clearIrqFlagsReg(SX1278_t *module);
 void readOperatingMode(SX1278_t *module);
-void setLoraLowFreqModeReg(SX1278_t *module, SX1278_Status_t mode);
+void setLoraLowFreqModeReg(SX1278_t *module, OPERATING_MODE_t mode);
 void writeLoRaParametersReg(SX1278_t *module);
 void updateMode(SX1278_t *module, Lora_Mode_t mode);
 void initLoRaParameters(SX1278_t *module);

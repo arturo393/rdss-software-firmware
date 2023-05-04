@@ -18,15 +18,11 @@ uint8_t max4003_get_dbm( MAX4003_t *mx,uint16_t value) {
 	} else if (value < mx->min) {
 		return  MAX4003_DBM_MIN;
 	}
-	return (int8_t) (m * (float) value + b);
+	return (uint8_t) (m * (float) value + b);
 }
 
 float max4003_get_fix_voltage(uint16_t value) {
 	float new_value;
-	 float	 MAX4003_VOLTAGE_SCOPE = (float) ( MAX4003_VOLTAGE_MAX -  MAX4003_VOLTAGE_MIN)
-				/ (float) (4095 - 0);
-	 float 	 MAX4003_VOLTAGE_FACTOR =  MAX4003_VOLTAGE_MAX - 4096 * MAX4003_VOLTAGE_SCOPE;
-
 	new_value =  (MAX4003_VOLTAGE_SCOPE * (float) value + MAX4003_VOLTAGE_FACTOR);
 	return new_value;
 }
