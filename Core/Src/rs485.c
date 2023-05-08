@@ -7,8 +7,6 @@
 #include "rs485.h"
 #define MINIMUN_FRAME_LEN 6
 
-
-
 void rdssInit(RDSS_t *r, uint8_t id) {
 	r->len = 0;
 	r->status = WAITING;
@@ -71,39 +69,38 @@ Rs485_status_t isValidFrame(uint8_t *frame, uint8_t lenght) {
 }
 
 Rs485_status_t checkValidCrc(uint8_t *frame, uint8_t len) {
-    uint16_t calculatedCrc, savedCrc;
-    savedCrc = ((uint16_t) frame[len - 2] << 8);
-    savedCrc |=	(uint16_t) frame[len - 3];
-    calculatedCrc = crc_get(&frame[1], len - 4);
+	uint16_t calculatedCrc, savedCrc;
+	savedCrc = ((uint16_t) frame[len - 2] << 8);
+	savedCrc |= (uint16_t) frame[len - 3];
+	calculatedCrc = crc_get(&frame[1], len - 4);
 
-    return (calculatedCrc == savedCrc) ? DATA_OK : CRC_ERROR;
+	return (calculatedCrc == savedCrc) ? DATA_OK : CRC_ERROR;
 }
 
 uint16_t crc_get(uint8_t *buffer, uint8_t buff_len) {
-    uint8_t byte_idx;
-    uint8_t bit_idx;
-    uint16_t generator = 0x1021; // 16-bit divisor
-    uint16_t crc = 0;            // 16-bit CRC value
+	uint8_t byte_idx;
+	uint8_t bit_idx;
+	uint16_t generator = 0x1021; // 16-bit divisor
+	uint16_t crc = 0;            // 16-bit CRC value
 
-    for (byte_idx = 0; byte_idx < buff_len; byte_idx++) {
-        crc ^= ((uint16_t)(buffer[byte_idx] << 8)); // Move byte into MSB of 16-bit CRC
+	for (byte_idx = 0; byte_idx < buff_len; byte_idx++) {
+		crc ^= ((uint16_t) (buffer[byte_idx] << 8)); // Move byte into MSB of 16-bit CRC
 
-        for (bit_idx = 0; bit_idx < 8; bit_idx++) {
-            if ((crc & 0x8000) != 0) { // Test for MSB = bit 15
-                crc = ((uint16_t)((crc << 1) ^ generator));
-            } else {
-                crc <<= 1;
-            }
-        }
-    }
+		for (bit_idx = 0; bit_idx < 8; bit_idx++) {
+			if ((crc & 0x8000) != 0) { // Test for MSB = bit 15
+				crc = ((uint16_t) ((crc << 1) ^ generator));
+			} else {
+				crc <<= 1;
+			}
+		}
+	}
 
-    return crc;
+	return crc;
 }
 
 Rs485_status_t isValidId(RDSS_t *r) {
 
 	r->idReceived = r->buffer[2];
-
 	if (r->idReceived == r->id)
 		return DATA_OK;
 	else if (r->idReceived == r->idQuery)
