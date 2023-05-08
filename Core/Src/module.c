@@ -68,14 +68,14 @@ uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad) {
 	uint8_t uplink_agc_value = (uint8_t) (vlad->agc172m_real * 10);
 	uint8_t vladRev23Id = 0xff;
 	frame[index++] = data_length;
+	frame[index++] = (uint8_t) vladRev23Id;
+	frame[index++] = (uint8_t) vladRev23Id >> 8;
 	frame[index++] = (uint8_t) line_voltage;
 	frame[index++] = (uint8_t) line_voltage >> 8;
 	frame[index++] = (uint8_t) line_current;
 	frame[index++] = (uint8_t) line_current >> 8;
-	frame[index++] = (uint8_t) vladRev23Id;
-	frame[index++] = (uint8_t) vladRev23Id >> 8;
-	frame[index++] = (uint8_t) line_current;
-	frame[index++] = (uint8_t) line_current >> 8;
+	frame[index++] = (uint8_t) vlad->remote_attenuation;
+	frame[index++] = (uint8_t) vlad->remote_attenuation >> 8;
 	frame[index++] = (uint8_t) downlink_agc_value;
 	frame[index++] = (uint8_t) vlad->level152m_real;
 	frame[index++] = (uint8_t) uplink_agc_value;
@@ -154,7 +154,7 @@ uint8_t queryVladStatus(Vlad_t *vlad) {
 
 	uint16_t *vlad_values[] = { &vlad->level152m, &vlad->level172m,
 			&vlad->agc152m, &vlad->agc172m, &vlad->ref152m, &vlad->tone_level,
-			&vlad->vin, &vlad->v_5v, &vlad->current };
+			&vlad->vin, &vlad->v_5v, &vlad->current, &vlad->remote_attenuation };
 	size_t num_values = sizeof(vlad_values) / sizeof(vlad_values[0]);
 
 	for (size_t i = 0; i < num_values; i++) {
@@ -172,6 +172,8 @@ uint8_t queryVladStatus(Vlad_t *vlad) {
 
 void updateVladData(Vlad_t *vlad) {
 	const uint32_t vladReadInterval = VLAD_READ_TIMER;
+	uint8_t query[2];
+	uint8_t slave_address = 0x08;
 
 	if (HAL_GetTick() - vlad->ticks > vladReadInterval) {
 		if (queryVladStatus(vlad) > 0) {
@@ -179,15 +181,16 @@ void updateVladData(Vlad_t *vlad) {
 			vlad->vin_real = (float) vlad->vin * ADC_VOLTAGE_FACTOR;
 			vlad->current_real =
 					(float) vlad->current * ADC_LINE_CURRENT_FACTOR;
-			vlad->agc152m_real = (MAX4003_VOLTAGE_SCOPE * (float) vlad->agc152m
-					+ MAX4003_VOLTAGE_FACTOR);
-			vlad->agc172m_real = (MAX4003_VOLTAGE_SCOPE * (float) vlad->agc172m
-					+ MAX4003_VOLTAGE_FACTOR);
-			vlad->level152m_real = max4003_get_fix_dbm(vlad->level152m);
-			vlad->level172m_real = max4003_get_fix_dbm(vlad->level172m);
-		} else {
+			vlad->agc152m_real = (int8_t) (MAX4003_AGC_SCOPE * (float) vlad->agc152m + MAX4003_AGC_FACTOR);
+			vlad->agc172m_real = (int8_t) (MAX4003_AGC_SCOPE * (float) vlad->agc172m + MAX4003_AGC_FACTOR);
+			vlad->level152m_real =  (int8_t) (MAX4003_AGC_SCOPE * (float) vlad->level152m + MAX4003_AGC_FACTOR);
+			vlad->level172m_real =  (int8_t) (MAX4003_DBM_SCOPE * (float) vlad->level172m + MAX4003_DBM_FACTOR);
 			vladReset(vlad);
 		}
 		vlad->ticks = HAL_GetTick();
+
+		query[0] = SET_VLAD_ATTENUATION;
+		query[1] = (HAL_GetTick() & 0xFF) % 31;
+		i2c1MasterTransmit(slave_address, query, sizeof(query), 200);
 	}
 }

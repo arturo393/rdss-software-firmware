@@ -27,12 +27,7 @@ float max4003_get_fix_voltage(uint16_t value) {
 	return new_value;
 }
 
-
 int8_t max4003_get_fix_dbm(uint16_t value) {
-	float	 MAX4003_DBM_SCOPE = (float) ( MAX4003_DBM_MAX -  MAX4003_DBM_MIN)
-				/ (float) (MAX4003_ADC_MAX - MAX4003_ADC_MIN);
-	float 	 MAX4003_DBM_FACTOR =  MAX4003_DBM_MAX - MAX4003_ADC_MAX * MAX4003_DBM_SCOPE;
-
 	return (int8_t) (MAX4003_DBM_SCOPE * (float) value + MAX4003_DBM_FACTOR);
 }
 

@@ -47,6 +47,11 @@ UART1_t* uart1Init(uint32_t pclk, uint32_t baud_rate) {
 	UART1_t * u1;
 	u1 = malloc(sizeof(UART1_t));
 
+	memset(u1->rx,0,sizeof(u1->rx));
+	memset(u1->tx,0,sizeof(u1->tx));
+
+	u1->isReady = false;
+
 	uart1_gpio_init();
 
 	/*enable clock access to USART1 */

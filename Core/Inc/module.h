@@ -91,8 +91,8 @@ typedef struct VLAD_MODULE {
 	uint16_t v_5v;
 	uint16_t vin;
 	uint16_t current;
-	float agc152m_real;
-	float agc172m_real;
+	int8_t agc152m_real;
+	int8_t agc172m_real;
 	int8_t level152m_real;
 	int8_t level172m_real;
 	float v_5v_real;
