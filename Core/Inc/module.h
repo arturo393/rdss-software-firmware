@@ -97,7 +97,7 @@ typedef struct VLAD_MODULE {
 	float v_5v_real;
 	float vin_real;
 	float current_real;
-	union floatConverter uc_temperature;
+	union floatConverter ucTemperature;
 	uint8_t remote_attenuation;
 	bool is_remote_attenuation;
 	bool is_attenuation_updated;
@@ -117,7 +117,7 @@ uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad);
 uint8_t isValidCrc(uint8_t *buffer, uint8_t len);
 uint16_t crc_get(uint8_t *buffer, uint8_t buff_len);
 void resetVladData(Vlad_t *vlad);
-uint8_t queryVladStatus(Vlad_t *vlad);
+uint8_t readVladMeasurements(Vlad_t *vlad);
 void updateVladMeasurements(Vlad_t *vlad);
 
 #endif /* INC_LTEL_H_ */

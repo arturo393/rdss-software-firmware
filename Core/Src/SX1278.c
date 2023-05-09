@@ -218,8 +218,6 @@ void updateMode(SX1278_t *module, Lora_Mode_t mode) {
 	writeRegister(module->spi, LR_RegIrqFlagsMask, &(module->flagsMode), 1);
 }
 
-
-
 void initLoRaParameters(SX1278_t *module) {
 	module->power = SX1278_POWER_17DBM;
 	module->LoRa_CRC_sum = CRC_ENABLE;

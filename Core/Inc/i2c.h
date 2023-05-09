@@ -21,7 +21,6 @@
 #define I2C_SET_ATTENUATION 0x11
 #define I2C_QUERY_VLAD_PARAMETERS 0x21
 
-extern CRC_HandleTypeDef hcrc;
 
 typedef enum State{
 	WAITING_DATA,

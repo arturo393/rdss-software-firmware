@@ -40,22 +40,6 @@ void i2c1MasterInit() {
 	I2C1->CR1 |= I2C_CR1_PE;
 }
 
-uint8_t isCrcValid(I2C_t *i2c) {
-	uint8_t *rx;
-	rx = i2c->buffer;
-	uint32_t crc_calculated = 0;
-	uint8_t len = i2c->len - 1;
-	uint32_t crc_received = (rx[len - 3] << 24) | (rx[len - 2] << 16)
-			| (rx[len - 1] << 8) | (rx[len]);
-	if (len == 2 + 4 - 1)
-		crc_calculated = HAL_CRC_Calculate(&hcrc, (uint32_t*) i2c->buffer, 2);
-	else if (len == 1 + 4 - 1)
-		crc_calculated = HAL_CRC_Calculate(&hcrc, (uint32_t*) i2c->buffer, 1);
-	if (crc_calculated == crc_received)
-		return 1;
-	return 0;
-}
-
 void i2cCleanBuffer(I2C_t *i2c) {
 	for (int i = 0; i < I2C_RX_BUFFER_SIZE; i++)
 		i2c->buffer[i] = '\0';

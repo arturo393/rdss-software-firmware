@@ -48,7 +48,7 @@ Vlad_t* vladInit(uint8_t id) {
 	vlad->v_5v_real = 0;
 	vlad->vin_real = 0;
 	vlad->current_real = 0;
-	vlad->uc_temperature.i = 0;
+	vlad->ucTemperature.i = 0;
 	vlad->remote_attenuation = 0;
 	vlad->v_5v_real = 0;
 	vlad->vin_real = 0;
@@ -147,8 +147,9 @@ void resetVladData(Vlad_t *vlad) {
 	vlad->vin = 0;
 	vlad->v_5v = 0;
 	vlad->current = 0;
-	vlad->uc_temperature.i = 0;
+	vlad->ucTemperature.i = 0;
 	vlad->remote_attenuation = 0;
+	vlad->is_attenuation_updated = false;
 	vlad->v_5v_real = 0;
 	vlad->vin_real = 0;
 	vlad->current_real = 0;
@@ -158,35 +159,35 @@ void resetVladData(Vlad_t *vlad) {
 	vlad->level172m_real = 0;
 }
 
-uint8_t queryVladStatus(Vlad_t *vlad) {
-	uint8_t slave_address = 0x08;
-	uint8_t query = 0x10;
+uint8_t readVladMeasurements(Vlad_t *vlad) {
+	uint8_t slaveAddress = 0x08;
+	uint8_t vladMeasurementsCmd[2] = {0x10,0x00};
 	uint8_t query_size = 24;
-	uint8_t index = 0;
+	uint8_t bufferIndex = 0;
 	uint8_t buffer[24];
 
-	if (!i2c1MasterTransmit(slave_address, &query, sizeof(query), 10))
-		return index;
+	if (!i2c1MasterTransmit(slaveAddress, vladMeasurementsCmd, sizeof(vladMeasurementsCmd), 10))
+		return bufferIndex;
 	HAL_Delay(6);
-	if (!i2c1MasterReceive(slave_address, buffer, query_size, 10))
-		return index;
+	if (!i2c1MasterReceive(slaveAddress, buffer, query_size, 10))
+		return bufferIndex;
 
-	uint16_t *vlad_values[] = { &vlad->level152m, &vlad->level172m,
+	uint16_t *vladValues[] = { &vlad->level152m, &vlad->level172m,
 			&vlad->agc152m, &vlad->agc172m, &vlad->ref152m, &vlad->tone_level,
 			&vlad->vin, &vlad->v_5v, &vlad->current, &vlad->remote_attenuation };
-	size_t num_values = sizeof(vlad_values) / sizeof(vlad_values[0]);
+	size_t num_values = sizeof(vladValues) / sizeof(vladValues[0]);
 
 	for (size_t i = 0; i < num_values; i++) {
-		*vlad_values[i] = (uint16_t) buffer[index++];
-		*vlad_values[i] |= (uint16_t) (buffer[index++] << 8);
+		*vladValues[i] = (uint16_t) buffer[bufferIndex++];
+		*vladValues[i] |= (uint16_t) (buffer[bufferIndex++] << 8);
 	}
 
-	vlad->uc_temperature.i = buffer[index++];
-	vlad->uc_temperature.i |= buffer[index++] << 8;
-	vlad->uc_temperature.i |= buffer[index++] << 16;
-	vlad->uc_temperature.i |= buffer[index++] << 24;
+	vlad->ucTemperature.i = buffer[bufferIndex++];
+	vlad->ucTemperature.i |= buffer[bufferIndex++] << 8;
+	vlad->ucTemperature.i |= buffer[bufferIndex++] << 16;
+	vlad->ucTemperature.i |= buffer[bufferIndex++] << 24;
 
-	return index;
+	return bufferIndex;
 }
 
 void updateVladMeasurements(Vlad_t *vlad) {
@@ -195,7 +196,7 @@ void updateVladMeasurements(Vlad_t *vlad) {
 	uint8_t i2cSlaveAddress  = 0x08;
 
 	if (HAL_GetTick() - vlad->lastUpdateTicks > vladReadIntervalMs ) {
-		if (queryVladStatus(vlad) > 0) {
+		if (readVladMeasurements(vlad) > 0) {
 			vlad->v_5v_real = (float) vlad->v_5v * ADC_V5V_FACTOR;
 			vlad->vin_real = (float) vlad->vin * ADC_VOLTAGE_FACTOR;
 			vlad->current_real =
@@ -211,8 +212,8 @@ void updateVladMeasurements(Vlad_t *vlad) {
 
 			attenuationCommand[0] = SET_VLAD_ATTENUATION;
 			attenuationCommand[1] = (HAL_GetTick() & 0xFF) % 31;
-//			vlad->is_attenuation_updated = i2c1MasterTransmit(slave_address, query,
-//					sizeof(query), 50);
+			vlad->is_attenuation_updated = i2c1MasterTransmit(i2cSlaveAddress, attenuationCommand,
+					sizeof(attenuationCommand), 10);
 		} else {
 			resetVladData(vlad);
 		}

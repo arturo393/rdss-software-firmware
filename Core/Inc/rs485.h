@@ -23,6 +23,7 @@
 #define RDSS_BUFFER_SIZE 50
 #define LTEL_SET_LENGTH  13
 #define LTEL_QUERY_LENGTH  9
+#define MINIMUN_FRAME_LEN 6
 
 typedef enum RS485_CMD {
 	NONE,
@@ -105,7 +106,7 @@ Rs485_status_t isValidId(RDSS_t *r);
 Rs485_status_t checkBuffer(RDSS_t *rs485);
 void fillValidBuffer(RDSS_t *r, uint8_t *buff, uint8_t len);
 //void rs485_set_query_frame(RS485_t* , Module_t *module);
-void rdssInit(RDSS_t*,uint8_t id);
+RDSS_t* rdssInit(uint8_t id);
 void rs485Uart1Decode(RDSS_t *rs485, UART1_t *uart1, SX1278_t *loraRx);
 void reinit(RDSS_t *rs485);
 void encodeVlad(uint8_t* buff);

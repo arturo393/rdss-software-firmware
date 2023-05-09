@@ -43,7 +43,7 @@ void savePage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
 		for (i = 0; i < size; i++) {
 			buff[i + 1] = data[i];
 		}
-		i2c1MasterTransmit(CHIP_ADDR, buff, size + 1, 1000);
+		i2c1MasterTransmit(CHIP_ADDR, buff, size + 1, 50);
 	}
 	HAL_Delay(6);
 }

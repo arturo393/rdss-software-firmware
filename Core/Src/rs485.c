@@ -5,9 +5,10 @@
  *      Author: sigmadev
  */
 #include "rs485.h"
-#define MINIMUN_FRAME_LEN 6
 
-void rdssInit(RDSS_t *r, uint8_t id) {
+RDSS_t* rdssInit(uint8_t id) {
+	RDSS_t *r;
+	r = malloc(sizeof(RDSS_t));
 	r->len = 0;
 	r->status = WAITING;
 	r->cmd = NONE;
@@ -16,7 +17,7 @@ void rdssInit(RDSS_t *r, uint8_t id) {
 	/* PB9 DE485 as output  */
 	SET_BIT(GPIOB->MODER, GPIO_MODER_MODE9_0);
 	CLEAR_BIT(GPIOB->MODER, GPIO_MODER_MODE9_1);
-
+	return r;
 }
 
 Rs485_status_t rs485_check_CRC_module(UART1_t *uart1) {
