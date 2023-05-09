@@ -108,7 +108,6 @@ void handleDefaultCase(RDSS_t *rdss, SX1278_t *loRa, UART1_t *u1);
 int main(void) {
 	/* USER CODE BEGIN 1 */
 
-
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -812,6 +811,7 @@ uint8_t setBufferWithLtelCmd(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa,
 		loRa->codingRate = rdss->buffer[index++];
 		savePage(CAT24C02_PAGE0_START_ADDR, &(loRa->codingRate), 2, 1);
 		break;
+
 	default:
 		break;
 	}
@@ -831,12 +831,24 @@ uint8_t processReceivedLoraCommand(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad,
 		loRa->buffer[index++] = LTEL_END_MARK;
 		loRa->len = index;
 		loRa->status = TX_BUFFER_READY;
-		printLoRaStatus(u1, loRa);
-		updateMode(loRa, SLAVE_SENDER);
-		printStatus(u1, &*rdss);
-		transmit(loRa);
-		printLoRaStatus(u1, loRa);
+	} else if (rdss->cmd == SET_VLAD_ATTENUATION) {
+		uint8_t attenuationCommand[2];
+		uint8_t i2cSlaveAddress = 0x08;
+		attenuationCommand[0] = SET_VLAD_ATTENUATION;
+		attenuationCommand[1] = rdss->buffer[6];
+		vlad->is_attenuation_updated = i2c1MasterTransmit(i2cSlaveAddress,
+				attenuationCommand, sizeof(attenuationCommand), 10);
+		loRa->buffer[index++] = vlad->is_attenuation_updated;
+		index += setCrc(loRa->buffer, index);
+		loRa->buffer[index++] = LTEL_END_MARK;
+		loRa->len = index;
+		loRa->status = TX_BUFFER_READY;
 	}
+	printLoRaStatus(u1, loRa);
+	updateMode(loRa, SLAVE_SENDER);
+	printStatus(u1, &*rdss);
+	transmit(loRa);
+	printLoRaStatus(u1, loRa);
 	reinit(&*rdss);
 	updateMode(loRa, SLAVE_RECEIVER);
 	printLoRaStatus(u1, loRa);
@@ -845,7 +857,22 @@ uint8_t processReceivedLoraCommand(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad,
 
 void processReceivedUartCommand(Vlad_t *vlad, UART1_t *u1, RDSS_t *rdss,
 		SX1278_t *loRa) {
-	u1->tx_len = setBufferWithLtelCmd(u1->tx, &*rdss, loRa, vlad);
+	u1->tx_len = setBufferWithLtelCmd(u1->tx, rdss, loRa, vlad);
+	if (rdss->cmd == SET_VLAD_ATTENUATION) {
+		uint8_t attenuationCommand[2];
+		uint8_t i2cSlaveAddress = 0x08;
+		uint8_t index = 0;
+		index = setRdssStartData(rdss, u1->tx);
+		attenuationCommand[0] = SET_VLAD_ATTENUATION;
+		attenuationCommand[1] = rdss->buffer[5];
+		vlad->is_attenuation_updated = i2c1MasterTransmit(i2cSlaveAddress,
+				attenuationCommand, sizeof(attenuationCommand), 10);
+
+		u1->tx[index++] = vlad->is_attenuation_updated;
+		index += setCrc(u1->tx, index);
+		u1->tx[index++] = LTEL_END_MARK;
+		u1->tx_len = index;
+	}
 	writeTx(u1);
 	printStatus(u1, rdss);
 	reinit(rdss);

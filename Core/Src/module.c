@@ -192,8 +192,7 @@ uint8_t readVladMeasurements(Vlad_t *vlad) {
 
 void updateVladMeasurements(Vlad_t *vlad) {
 	const uint32_t vladReadIntervalMs  = VLAD_READ_TIMER;
-	uint8_t attenuationCommand[2];
-	uint8_t i2cSlaveAddress  = 0x08;
+
 
 	if (HAL_GetTick() - vlad->lastUpdateTicks > vladReadIntervalMs ) {
 		if (readVladMeasurements(vlad) > 0) {
@@ -210,10 +209,6 @@ void updateVladMeasurements(Vlad_t *vlad) {
 			vlad->level172m_real = (int8_t) (MAX4003_DBM_SCOPE
 					* (float) vlad->level172m + MAX4003_DBM_FACTOR);
 
-			attenuationCommand[0] = SET_VLAD_ATTENUATION;
-			attenuationCommand[1] = (HAL_GetTick() & 0xFF) % 31;
-			vlad->is_attenuation_updated = i2c1MasterTransmit(i2cSlaveAddress, attenuationCommand,
-					sizeof(attenuationCommand), 10);
 		} else {
 			resetVladData(vlad);
 		}
