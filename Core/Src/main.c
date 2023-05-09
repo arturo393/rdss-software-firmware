@@ -109,6 +109,7 @@ int main(void) {
 	/* USER CODE BEGIN 1 */
 	LED_t led;
 	RDSS_t rdss;
+
 	rs485_ptr = &rdss;
 	/* USER CODE END 1 */
 
@@ -138,11 +139,11 @@ int main(void) {
 	/* USER CODE BEGIN 2 */
 
 // Initialize the I2C peripheral (hi2c1) here
+	i2c1MasterInit();
 	u1 = uart1Init(HS16_CLK, BAUD_RATE);
 	u1->debug = false;
-	vlad = vladInit(2);
-	i2c1MasterInit();
-	rdssInit(&rdss, 2);
+	vlad = vladInit(0);
+	rdssInit(&rdss, vlad->id);
 	ledInit(&led);
 	loRa = loRaInit(&hspi1);
 	printLoRaStatus(u1, loRa);
@@ -153,9 +154,8 @@ int main(void) {
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 
-		updateVladData(vlad);
+		updateVladMeasurements(vlad);
 		handleCommunication(&rdss, loRa, vlad, u1);
-
 	}
 	/* USER CODE END WHILE */
 
@@ -752,8 +752,6 @@ void parseUartMaster(UART1_t *u1, RDSS_t *rdss) {
 void parseUartSlave(UART1_t *u1, RDSS_t *rdss) {
 	u1->isReady = false;
 	fillValidBuffer(rdss, u1->rx, u1->rxLen);
-
-	u1->rxLen = 0;
 	if (rdss->status == DATA_OK) {
 		rdss->cmd = rdss->buffer[CMD_INDEX];
 		rdss->idReceived = rdss->buffer[MODULE_ID_INDEX];
@@ -762,13 +760,17 @@ void parseUartSlave(UART1_t *u1, RDSS_t *rdss) {
 		} else {
 			rdss->status = WRONG_MODULE_ID;
 		}
-	} else if (u1->rx[CMD_INDEX] == QUERY_MODULE_ID) {
+	}
+	if (u1->rx[CMD_INDEX] == QUERY_MODULE_ID
+			|| u1->rx[CMD_INDEX] == SET_MODULE_ID) {
 		rdss->status = UART_VALID;
-		memcpy(rdss->buffer,u1->rx ,sizeof(u1->rx));
+		memcpy(rdss->buffer, u1->rx, sizeof(u1->rx));
 		rdss->cmd = rdss->buffer[CMD_INDEX];
+		rdss->len = u1->rxLen;
 	}
 
 	memset(u1->rx, 0, sizeof(u1->rx));
+	u1->rxLen = 0;
 }
 
 void sendLoRaMasterQuery(RDSS_t *rs485, SX1278_t *loRa) {
@@ -785,7 +787,7 @@ uint8_t setBufferWithLtelCmd(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa,
 		Vlad_t *vlad) {
 	uint8_t index = 0;
 
-	if (rdss->len != LTEL_QUERY_LENGTH && rdss->len != LTEL_SET_LENGTH)
+	if (rdss->len < LTEL_QUERY_LENGTH || rdss->len > LTEL_SET_LENGTH)
 		return 0;
 
 	index = setRdssStartData(rdss, buffer);
@@ -821,13 +823,23 @@ uint8_t setBufferWithLtelCmd(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa,
 	case QUERY_MODULE_ID:
 		index = 0;
 		buffer[index++] = LTEL_START_MARK;
-		buffer[index++] = 0;
-		buffer[index++] = 0;
+		buffer[index++] = VLADR;
+		buffer[index++] = rdss->id;
 		buffer[index++] = QUERY_MODULE_ID;
 		buffer[index++] = 0x00;
 		buffer[index++] = 2;
 		buffer[index++] = VLADR;
 		buffer[index++] = rdss->id;
+		break;
+	case SET_MODULE_ID:
+		vlad->function = rdss->buffer[6];
+		vlad->id = rdss->buffer[7];
+		rdss->id = vlad->id;
+		index = setRdssStartData(rdss, buffer);
+		buffer[index++] = VLADR;
+		buffer[index++] = rdss->id;
+		savePage(CAT24C02_PAGE0_START_ADDR, (uint8_t*) &(vlad->function), 3, 1);
+		savePage(CAT24C02_PAGE0_START_ADDR, (uint8_t*) &(vlad->id), 4, 1);
 		break;
 	case SET_TX_FREQ:
 		buffer[index++] = 4;
@@ -891,7 +903,7 @@ void processReceivedUartCommand(Vlad_t *vlad, UART1_t *u1, RDSS_t *rdss,
 		SX1278_t *loRa) {
 	u1->tx_len = setBufferWithLtelCmd(u1->tx, &*rdss, loRa, vlad);
 	writeTx(u1);
-	printStatus(u1,rdss);
+	printStatus(u1, rdss);
 	reinit(rdss);
 	cleanTx(u1);
 	u1->tx_len = 0;

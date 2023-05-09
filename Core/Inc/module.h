@@ -7,7 +7,6 @@
 #ifndef __MODULE_H_
 #define __MODULE_H_
 
-
 #include "main.h"
 #include "stdbool.h"
 #include <stdio.h>
@@ -44,7 +43,7 @@ typedef enum MODULE_FUNCTION {
 } Function_t;
 
 typedef enum MODULE_ID {
-	ID0 = 0x00, ID1 = 0x01, ID2 = 0x02,ID4 = 0x04, ID8 = 0x08, ID9 = 0X09
+	ID0 = 0x00, ID1 = 0x01, ID2 = 0x02, ID4 = 0x04, ID8 = 0x08, ID9 = 0X09
 } Id_t;
 
 typedef enum MODULE_S {
@@ -77,8 +76,8 @@ typedef struct TONE_UHF_MODULE {
 } Tone_uhf_t;
 
 union floatConverter {
-    uint32_t i;
-    float f;
+	uint32_t i;
+	float f;
 };
 
 typedef struct VLAD_MODULE {
@@ -105,10 +104,8 @@ typedef struct VLAD_MODULE {
 	Id_t id;
 	Function_t function;
 	bool calc_en;
-	uint32_t ticks;
+	uint32_t lastUpdateTicks;
 } Vlad_t;
-
-
 
 void module_init(PA_t*, Function_t, Id_t);
 void module_calc_parameters(PA_t m, uint16_t *media_array);
@@ -116,11 +113,11 @@ void pa_sample_timer3_init();
 void updatePAState(PA_t *pa);
 void toneUhfInit(Function_t funcion, Id_t id, Tone_uhf_t *uhf);
 Vlad_t* vladInit(uint8_t id);
-uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t*vlad);
+uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad);
 uint8_t isValidCrc(uint8_t *buffer, uint8_t len);
 uint16_t crc_get(uint8_t *buffer, uint8_t buff_len);
-void vladReset(Vlad_t *vlad);
+void resetVladData(Vlad_t *vlad);
 uint8_t queryVladStatus(Vlad_t *vlad);
-void updateVladData(Vlad_t *vlad);
+void updateVladMeasurements(Vlad_t *vlad);
 
 #endif /* INC_LTEL_H_ */

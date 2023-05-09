@@ -50,32 +50,43 @@ Vlad_t* vladInit(uint8_t id) {
 	vlad->current_real = 0;
 	vlad->uc_temperature.i = 0;
 	vlad->remote_attenuation = 0;
+	vlad->v_5v_real = 0;
+	vlad->vin_real = 0;
+	vlad->current_real = 0;
+	vlad->agc152m_real = 0;
+	vlad->agc172m_real = 0;
+	vlad->level152m_real = 0;
+	vlad->level172m_real = 0;
+	vlad->remote_attenuation = 0;
 	vlad->is_remote_attenuation = false;
 	vlad->is_attenuation_updated = false;
 	vlad->calc_en = false;
 	vlad->function = VLADR;
 	vlad->id = id;
-	vlad->ticks = HAL_GetTick();
+	vlad->lastUpdateTicks = HAL_GetTick();
+
+	readPage(CAT24C02_PAGE0_START_ADDR, &(vlad->function), 3, 1);
+	readPage(CAT24C02_PAGE0_START_ADDR, &(vlad->id), 4, 1);
 	return vlad;
 }
 
 uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad) {
 	uint8_t data_length = 12;
 	uint8_t index = 0;
-	uint16_t line_voltage = (uint16_t) vlad->vin_real * 10;
-	uint16_t line_current = (uint16_t) vlad->current_real * 1000;
+	uint16_t line_voltage = (uint16_t) (vlad->vin_real * 10);
+	uint16_t line_current = (uint16_t) (vlad->current_real * 1000);
 	uint8_t downlink_agc_value = (uint8_t) (vlad->agc152m_real * 10);
 	uint8_t uplink_agc_value = (uint8_t) (vlad->agc172m_real * 10);
 	uint8_t vladRev23Id = 0xff;
 	frame[index++] = data_length;
 	frame[index++] = (uint8_t) vladRev23Id;
-	frame[index++] = (uint8_t) vladRev23Id >> 8;
+	frame[index++] = (uint8_t) (vlad->remote_attenuation >> 8);
 	frame[index++] = (uint8_t) line_voltage;
-	frame[index++] = (uint8_t) line_voltage >> 8;
+	frame[index++] = (uint8_t) (line_voltage >> 8);
 	frame[index++] = (uint8_t) line_current;
-	frame[index++] = (uint8_t) line_current >> 8;
+	frame[index++] = (uint8_t) (line_current >> 8);
 	frame[index++] = (uint8_t) vlad->remote_attenuation;
-	frame[index++] = (uint8_t) vlad->remote_attenuation >> 8;
+	frame[index++] = (uint8_t) (vlad->remote_attenuation >> 8);
 	frame[index++] = (uint8_t) downlink_agc_value;
 	frame[index++] = (uint8_t) vlad->level152m_real;
 	frame[index++] = (uint8_t) uplink_agc_value;
@@ -126,7 +137,7 @@ float current_calc(uint16_t _current) {
 	return ADC_CONSUMPTION_CURRENT_FACTOR * _current / 4095.0f;
 }
 
-void vladReset(Vlad_t *vlad) {
+void resetVladData(Vlad_t *vlad) {
 	vlad->level152m = 0;
 	vlad->level172m = 0;
 	vlad->agc152m = 0;
@@ -137,19 +148,27 @@ void vladReset(Vlad_t *vlad) {
 	vlad->v_5v = 0;
 	vlad->current = 0;
 	vlad->uc_temperature.i = 0;
+	vlad->remote_attenuation = 0;
+	vlad->v_5v_real = 0;
+	vlad->vin_real = 0;
+	vlad->current_real = 0;
+	vlad->agc152m_real = 0;
+	vlad->agc172m_real = 0;
+	vlad->level152m_real = 0;
+	vlad->level172m_real = 0;
 }
 
 uint8_t queryVladStatus(Vlad_t *vlad) {
 	uint8_t slave_address = 0x08;
 	uint8_t query = 0x10;
-	uint8_t query_size = 23;
+	uint8_t query_size = 24;
 	uint8_t index = 0;
-	uint8_t buffer[23];
+	uint8_t buffer[24];
 
-	if (!i2c1MasterTransmit(slave_address, &query, sizeof(query), 200))
+	if (!i2c1MasterTransmit(slave_address, &query, sizeof(query), 10))
 		return index;
 	HAL_Delay(6);
-	if (!i2c1MasterReceive(slave_address, buffer, query_size, 2000))
+	if (!i2c1MasterReceive(slave_address, buffer, query_size, 10))
 		return index;
 
 	uint16_t *vlad_values[] = { &vlad->level152m, &vlad->level172m,
@@ -170,27 +189,33 @@ uint8_t queryVladStatus(Vlad_t *vlad) {
 	return index;
 }
 
-void updateVladData(Vlad_t *vlad) {
-	const uint32_t vladReadInterval = VLAD_READ_TIMER;
-	uint8_t query[2];
-	uint8_t slave_address = 0x08;
+void updateVladMeasurements(Vlad_t *vlad) {
+	const uint32_t vladReadIntervalMs  = VLAD_READ_TIMER;
+	uint8_t attenuationCommand[2];
+	uint8_t i2cSlaveAddress  = 0x08;
 
-	if (HAL_GetTick() - vlad->ticks > vladReadInterval) {
+	if (HAL_GetTick() - vlad->lastUpdateTicks > vladReadIntervalMs ) {
 		if (queryVladStatus(vlad) > 0) {
 			vlad->v_5v_real = (float) vlad->v_5v * ADC_V5V_FACTOR;
 			vlad->vin_real = (float) vlad->vin * ADC_VOLTAGE_FACTOR;
 			vlad->current_real =
 					(float) vlad->current * ADC_LINE_CURRENT_FACTOR;
-			vlad->agc152m_real = (int8_t) (MAX4003_AGC_SCOPE * (float) vlad->agc152m + MAX4003_AGC_FACTOR);
-			vlad->agc172m_real = (int8_t) (MAX4003_AGC_SCOPE * (float) vlad->agc172m + MAX4003_AGC_FACTOR);
-			vlad->level152m_real =  (int8_t) (MAX4003_AGC_SCOPE * (float) vlad->level152m + MAX4003_AGC_FACTOR);
-			vlad->level172m_real =  (int8_t) (MAX4003_DBM_SCOPE * (float) vlad->level172m + MAX4003_DBM_FACTOR);
-			vladReset(vlad);
-		}
-		vlad->ticks = HAL_GetTick();
+			vlad->agc152m_real = (int8_t) (MAX4003_AGC_SCOPE
+					* (float) vlad->agc152m + MAX4003_AGC_FACTOR);
+			vlad->agc172m_real = (int8_t) (MAX4003_AGC_SCOPE
+					* (float) vlad->agc172m + MAX4003_AGC_FACTOR);
+			vlad->level152m_real = (int8_t) (MAX4003_DBM_SCOPE
+					* (float) vlad->level152m + MAX4003_DBM_FACTOR);
+			vlad->level172m_real = (int8_t) (MAX4003_DBM_SCOPE
+					* (float) vlad->level172m + MAX4003_DBM_FACTOR);
 
-		query[0] = SET_VLAD_ATTENUATION;
-		query[1] = (HAL_GetTick() & 0xFF) % 31;
-		i2c1MasterTransmit(slave_address, query, sizeof(query), 200);
+			attenuationCommand[0] = SET_VLAD_ATTENUATION;
+			attenuationCommand[1] = (HAL_GetTick() & 0xFF) % 31;
+//			vlad->is_attenuation_updated = i2c1MasterTransmit(slave_address, query,
+//					sizeof(query), 50);
+		} else {
+			resetVladData(vlad);
+		}
+		vlad->lastUpdateTicks = HAL_GetTick();
 	}
 }
