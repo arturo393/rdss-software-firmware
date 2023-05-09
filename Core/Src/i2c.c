@@ -119,7 +119,8 @@ bool i2c1MasterTransmit(uint8_t slave_addr, uint8_t *data, uint8_t len,
 			SET_BIT(I2C1->ICR, I2C_ICR_NACKCF);
 			// Reinitialize the I2C peripheral if needed
 			i2c1MasterInit();
-			return false;
+			return i2c1MasterTransmit(slave_addr, data, len, 10);
+			//return false;
 		}
 	}
 
