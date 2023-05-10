@@ -285,61 +285,93 @@ def sendCmd(ser, cmd, createdevice):
             if(6 <= i < 18):
                 data.append(hexResponse[i])
 
-        deviceData = list()
-
-        for i in range(0, len(data)):
-
-            if (i == 0 or i == 2 or i == 4 or i == 6):
-                if(data[i+1] == 255):
-                    deviceData.append(data[i] * -1)
-                else:
-                    deviceData.append(int.from_bytes(
-                        ((data[i+1]).to_bytes(1, "little")) + ((data[i]).to_bytes(1, "little")), "big"))
-
-            elif(i == 8 or i == 9 or i == 10 or i == 11):
-                deviceData.append(data[i])
-            else:
-                pass
-
-        logging.debug("Data read from Serial: {}".format(deviceData))
-
-        lineVoltage = deviceData[0] / 10.0
-        baseCurrent = deviceData[1] / 1000.0
-        tunnelCurrent = deviceData[2]
-        unitCurrent = deviceData[3] / 1000.0
-        uplinkAgcValue = deviceData[4] / 10.0
-        downlinkInputPower =  deviceData[5] 
-        downlinkAgcValue = deviceData[6] / 10.0
-        downlinkOutputPower = deviceData[7]
         vladRev23Id = 0xff
+        if(data[0] == vladRev23Id):
+            # decode the frame according to the specified format
+            unsigned_byte = data[0] 
+            isRemoteAttenuation = bool(data[1]) 
+            lineVoltage = ( data[2] | (data[3] << 8) ) /10.0
+            lineCurrent = ( data[4] | (data[5] << 8) ) /1000.0
+            remoteAttenuation = data[6]
+            rotarySwitchAttenuation = data[7]
+            downlinkAgcValue = data[8] / 10.0
+            downlinkOutputPower =  data[9] - 128 if  data[9] < 128 else data[9] - 256
+            uplinkAgcValue = data[10] / 10.0
+            uplinkOutputPower = data[11] - 128 if  data[11] < 128 else data[11] - 256
 
+            # print the decoded values
 
-        if tunnelCurrent == vladRev23Id:
-             downlinkInputPower =  deviceData[5] - 128 if deviceData[5] < 128 else deviceData[5] - 256
-             downlinkOutputPower = deviceData[7] - 128 if deviceData[7] < 128 else deviceData[7] - 256
+            logging.debug(f"Voltage: {lineVoltage:.2f}[V]")
+            logging.debug(f"Line Current: {lineCurrent:.3f}[A]")
+            logging.debug(f"Software Attenuation: {remoteAttenuation:.1f}[dB]")
+            logging.debug(f"Rotary Switch Attenuation: {rotarySwitchAttenuation:.1f}[dB]")
+            logging.debug(f"Is Software Attenuation : {isRemoteAttenuation}")
+            logging.debug(f"AGC Uplink: {uplinkAgcValue:.1f}[dB]")
+            logging.debug(f"Downlink Output Power: {downlinkOutputPower}[dBm]")
+            logging.debug(f"AGC Downlink: {downlinkAgcValue:.1f}[dB]")
+            logging.debug(f"Uplink Output Power:    {uplinkOutputPower}[dBm]")
+            
+            SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
+            finalData = {
+                "sampleTime": timeNow,
+                "voltage": lineVoltage,
+                "current": lineCurrent,
+                "gupl": uplinkAgcValue,
+                "gdwl": downlinkAgcValue,
+                "power": downlinkOutputPower
+            }
         else:
-             downlinkOutputPower = round(f_power_convert(downlinkOutputPower),2)
-             downlinkInputPower = round(f_power_convert(downlinkInputPower),2)
-
-        uplinkAgcValue =  round(f_agc_convert(uplinkAgcValue),1)
-        downlinkAgcValue = round(f_agc_convert(downlinkAgcValue),1)
-
-
-        if lineVoltage > 0 :
-            lineVoltage = round(f_voltage_convert(lineVoltage),2)
         
-        if unitCurrent > 0 :
+            deviceData = list()
+            for i in range(0, len(data)):
+
+                if (i == 0 or i == 2 or i == 4 or i == 6):
+                    if(data[i+1] == 255):
+                        deviceData.append(data[i] * -1)
+                    else:
+                        deviceData.append(int.from_bytes(
+                            ((data[i+1]).to_bytes(1, "little")) + ((data[i]).to_bytes(1, "little")), "big"))
+
+                elif(i == 8 or i == 9 or i == 10 or i == 11):
+                    deviceData.append(data[i])
+                else:
+                    pass
+
+            logging.debug("Data read from Serial: {}".format(deviceData))
+            lineVoltage = deviceData[0] / 10.0
+            baseCurrent = deviceData[1] /10000.
+            tunnelCurrent = deviceData[2] /1000.0
+            unitCurrent = deviceData[3] / 1000.0
+            uplinkAgcValue = deviceData[4] / 10.0
+            downlinkInputPower =  deviceData[5] 
+            downlinkAgcValue = deviceData[6] / 10.0
+            downlinkOutputPower = deviceData[7]
+
+            downlinkOutputPower = round(f_power_convert(downlinkOutputPower),2)
+            downlinkInputPower = round(f_power_convert(downlinkInputPower),2)
+            uplinkAgcValue =  round(f_agc_convert(uplinkAgcValue),1)
+            downlinkAgcValue = round(f_agc_convert(downlinkAgcValue),1)
+            lineVoltage = round(f_voltage_convert(lineVoltage),2)
             unitCurrent = round(f_current_convert(unitCurrent),3)
 
-       
-        logging.debug(f"Voltage: {deviceData[0]/10} {lineVoltage:.2f}[V]")
-        logging.debug(f"Unit Current: {deviceData[3]/1000} {unitCurrent:.3f}[A]")
-        logging.debug(f"AGC Uplink: {deviceData[4]/10} {uplinkAgcValue:.1f}[dB]")
-        logging.debug(f"AGC Downlink: {deviceData[6]/10} {downlinkAgcValue:.1f}[dB]")
-        logging.debug(f"Downlink Output Power: {deviceData[7]} {downlinkOutputPower:.2f}[dBm]")
-        logging.debug(f"Downlink Input Power: {deviceData[5]} {downlinkInputPower:.2f}[dBm]")
-        logging.debug(f"Rev32Id: {deviceData[2]} {tunnelCurrent:.2f}")
-      
+            logging.debug(f"Voltage: {deviceData[0]/10} {lineVoltage:.2f}[V]")
+            logging.debug(f"Unit Current: {deviceData[3]/1000} {unitCurrent:.3f}[A]")
+            logging.debug(f"AGC Uplink: {deviceData[4]/10} {uplinkAgcValue:.1f}[dB]")
+            logging.debug(f"AGC Downlink: {deviceData[6]/10} {downlinkAgcValue:.1f}[dB]")
+            logging.debug(f"Downlink Output Power: {deviceData[7]} {downlinkOutputPower:.2f}[dBm]")
+            logging.debug(f"Downlink Input Power: {deviceData[5]} {downlinkInputPower:.2f}[dBm]")
+            
+            SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
+            finalData = {
+                "sampleTime": timeNow,
+                "voltage": lineVoltage,
+                "current": unitCurrent,
+                "gupl": uplinkAgcValue,
+                "gdwl": downlinkAgcValue,
+                "power": downlinkOutputPower
+            }
         # -----------------------------------------------------
         # if(createdevice == True):
         #     pass
@@ -348,20 +380,6 @@ def sendCmd(ser, cmd, createdevice):
 
         ser.flushInput()
         ser.flushOutput()
-
-        SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-        timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
-
-        finalData = {
-            "sampleTime": timeNow,
-            "voltage": lineVoltage,
-            "current": unitCurrent,
-            "gupl": uplinkAgcValue,
-            "gdwl": downlinkAgcValue,
-            "power": downlinkOutputPower
-        }
-
-        return(finalData)
 
     except Exception as e:
         logging.error(e)
