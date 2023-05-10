@@ -60,66 +60,63 @@ bool i2c1WaitForBusyWithTimeout(uint32_t timeout) {
 	return true;
 }
 
-bool i2c1MasterTransmit(uint8_t slave_addr, uint8_t *data, uint8_t len,
-		uint32_t timeout) {
-	uint32_t tick_start = HAL_GetTick();
-	uint8_t index = 0;
+bool i2c1MasterTransmit(uint8_t slaveAddr, uint8_t *data, uint8_t length, uint32_t timeout) {
+    uint32_t tickStart = HAL_GetTick();
+    uint8_t dataIndex = 0;
+    uint8_t retries = 3;
 
-	// Make sure the peripheral is enabled and not busy
-	if (!(I2C1->CR1 & I2C_CR1_PE) || (I2C1->ISR & I2C_ISR_BUSY)) {
-		return false;
-	}
+    if (!(I2C1->CR1 & I2C_CR1_PE) || (I2C1->ISR & I2C_ISR_BUSY)) {
+        I2C1->CR1 &= ~I2C_CR1_PE;
+        I2C1->CR1 |= I2C_CR1_PE;
+        return false;
+    }
 
-	// Set slave address, write transfer, and set number of bytes
-	I2C1->CR2 = (slave_addr << 1) | (len << 16) | I2C_CR2_AUTOEND;
+    I2C1->CR2 = (slaveAddr << 1) | (length << 16) | I2C_CR2_AUTOEND;
+    SET_BIT(I2C1->CR2, I2C_CR2_START);
 
-	// Send START condition
-	SET_BIT(I2C1->CR2, I2C_CR2_START);
+    while (dataIndex < length) {
+        if (HAL_GetTick() - tickStart > timeout) {
+            if (I2C1->ISR & I2C_ISR_BUSY) {
+                I2C1->CR2 |= I2C_CR2_STOP;
+                i2c1MasterInit();
+                return false;
+            }
+        }
 
-	// Transmit data
-	while (index < len) {
-		// Check for timeout
-		if ((HAL_GetTick() - tick_start) > timeout) {
-			if (I2C1->ISR & I2C_ISR_BUSY) {
-				// Generate the stop condition
-				I2C1->CR2 |= I2C_CR2_STOP;
-				// Reinitialize the I2C peripheral if needed
-				i2c1MasterInit();
-				return false;
-			}
-		}
+        if (READ_BIT(I2C1->ISR, I2C_ISR_TXIS)) {
+            I2C1->TXDR = data[dataIndex++];
+        }
 
-		// Check if TXIS flag is set (transmit data register empty)
-		if (READ_BIT(I2C1->ISR, I2C_ISR_TXIS)) {
-			// Write data to TXDR
-			I2C1->TXDR = data[index++];
-		}
+        if (READ_BIT(I2C1->ISR, I2C_ISR_NACKF)) {
+            if (--retries > 0) {
+                // Generate the stop condition
+                I2C1->CR2 |= I2C_CR2_STOP;
+                // Clear NACKF flag
+                SET_BIT(I2C1->ICR, I2C_ICR_NACKCF);
+                // Reinitialize the I2C peripheral
+                i2c1MasterInit();
+                // Restart the transmission process
+                dataIndex = 0;
+                I2C1->CR2 = (slaveAddr << 1) | (length << 16) | I2C_CR2_AUTOEND;
+                SET_BIT(I2C1->CR2, I2C_CR2_START);
+            } else {
+                I2C1->CR2 |= I2C_CR2_STOP;
+                SET_BIT(I2C1->ICR, I2C_ICR_NACKCF);
+                i2c1MasterInit();
+                return false;
+            }
+        }
+    }
 
-		// Check for NACKF flag (Not Acknowledge Received)
-		if (READ_BIT(I2C1->ISR, I2C_ISR_NACKF)) {
-			// Generate the stop condition
-			I2C1->CR2 |= I2C_CR2_STOP;
-			// Clear NACKF flag
-			SET_BIT(I2C1->ICR, I2C_ICR_NACKCF);
-			// Reinitialize the I2C peripheral if needed
-			i2c1MasterInit();
-			return i2c1MasterTransmit(slave_addr, data, len, 10);
-			//return false;
-		}
-	}
+    while (!READ_BIT(I2C1->ISR, I2C_ISR_STOPF)) {
+        if (HAL_GetTick() - tickStart > timeout) {
+            return false;
+        }
+    }
 
-	// Wait for STOPF flag (stop detection)
-	while (!READ_BIT(I2C1->ISR, I2C_ISR_STOPF)) {
-		// Check for timeout
-		if (HAL_GetTick() - tick_start > timeout) {
-			return false;
-		}
-	}
+    SET_BIT(I2C1->ICR, I2C_ICR_STOPCF);
 
-	// Clear STOPF flag
-	SET_BIT(I2C1->ICR, I2C_ICR_STOPCF);
-
-	return true;
+    return true;
 }
 
 bool i2c1MasterReceive(uint8_t slave_addr, uint8_t *data, uint8_t len,
@@ -143,10 +140,10 @@ bool i2c1MasterReceive(uint8_t slave_addr, uint8_t *data, uint8_t len,
 		// Check for timeout
 		if (HAL_GetTick() - tick_start > timeout) {
 			if (I2C1->ISR & I2C_ISR_BUSY) {
-					// Generate the stop condition
-					I2C1->CR2 |= I2C_CR2_STOP;
-					i2c1MasterInit();
-					return false;
+				// Generate the stop condition
+				I2C1->CR2 |= I2C_CR2_STOP;
+				i2c1MasterInit();
+				return false;
 			}
 		}
 

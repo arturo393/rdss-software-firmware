@@ -98,8 +98,9 @@ typedef struct VLAD_MODULE {
 	float vin_real;
 	float current_real;
 	union floatConverter ucTemperature;
-	uint8_t remote_attenuation;
-	bool is_remote_attenuation;
+	uint8_t remoteAttenuation;
+	uint8_t rotarySwitchAttenuation;
+	bool isRemoteAttenuation;
 	bool is_attenuation_updated;
 	Id_t id;
 	Function_t function;

@@ -31,7 +31,7 @@ typedef enum State{
 typedef struct I2C{
 uint8_t tx[I2C_TX_BUFFER_SIZE];
 uint8_t buffer[I2C_RX_BUFFER_SIZE];
-uint8_t len;
+uint8_t index;
 uint8_t tx_count;
 I2CState state;
 uint32_t ticks;

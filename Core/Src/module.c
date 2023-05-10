@@ -49,7 +49,7 @@ Vlad_t* vladInit(uint8_t id) {
 	vlad->vin_real = 0;
 	vlad->current_real = 0;
 	vlad->ucTemperature.i = 0;
-	vlad->remote_attenuation = 0;
+	vlad->remoteAttenuation = 0;
 	vlad->v_5v_real = 0;
 	vlad->vin_real = 0;
 	vlad->current_real = 0;
@@ -57,8 +57,9 @@ Vlad_t* vladInit(uint8_t id) {
 	vlad->agc172m_real = 0;
 	vlad->level152m_real = 0;
 	vlad->level172m_real = 0;
-	vlad->remote_attenuation = 0;
-	vlad->is_remote_attenuation = false;
+	vlad->remoteAttenuation = 0;
+	vlad->rotarySwitchAttenuation = 0;
+	vlad->isRemoteAttenuation = false;
 	vlad->is_attenuation_updated = false;
 	vlad->calc_en = false;
 	vlad->function = VLADR;
@@ -80,13 +81,13 @@ uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad) {
 	uint8_t vladRev23Id = 0xff;
 	frame[index++] = data_length;
 	frame[index++] = (uint8_t) vladRev23Id;
-	frame[index++] = (uint8_t) (vlad->remote_attenuation >> 8);
+	frame[index++] = (uint8_t) (vlad->isRemoteAttenuation);
 	frame[index++] = (uint8_t) line_voltage;
 	frame[index++] = (uint8_t) (line_voltage >> 8);
 	frame[index++] = (uint8_t) line_current;
 	frame[index++] = (uint8_t) (line_current >> 8);
-	frame[index++] = (uint8_t) vlad->remote_attenuation;
-	frame[index++] = (uint8_t) (vlad->remote_attenuation >> 8);
+	frame[index++] = (uint8_t) vlad->remoteAttenuation;
+	frame[index++] = (uint8_t) (vlad->rotarySwitchAttenuation);
 	frame[index++] = (uint8_t) downlink_agc_value;
 	frame[index++] = (uint8_t) vlad->level152m_real;
 	frame[index++] = (uint8_t) uplink_agc_value;
@@ -148,7 +149,8 @@ void resetVladData(Vlad_t *vlad) {
 	vlad->v_5v = 0;
 	vlad->current = 0;
 	vlad->ucTemperature.i = 0;
-	vlad->remote_attenuation = 0;
+	vlad->remoteAttenuation = 0;
+	vlad->rotarySwitchAttenuation = 0;
 	vlad->is_attenuation_updated = false;
 	vlad->v_5v_real = 0;
 	vlad->vin_real = 0;
@@ -162,9 +164,9 @@ void resetVladData(Vlad_t *vlad) {
 uint8_t readVladMeasurements(Vlad_t *vlad) {
 	uint8_t slaveAddress = 0x08;
 	uint8_t vladMeasurementsCmd[2] = {0x10,0x00};
-	uint8_t query_size = 24;
+	uint8_t query_size = 26;
 	uint8_t bufferIndex = 0;
-	uint8_t buffer[24];
+	uint8_t buffer[26];
 
 	if (!i2c1MasterTransmit(slaveAddress, vladMeasurementsCmd, sizeof(vladMeasurementsCmd), 10))
 		return bufferIndex;
@@ -174,13 +176,18 @@ uint8_t readVladMeasurements(Vlad_t *vlad) {
 
 	uint16_t *vladValues[] = { &vlad->level152m, &vlad->level172m,
 			&vlad->agc152m, &vlad->agc172m, &vlad->ref152m, &vlad->tone_level,
-			&vlad->vin, &vlad->v_5v, &vlad->current, &vlad->remote_attenuation };
+			&vlad->vin, &vlad->v_5v, &vlad->current };
+
 	size_t num_values = sizeof(vladValues) / sizeof(vladValues[0]);
 
 	for (size_t i = 0; i < num_values; i++) {
 		*vladValues[i] = (uint16_t) buffer[bufferIndex++];
 		*vladValues[i] |= (uint16_t) (buffer[bufferIndex++] << 8);
 	}
+
+	vlad->remoteAttenuation = buffer[bufferIndex++];
+	vlad->rotarySwitchAttenuation = buffer[bufferIndex++];
+	vlad->isRemoteAttenuation = buffer[bufferIndex++];
 
 	vlad->ucTemperature.i = buffer[bufferIndex++];
 	vlad->ucTemperature.i |= buffer[bufferIndex++] << 8;
