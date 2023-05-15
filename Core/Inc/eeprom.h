@@ -74,7 +74,7 @@ typedef struct M24C64 {
 	M24C64_ADDR_t  addrs;
 	 uint8_t data[PAGESIZE];
 	 I2C_HandleTypeDef *hi2c;
-} M24C64_t;
+} EEPROM_t;
 
 
 void m24c64_page_read(uint8_t address,uint8_t page, uint8_t *data);

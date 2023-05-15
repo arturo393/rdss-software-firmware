@@ -98,6 +98,7 @@ typedef struct VLAD_MODULE {
 	float vin_real;
 	float current_real;
 	union floatConverter ucTemperature;
+	union floatConverter lineCurrent;
 	uint8_t remoteAttenuation;
 	uint8_t rotarySwitchAttenuation;
 	bool isRemoteAttenuation;
@@ -106,6 +107,7 @@ typedef struct VLAD_MODULE {
 	Function_t function;
 	bool calc_en;
 	uint32_t lastUpdateTicks;
+	uint8_t state;
 } Vlad_t;
 
 void module_init(PA_t*, Function_t, Id_t);
