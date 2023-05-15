@@ -8,6 +8,7 @@ import datetime
 import sys
 import numpy as np
 import csv
+import struct
 from crccheck.crc import Crc16Xmodem
 from struct import *
 from sympy import *
@@ -34,6 +35,31 @@ client = None
 ser = None
 f_agc_convert = None
 
+
+class CircularBuffer:
+    def __init__(self, size):
+        self.size = size
+        self.buffer = [0] * size
+        self.index = 0
+        self.is_full = False
+    
+    def add(self, value):
+        self.buffer[self.index] = value
+        self.index = (self.index + 1) % self.size
+        if not self.is_full and self.index == 0:
+            self.is_full = True
+    
+    def get(self):
+        if self.is_full:
+            return self.buffer
+        else:
+            return self.buffer[:self.index]
+    def __str__(self):
+            return str(self.buffer)
+
+
+window_size = 5  # Number of samples to consider for the moving average
+downlinkPowerOutputSamples = CircularBuffer(window_size)
 def getCsvData(data):
     x_vals = []
     y_vals = []
@@ -69,6 +95,10 @@ x,y = getCsvData(cfg.CURRENT_DATA)
 coeffs = np.polyfit(x, y, 8)
 f_current_convert = np.poly1d(coeffs)
 
+def moving_average(new_sample, buffer):
+    buffer.add(new_sample)
+    samples = buffer.get()
+    return sum(samples) / len(samples)
 
 def dbConnect():
     """
@@ -295,10 +325,9 @@ def sendCmd(ser, cmd, createdevice):
             remoteAttenuation = data[6]
             rotarySwitchAttenuation = data[7]
             downlinkAgcValue = data[8] / 10.0
-            downlinkOutputPower =  data[9] - 128 if  data[9] < 128 else data[9] - 256
+            downlinkOutputPower =  data[9] if  data[9] < 128 else data[9] - 256
             uplinkAgcValue = data[10] / 10.0
-            uplinkOutputPower = data[11] - 128 if  data[11] < 128 else data[11] - 256
-
+            uplinkOutputPower = data[11]if  data[11] < 128 else data[11] - 256
             # print the decoded values
 
             logging.debug(f"Voltage: {lineVoltage:.2f}[V]")
@@ -344,33 +373,34 @@ def sendCmd(ser, cmd, createdevice):
             tunnelCurrent = deviceData[2] /1000.0
             unitCurrent = deviceData[3] / 1000.0
             uplinkAgcValue = deviceData[4] / 10.0
-            downlinkInputPower =  deviceData[5] 
+            downlinkInputPower = deviceData[5]  if  deviceData[5] < 128 else deviceData[5] - 256
             downlinkAgcValue = deviceData[6] / 10.0
-            downlinkOutputPower = deviceData[7]
+            downlinkOutputPower = deviceData[7] if  deviceData[7] < 128 else deviceData[7] - 256
 
-            downlinkOutputPower = round(f_power_convert(downlinkOutputPower),2)
-            downlinkInputPower = round(f_power_convert(downlinkInputPower),2)
-            uplinkAgcValue =  round(f_agc_convert(uplinkAgcValue),1)
-            downlinkAgcValue = round(f_agc_convert(downlinkAgcValue),1)
-            lineVoltage = round(f_voltage_convert(lineVoltage),2)
-            unitCurrent = round(f_current_convert(unitCurrent),3)
+            downlinkOutputPowerConverted = moving_average(downlinkOutputPower,downlinkPowerOutputSamples)
+            downlinkOutputPowerAvg = round(f_power_convert(downlinkOutputPowerConverted),2)
+            downlinkInputPowerConverted = round(f_power_convert(downlinkInputPower),2)
+            uplinkAgcValueConverted =  round(f_agc_convert(uplinkAgcValue),1)
+            downlinkAgcValueConverted = round(f_agc_convert(downlinkAgcValue),1)
+            lineVoltageConverted = round(f_voltage_convert(lineVoltage),2)
+            unitCurrentConverted = round(f_current_convert(unitCurrent),3)
 
-            logging.debug(f"Voltage: {deviceData[0]/10} {lineVoltage:.2f}[V]")
-            logging.debug(f"Unit Current: {deviceData[3]/1000} {unitCurrent:.3f}[A]")
-            logging.debug(f"AGC Uplink: {deviceData[4]/10} {uplinkAgcValue:.1f}[dB]")
-            logging.debug(f"AGC Downlink: {deviceData[6]/10} {downlinkAgcValue:.1f}[dB]")
-            logging.debug(f"Downlink Output Power: {deviceData[7]} {downlinkOutputPower:.2f}[dBm]")
-            logging.debug(f"Downlink Input Power: {deviceData[5]} {downlinkInputPower:.2f}[dBm]")
+            logging.debug(f"Voltage: {lineVoltage} {lineVoltageConverted:.2f}[V]")
+            logging.debug(f"Unit Current: {unitCurrent} {unitCurrentConverted:.3f}[A]")
+            logging.debug(f"AGC Uplink: {uplinkAgcValue} {uplinkAgcValueConverted:.1f}[dB]")
+            logging.debug(f"AGC Downlink: {downlinkAgcValue} {downlinkAgcValueConverted:.1f}[dB]")
+            logging.debug(f"Downlink Output Power: {downlinkOutputPower} {downlinkOutputPowerAvg:.2f}[dBm] {downlinkPowerOutputSamples}")
+            logging.debug(f"Downlink Input Power: {downlinkInputPower} {downlinkInputPowerConverted:.2f}[dBm]")
             
             SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
             timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
             finalData = {
                 "sampleTime": timeNow,
-                "voltage": lineVoltage,
-                "current": unitCurrent,
-                "gupl": uplinkAgcValue,
-                "gdwl": downlinkAgcValue,
-                "power": downlinkOutputPower
+                "voltage": lineVoltageConverted,
+                "current": unitCurrentConverted,
+                "gupl": uplinkAgcValueConverted,
+                "gdwl": downlinkAgcValueConverted,
+                "power": downlinkOutputPowerAvg
             }
         # -----------------------------------------------------
         # if(createdevice == True):
