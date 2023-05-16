@@ -1,2 +1,40 @@
 Debug/Core/Src/*.o
 Debug/Core/Src/*.su
+# Ignore everything in the debug directory
+Debug/*
+
+# Ignore everything in the release directory
+Release/*
+
+# Ignore compiled files
+*.o
+*.elf
+*.bin
+*.hex
+*.srec
+*.lst
+*.map
+*.a
+
+# Ignore generated files by IDE or build tools
+*.autotools
+*.swp
+*.swo
+*~
+*.sublime-*
+.vscode/
+.cproject
+.project
+.settings/
+
+# Ignore CMSIS and HAL libraries if you have them in your project
+Drivers/
+
+# Ignore core files if core dumps occur
+core
+
+# Ignore Doxygen documentation directory
+Documentation/
+
+# Ignore backup files
+*.bak
