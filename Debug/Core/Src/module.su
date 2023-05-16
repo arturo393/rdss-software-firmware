@@ -1,7 +1,11 @@
 ../Drivers/CMSIS/Include/core_cm0plus.h:741:22:__NVIC_EnableIRQ	16	static,ignoring_inline_asm
 ../Core/Src/module.c:10:6:pa_init	16	static
 ../Core/Src/module.c:27:6:toneUhfInit	16	static
-../Core/Src/module.c:36:6:vladInit	16	static
-../Core/Src/module.c:59:6:module_init	16	static
-../Core/Src/module.c:63:6:pa_sample_timer3_init	8	static
-../Core/Src/module.c:80:6:module_pa_state_update	16	static
+../Core/Src/module.c:36:9:vladInit	24	static
+../Core/Src/module.c:76:9:encodeVladToLtel	48	static
+../Core/Src/module.c:101:6:pa_sample_timer3_init	8	static
+../Core/Src/module.c:118:6:updatePAState	40	static
+../Core/Src/module.c:140:7:current_calc	16	static
+../Core/Src/module.c:144:6:resetVladData	16	static
+../Core/Src/module.c:169:9:readVladMeasurements	112	static
+../Core/Src/module.c:207:6:updateVladMeasurements	24	static

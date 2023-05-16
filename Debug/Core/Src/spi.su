@@ -1,1 +1,1 @@
-../Core/Src/spi.c:11:6:MX_SPI1_Init	8	static
+../Core/Src/spi.c:10:6:spi1_init	8	static

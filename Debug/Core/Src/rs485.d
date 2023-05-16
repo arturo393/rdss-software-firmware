@@ -21,23 +21,21 @@ Core/Src/rs485.o: ../Core/Src/rs485.c ../Core/Inc/rs485.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_ll_dmamux.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_dma_ex.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_cortex.h \
- ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_adc.h \
- ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_ll_adc.h \
- ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_adc_ex.h \
- ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_adc_ex.h \
- ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_crc.h \
- ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_crc_ex.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_exti.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_flash.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_flash_ex.h \
+ ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_i2c.h \
+ ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_i2c_ex.h \
+ ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_iwdg.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_pwr.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_pwr_ex.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_spi.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_spi_ex.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart.h \
  ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart_ex.h \
- ../Core/Inc/module.h ../Core/Inc/uart1.h ../Core/Inc/SX1278.h \
- ../Core/Inc/SX1278_hw.h
+ ../Core/Inc/module.h ../Core/Inc/rs485.h ../Core/Inc/max4003.h \
+ ../Core/Inc/uart1.h ../Core/Inc/SX1278.h ../Core/Inc/eeprom.h \
+ ../Core/Inc/i2c.h
 ../Core/Inc/rs485.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal.h:
@@ -62,15 +60,12 @@ Core/Src/rs485.o: ../Core/Src/rs485.c ../Core/Inc/rs485.h \
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_ll_dmamux.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_dma_ex.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_cortex.h:
-../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_adc.h:
-../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_ll_adc.h:
-../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_adc_ex.h:
-../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_adc_ex.h:
-../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_crc.h:
-../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_crc_ex.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_exti.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_flash.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_flash_ex.h:
+../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_i2c.h:
+../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_i2c_ex.h:
+../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_iwdg.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_pwr.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_pwr_ex.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_spi.h:
@@ -78,6 +73,9 @@ Core/Src/rs485.o: ../Core/Src/rs485.c ../Core/Inc/rs485.h \
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart.h:
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart_ex.h:
 ../Core/Inc/module.h:
+../Core/Inc/rs485.h:
+../Core/Inc/max4003.h:
 ../Core/Inc/uart1.h:
 ../Core/Inc/SX1278.h:
-../Core/Inc/SX1278_hw.h:
+../Core/Inc/eeprom.h:
+../Core/Inc/i2c.h:

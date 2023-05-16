@@ -60,8 +60,8 @@ all: main-build
 main-build: rdss_slave.elf secondary-outputs
 
 # Tool invocations
-rdss_slave.elf rdss_slave.map: $(OBJS) $(USER_OBJS) C:\Users\admin\RDSslave\vladr\STM32G030K6TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "rdss_slave.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\admin\RDSslave\vladr\STM32G030K6TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="rdss_slave.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+rdss_slave.elf rdss_slave.map: $(OBJS) $(USER_OBJS) C:\Users\artur\STM32CubeIDE\VLADR\STM32G030K6TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "rdss_slave.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\artur\STM32CubeIDE\VLADR\STM32G030K6TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="rdss_slave.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
