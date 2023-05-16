@@ -5,7 +5,8 @@
  *      Author: sigmadev
  */
 
-#include <module.h>
+
+#include <eeprom.h>
 
 void pa_init(Function_t funcion, Id_t id, Module_pa_t *module) {
 	module->function = funcion;
@@ -33,33 +34,46 @@ void toneUhfInit(Function_t funcion, Id_t id, Tone_uhf_t *uhf) {
 	uhf->id = id;
 }
 
-void vladInit(Function_t funcion, Id_t id, Vlad_t *vlad) {
-	vlad->agc150m = 0;
-	vlad->ref150m = 0;
-	vlad->level150m = 0;  // downlink 152 mhz
-	vlad->agc170m = 0;
-	vlad->ref170m = 0;
-	vlad->level170m = 0; //uplink 172 mhz
+Vlad_t* vladInit(uint8_t id) {
+	Vlad_t *vlad;
+	vlad = malloc(sizeof(Vlad_t));
+	vlad->agc152m = 0;
+	vlad->ref152m = 0;
+	vlad->level152m = 0;  // downlink 150 mhz
+	vlad->agc172m = 0;
+	vlad->level172m = 0; //uplink 170 mhz
 	vlad->tone_level = 0;
 	vlad->v_5v = 0;
 	vlad->vin = 0;
 	vlad->current = 0;
 	vlad->v_5v_real = 0;
-	vlad->vin_real = 0;
-	vlad->current_real = 0;
-	vlad->uc_temperature = 0;
-	vlad->remote_attenuation = 0;
-	vlad->is_remote_attenuation = false;
-    vlad->is_attenuation_updated = false;
-	vlad->calc_en = 0;
-	vlad->function = funcion;
+	vlad->lineVoltagereal = 0;
+	vlad->lineCurrentReal = 0;
+	vlad->ucTemperature.i = 0;
+	vlad->lineCurrent.i = 0;
+	vlad->remoteAttenuation = 0;
+	vlad->v_5v_real = 0;
+	vlad->lineVoltagereal = 0;
+	vlad->lineCurrentReal = 0;
+	vlad->agc152m_real = 0;
+	vlad->agc172m_real = 0;
+	vlad->level152m_real = 0;
+	vlad->level172m_real = 0;
+	vlad->remoteAttenuation = 0;
+	vlad->rotarySwitchAttenuation = 0;
+	vlad->isRemoteAttenuation = false;
+	vlad->is_attenuation_updated = false;
+	vlad->state = 0;
+	vlad->calc_en = false;
+	vlad->function = VLADR;
 	vlad->id = id;
-	/////////////////// VARIABLES DE PRUEBA ////////////////////////////////
-	vlad->vin2 = 0;
-	vlad->current2 = 0;
-	vlad->current_real2 = 0;
-	vlad->tone_level2 = 0;
+	vlad->lastUpdateTicks = HAL_GetTick();
+
+	HAL_readPage(CAT24C02_PAGE0_START_ADDR, &(vlad->function), 3, 1);
+	HAL_readPage(CAT24C02_PAGE0_START_ADDR, &(vlad->id), 4, 1);
+	return vlad;
 }
+
 
 void module_init(Module_pa_t *module, Function_t funcion, Id_t id) {
 

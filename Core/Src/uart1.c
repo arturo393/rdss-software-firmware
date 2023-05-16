@@ -157,7 +157,7 @@ void writeTxBuffer(uint8_t str[], uint8_t len) {
 }
 
 void writeTx(UART1_t *uart1) {
-	writeTxBuffer(uart1->tx, uart1->txLen);
+	writeTxBuffer(uart1->tx, uart1->tx_len);
 }
 
 void cleanRx(UART1_t *u) {
@@ -168,5 +168,5 @@ void cleanRx(UART1_t *u) {
 
 void cleanTx(UART1_t *u) {
 	memset(u->tx, 0, sizeof(u->tx));
-	u->txLen = 0;
+	u->tx_len = 0;
 }

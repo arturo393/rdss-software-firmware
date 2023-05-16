@@ -9,6 +9,7 @@
 #include "stdbool.h"
 #include "math.h"
 
+
 #ifndef INC_LTEL_H_
 #define INC_LTEL_H_
 
@@ -22,7 +23,16 @@
 //#define pa_state()  READ_BIT(GPIOA->ODR,GPIO_ODR_OD3) ? 1 : 0
 
 typedef enum MODULE_FUNCTION {
-	VLAD = 0x05, LOW_NOISE_AMPLIFIER = 0x08, POWER_AMPLIFIER = 0x09, UHF_TONE = 0x07
+	SERVER,
+	QUAD_BAND,
+	PSU,
+	TETRA,
+	ULADR,
+	VLADR,
+	BDA,
+	LOW_NOISE_AMPLIFIER,
+	POWER_AMPLIFIER,
+	UHF_TONE
 } Function_t;
 
 typedef enum MODULE_ID {
@@ -59,44 +69,46 @@ typedef struct TONE_UHF_MODULE {
 	Function_t function;
 }  Tone_uhf_t;
 
+union floatConverter {
+	uint32_t i;
+	float f;
+};
+
 typedef struct VLAD_MODULE {
-    uint16_t agc150m;
-    uint16_t ref150m;
-    uint16_t level150m;  // downlink 152 mhz
-    uint16_t agc170m;
-    uint16_t ref170m;
-    uint16_t level170m; //uplink 172 mhz
-    uint16_t tone_level;
-    uint16_t  v_5v;
-    uint16_t  vin;
-    uint16_t current;
-    float  v_5v_real;
-    float  vin_real;
-    float current_real;
-    int32_t  uc_temperature;
-    uint8_t remote_attenuation;
-    bool is_remote_attenuation;
-    bool is_attenuation_updated;
+	uint16_t agc152m;
+	uint16_t ref152m;
+	uint16_t level152m;  // downlink 150 mhz
+	uint16_t agc172m;
+	uint16_t level172m; //uplink 170 mhz
+	uint16_t tone_level;
+	uint16_t v_5v;
+	uint16_t vin;
+	uint16_t current;
+	int8_t agc152m_real;
+	int8_t agc172m_real;
+	int8_t level152m_real;
+	int8_t level172m_real;
+	float v_5v_real;
+	float lineVoltagereal;
+	float lineCurrentReal;
+	union floatConverter ucTemperature;
+	union floatConverter lineCurrent;
+	uint8_t remoteAttenuation;
+	uint8_t rotarySwitchAttenuation;
+	bool isRemoteAttenuation;
+	bool is_attenuation_updated;
 	Id_t id;
 	Function_t function;
 	bool calc_en;
-	 uint16_t  vin2;
-	 uint16_t  current2;
-	 uint16_t  current_real2;
-	 uint16_t  tone_level2;
-}  Vlad_t;
-
-static const uint8_t MODULE_ADDR = 0x08;
-static const uint8_t MODULE_FUNCTION = 0x09;
-
-static const uint8_t LTEL_START_MARK = 0x7e;
-static const uint8_t LTEL_END_MARK = 0x7f;
+	uint32_t lastUpdateTicks;
+	uint8_t state;
+} Vlad_t;
 
 void module_init(Module_pa_t*,Function_t,Id_t);
 void module_calc_parameters(Module_pa_t m,uint16_t* media_array);
 void pa_sample_timer3_init();
 void module_pa_state_update(Module_pa_t *pa);
 void toneUhfInit(Function_t funcion, Id_t id, Tone_uhf_t *uhf);
-void vladInit(Function_t funcion, Id_t id, Vlad_t *vlad);
+Vlad_t* vladInit(uint8_t id);
 
 #endif /* INC_LTEL_H_ */
