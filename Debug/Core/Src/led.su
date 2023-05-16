@@ -1,5 +1,5 @@
 ../Core/Src/led.c:9:6:ledInit	16	static
 ../Core/Src/led.c:21:6:led_off	4	static
-../Core/Src/led.c:25:6:led_enable_kalive	16	static
+../Core/Src/led.c:25:6:enableLedKeepAlive	16	static
 ../Core/Src/led.c:33:6:led_i2c_toggle	16	static
 ../Core/Src/led.c:40:6:led_reset	16	static

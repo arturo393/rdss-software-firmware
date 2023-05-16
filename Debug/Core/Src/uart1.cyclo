@@ -1,0 +1,13 @@
+core_cm3.h:1511:22:__NVIC_EnableIRQ	2
+uart1.c:10:9:cleanByTimeout	3
+uart1.c:24:6:uart1_gpio_init	1
+uart1.c:53:6:uart1Init	2
+uart1.c:86:6:writeTxReg	3
+uart1.c:99:6:uart1_read	9
+uart1.c:125:9:readRxReg	4
+uart1.c:139:6:readRx	2
+uart1.c:147:6:writeTxStr	2
+uart1.c:152:6:writeTxBuffer	2
+uart1.c:159:6:writeTx	1
+uart1.c:163:6:cleanRx	1
+uart1.c:169:6:cleanTx	1

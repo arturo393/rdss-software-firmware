@@ -1,5 +1,6 @@
 "./Core/Src/SX1278.o"
 "./Core/Src/SX1278_hw.o"
+"./Core/Src/eeprom.o"
 "./Core/Src/led.o"
 "./Core/Src/main.o"
 "./Core/Src/module.o"
