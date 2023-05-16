@@ -81,21 +81,16 @@ uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad) {
 	uint8_t downlink_agc_value = (uint8_t) (vlad->agc152m_real * 10);
 	uint8_t uplink_agc_value = (uint8_t) (vlad->agc172m_real * 10);
 	uint8_t vladRev23Id = 0xff;
-	uint8_t attenuation = 0;
-	uint8_t states_attenuation = 0 ;
 
-	attenuation = vlad->isRemoteAttenuation ? vlad->remoteAttenuation : vlad->rotarySwitchAttenuation;
-
-	states_attenuation = (attenuation << 3) | vlad->state;
 	frame[index++] = data_length;
 	frame[index++] = (uint8_t) vladRev23Id;
-	frame[index++] = (uint8_t) states_attenuation;
+	frame[index++] = (uint8_t) vlad->state;
 	frame[index++] = (uint8_t) line_voltage;
 	frame[index++] = (uint8_t) (line_voltage >> 8);
 	frame[index++] = (uint8_t) line_current;
 	frame[index++] = (uint8_t) (line_current >> 8);
-	frame[index++] = (uint8_t) 0;
-	frame[index++] = (uint8_t) 0;
+	frame[index++] = (uint8_t) vlad->tone_level;
+	frame[index++] = (uint8_t) (vlad->tone_level >> 8);
 	frame[index++] = (uint8_t) downlink_agc_value;
 	frame[index++] = (uint8_t) vlad->level152m_real;
 	frame[index++] = (uint8_t) uplink_agc_value;
@@ -208,8 +203,6 @@ uint8_t readVladMeasurements(Vlad_t *vlad) {
 	vlad->ucTemperature.i |= buffer[bufferIndex++] << 24;
 	return bufferIndex;
 }
-
-
 
 void updateVladMeasurements(Vlad_t *vlad) {
 	const uint32_t vladReadIntervalMs  = VLAD_READ_TIMER;

@@ -818,22 +818,18 @@ uint8_t setBufferWithLtelCmd(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa,
 	index += setCrc(buffer, index);
 	buffer[index++] = LTEL_END_MARK;
 	rdss->status = UART_SEND;
+
 	return index;
 }
 
 uint8_t processReceivedLoraCommand(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad,
 		UART1_t *u1) {
 
-	uint8_t index = setRdssStartData(&*rdss, loRa->buffer);
-	if (rdss->cmd == QUERY_STATUS) {
-		index += encodeVladToLtel(loRa->buffer + index, vlad);
-		index += setCrc(loRa->buffer, index);
-		loRa->buffer[index++] = LTEL_END_MARK;
-		loRa->len = index;
-		loRa->status = TX_BUFFER_READY;
-	} else if (rdss->cmd == SET_VLAD_ATTENUATION) {
+	loRa->len = setBufferWithLtelCmd(loRa->buffer, rdss, loRa, vlad);
+	if (rdss->cmd == SET_VLAD_ATTENUATION) {
 		uint8_t attenuationCommand[2];
 		uint8_t i2cSlaveAddress = 0x08;
+		uint8_t index = setRdssStartData(&*rdss, loRa->buffer);
 		attenuationCommand[0] = SET_VLAD_ATTENUATION;
 		attenuationCommand[1] = rdss->buffer[6];
 		vlad->is_attenuation_updated = i2c1MasterTransmit(i2cSlaveAddress,
@@ -861,8 +857,7 @@ void processReceivedUartCommand(Vlad_t *vlad, UART1_t *u1, RDSS_t *rdss,
 	if (rdss->cmd == SET_VLAD_ATTENUATION) {
 		uint8_t attenuationCommand[2];
 		uint8_t i2cSlaveAddress = 0x08;
-		uint8_t index = 0;
-		index = setRdssStartData(rdss, u1->tx);
+		uint8_t index = setRdssStartData(rdss, u1->tx);
 		attenuationCommand[0] = SET_VLAD_ATTENUATION;
 		attenuationCommand[1] = rdss->buffer[5];
 		vlad->is_attenuation_updated = i2c1MasterTransmit(i2cSlaveAddress,
