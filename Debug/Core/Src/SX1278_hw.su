@@ -1,6 +1,0 @@
-../Core/Src/SX1278_hw.c:12:7:SX1278_hw_SetNSS	16	static
-../Core/Src/SX1278_hw.c:17:7:SX1278_hw_Reset	16	static
-../Core/Src/SX1278_hw.c:28:7:SX1278_hw_SPICommand	24	static
-../Core/Src/SX1278_hw.c:33:10:SX1278_hw_SPIReadByte	32	static
-../Core/Src/SX1278_hw.c:47:7:SX1278_hw_DelayMs	16	static
-../Core/Src/SX1278_hw.c:51:6:SX1278_hw_GetDIO0	16	static
