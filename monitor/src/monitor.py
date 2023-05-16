@@ -319,11 +319,13 @@ def sendCmd(ser, cmd, createdevice):
         if(data[0] == vladRev23Id):
             # decode the frame according to the specified format
             unsigned_byte = data[0] 
-            isRemoteAttenuation = bool(data[1]) 
+            isReverse = bool(data[1] & 0x01)
+            isSmartTune = bool(data[1] & (0x1<<1))
+            isRemoteAttenuation = bool(data[1] & (0x1<<2))
+            attenuation = (data[1]>>3) & 0x1F
             lineVoltage = ( data[2] | (data[3] << 8) ) /10.0
             lineCurrent = ( data[4] | (data[5] << 8) ) /1000.0
-            remoteAttenuation = data[6]
-            rotarySwitchAttenuation = data[7]
+            toneLevel = ((data[6] | (data[7] << 8)) - 400) * (0 - -35) / (4095 - 400) + -35
             downlinkAgcValue = data[8] / 10.0
             downlinkOutputPower =  data[9] if  data[9] < 128 else data[9] - 256
             uplinkAgcValue = data[10] / 10.0
@@ -332,13 +334,15 @@ def sendCmd(ser, cmd, createdevice):
 
             logging.debug(f"Voltage: {lineVoltage:.2f}[V]")
             logging.debug(f"Line Current: {lineCurrent:.3f}[A]")
-            logging.debug(f"Software Attenuation: {remoteAttenuation:.1f}[dB]")
-            logging.debug(f"Rotary Switch Attenuation: {rotarySwitchAttenuation:.1f}[dB]")
-            logging.debug(f"Is Software Attenuation : {isRemoteAttenuation}")
+            logging.debug(f"Attenuation: {attenuation:.1f}[dB]")
+            logging.debug(f"Tone Level: {toneLevel:.1f}[dBm]")
             logging.debug(f"AGC Uplink: {uplinkAgcValue:.1f}[dB]")
             logging.debug(f"Downlink Output Power: {downlinkOutputPower}[dBm]")
             logging.debug(f"AGC Downlink: {downlinkAgcValue:.1f}[dB]")
             logging.debug(f"Uplink Output Power:    {uplinkOutputPower}[dBm]")
+            logging.debug(f"Is Software Attenuation : {isRemoteAttenuation}")
+            logging.debug(f"Is Reverse : {isReverse}")
+            logging.debug(f"Is SmartTune : {isSmartTune}")
             
             SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
             timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
