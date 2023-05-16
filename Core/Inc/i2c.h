@@ -60,5 +60,9 @@ void i2c1SalveRx(I2C_t *i2c_slave);
 bool i2c1MasterTransmit(uint8_t slave_addr, uint8_t *data, uint8_t len, uint32_t timeout);
 bool i2c1MasterReceive(uint8_t slave_addr, uint8_t *data, uint8_t len, uint32_t timeout);
 bool i2c1AddresScanner(uint8_t *addresses, uint8_t *address_count);
+bool i2cMasterReceive(I2C_TypeDef *i2c, uint8_t slave_addr, uint8_t *data,
+		uint8_t len, uint32_t timeout) ;
+bool i2cMasterTransmit(I2C_TypeDef *i2c, uint8_t slave_addr, uint8_t *data,
+		uint8_t len, uint32_t timeout);
 
 #endif /* INC_I2C1_H_ */

@@ -141,7 +141,7 @@ int main(void) {
 	vlad = vladInit(0);
 	rdss = rdssInit(vlad->id);
 	ledInit(&led);
-	loRa = loRaInit(&hspi1);
+	loRa = loRaInit(&hspi1,SLAVE_RECEIVER);
 	printLoRaStatus(u1, loRa);
 
 	/* USER CODE END 2 */
@@ -433,7 +433,7 @@ void print_parameters(UART1_t *u1, Vlad_t vlad) {
 	u1->tx_len = (uint8_t) sprintf(buff, "vin %d [V]\r\n", vlad.vin);
 	writeTx(u1);
 	u1->tx_len = (uint8_t) sprintf(buff, "current real %d [A]\r\n",
-			(uint8_t) vlad.current_real);
+			(uint8_t) vlad.lineCurrentReal);
 	writeTx(u1);
 	u1->tx_len = (uint8_t) sprintf(buff, "tone level %d[dBm]\r\n",
 			vlad.tone_level);
@@ -554,6 +554,7 @@ void printStatus(UART1_t *u1, RDSS_t *rdss) {
 	cleanTx(u1);
 
 }
+
 void printLoRaStatus(UART1_t *u1, SX1278_t *loRa) {
 	if (!u1->debug) {
 		return;
@@ -936,6 +937,7 @@ void handleDefaultCase(RDSS_t *rdss, SX1278_t *loRa, UART1_t *u1) {
 	}
 }
 /* USER CODE END 4 */
+
 
 /**
  * @brief  This function is executed in case of error occurrence.

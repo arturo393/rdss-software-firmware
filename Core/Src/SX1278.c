@@ -388,7 +388,7 @@ void readLoRaSettings(SX1278_t *loRa) {
 		loRa->dlFreq = DOWNLINK_FREQ;
 }
 
-SX1278_t* loRaInit(SPI_HandleTypeDef *hspi1) {
+SX1278_t* loRaInit(SPI_HandleTypeDef *hspi1,Lora_Mode_t loRaMode) {
 	SX1278_t * loRa;
 	loRa = malloc(sizeof(SX1278_t));
 	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_SET);
@@ -416,7 +416,7 @@ SX1278_t* loRaInit(SPI_HandleTypeDef *hspi1) {
 	 savePage(CAT24C02_PAGE1_START_ADDR, (uint8_t*)&(loRa.upFreq),0, 4);
 	 savePage(CAT24C02_PAGE1_START_ADDR, (uint8_t*)&(loRa.dlFreq),4, 4);
 	 */
-	updateMode(loRa, SLAVE_RECEIVER);
+	updateMode(loRa, loRaMode);
 	writeLoRaParametersReg(loRa);
 	return loRa;
 }

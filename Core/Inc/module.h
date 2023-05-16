@@ -49,6 +49,7 @@ typedef enum MODULE_ID {
 typedef enum MODULE_S {
 	OFF, ON
 } State_t;
+
 typedef struct PA_MODULE {
 	uint8_t att;
 	uint8_t gain;
@@ -95,8 +96,8 @@ typedef struct VLAD_MODULE {
 	int8_t level152m_real;
 	int8_t level172m_real;
 	float v_5v_real;
-	float vin_real;
-	float current_real;
+	float lineVoltagereal;
+	float lineCurrentReal;
 	union floatConverter ucTemperature;
 	union floatConverter lineCurrent;
 	uint8_t remoteAttenuation;

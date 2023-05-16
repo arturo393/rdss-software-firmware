@@ -345,7 +345,7 @@ void setTxFifoData(SX1278_t *module);
 void receive(SX1278_t *loRa);
 void transmit(SX1278_t *loRa);
 void readLoRaSettings(SX1278_t* loRa);
-SX1278_t* loRaInit(SPI_HandleTypeDef *hspi1
+SX1278_t* loRaInit(SPI_HandleTypeDef *hspi1 ,Lora_Mode_t loRaMode
 );
 
 #endif

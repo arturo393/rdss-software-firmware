@@ -71,7 +71,7 @@ typedef enum RS485_STATUS {
 	LORA_SEND,
 	UART_SEND,
 	UART_VALID
-} Rs485_status_t;
+} RDSS_status_t;
 
 typedef enum RS485_i {
 	START_INDEX,
@@ -92,18 +92,18 @@ typedef struct RS485 {
 	uint8_t idQuery;
 	uint8_t idReceived;
 	uint8_t id;
-	Rs485_status_t status;
+	RDSS_status_t status;
 } RDSS_t;
 
 uint16_t crc_get(uint8_t *buffer, uint8_t buff_len);
-Rs485_status_t rdssCheckFrame(RDSS_t *r, UART1_t *u);
-Rs485_status_t rs485_check_valid_module(UART1_t *uart1);
-Rs485_status_t rs485_check_CRC_module(UART1_t *uart1);
-Rs485_status_t isValidFrame(uint8_t *frame, uint8_t lenght);
-Rs485_status_t isValidModule(uint8_t *frame, uint8_t lenght);
-Rs485_status_t checkValidCrc(uint8_t *frame, uint8_t len);
-Rs485_status_t isValidId(RDSS_t *r);
-Rs485_status_t checkBuffer(RDSS_t *rs485);
+RDSS_status_t rdssCheckFrame(RDSS_t *r, UART1_t *u);
+RDSS_status_t rs485_check_valid_module(UART1_t *uart1);
+RDSS_status_t rs485_check_CRC_module(UART1_t *uart1);
+RDSS_status_t isValidFrame(uint8_t *frame, uint8_t lenght);
+RDSS_status_t isValidModule(uint8_t *frame, uint8_t lenght);
+RDSS_status_t checkValidCrc(uint8_t *frame, uint8_t len);
+RDSS_status_t isValidId(RDSS_t *r);
+RDSS_status_t checkBuffer(RDSS_t *rs485);
 void fillValidBuffer(RDSS_t *r, uint8_t *buff, uint8_t len);
 //void rs485_set_query_frame(RS485_t* , Module_t *module);
 RDSS_t* rdssInit(uint8_t id);

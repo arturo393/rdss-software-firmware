@@ -161,3 +161,84 @@ bool i2c1MasterReceive(uint8_t slave_addr, uint8_t *data, uint8_t len,
 	return true;
 }
 
+bool i2cMasterReceive(I2C_TypeDef *i2c, uint8_t slave_addr, uint8_t *data,
+		uint8_t len, uint32_t timeout) {
+	uint32_t tick_start = HAL_GetTick();
+	uint8_t index = 0;
+
+	// Make sure the peripheral is enabled
+	if (!(i2c->CR1 & I2C_CR1_PE)) {
+		return false;
+	}
+
+	// Set slave address, read transfer, and set number of bytes
+	i2c->CR2 = (slave_addr << 1) | I2C_CR2_RD_WRN | (len << 16)
+			| I2C_CR2_AUTOEND;
+
+	// Send START condition
+	SET_BIT(i2c->CR2, I2C_CR2_START);
+
+	while (index < len) {
+		// Check for timeout
+		if (HAL_GetTick() - tick_start > timeout) {
+			return false;
+		}
+
+		// Check if RXNE flag is set (receive data register not empty)
+		if (READ_BIT(i2c->ISR, I2C_ISR_RXNE)) {
+			// Read data from RXDR
+			data[index++] = (uint8_t) (I2C2->RXDR & 0xFF);
+		}
+	}
+
+	while (!(READ_BIT(i2c->ISR, I2C_ISR_STOPF))) {
+	}
+	SET_BIT(i2c->ICR, I2C_ICR_STOPCF);
+
+	return true;
+}
+
+bool i2cMasterTransmit(I2C_TypeDef *i2c, uint8_t slave_addr, uint8_t *data,
+		uint8_t len, uint32_t timeout) {
+	uint32_t tick_start = HAL_GetTick();
+	uint8_t index = 0;
+
+	// Make sure the peripheral is enabled
+	if (!(i2c->CR1 & I2C_CR1_PE)) {
+		return false;
+	}
+
+	// Set slave address, write transfer, and set number of bytes
+	i2c->CR2 = (slave_addr << 1) | (len << 16) | I2C_CR2_AUTOEND;
+
+	// Send START condition
+	SET_BIT(i2c->CR2, I2C_CR2_START);
+
+	while (index < len) {
+		// Check for timeout
+		if (HAL_GetTick() - tick_start > timeout) {
+			return false;
+		}
+
+		// Check if TXIS flag is set (transmit data register empty)
+		if (READ_BIT(I2C2->ISR, I2C_ISR_TXIS)) {
+			// Write data to TXDR
+			i2c->TXDR = data[index++];
+
+			// Wait for TC flag (transfer complete)
+
+		}
+	}
+
+	while (!READ_BIT(I2C2->ISR, I2C_ISR_STOPF)) {
+		if (HAL_GetTick() - tick_start > timeout) {
+			return false;
+		}
+	}
+
+	SET_BIT(i2c->ICR, I2C_ICR_STOPCF);
+
+	return true;
+}
+
+
