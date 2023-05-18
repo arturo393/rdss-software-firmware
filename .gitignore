@@ -38,3 +38,7 @@ Documentation/
 
 # Ignore backup files
 *.bak
+Debug/Core/Src/*.d
+
+Debug/Core/Src/*.cyclo
+Debug/rdss_master.map

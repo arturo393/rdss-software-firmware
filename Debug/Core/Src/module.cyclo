@@ -1,7 +1,0 @@
-core_cm3.h:1511:22:__NVIC_EnableIRQ	2
-module.c:11:6:pa_init	1
-module.c:28:6:toneUhfInit	1
-module.c:37:9:vladInit	1
-module.c:78:6:module_init	1
-module.c:82:6:pa_sample_timer3_init	1
-module.c:99:6:module_pa_state_update	7

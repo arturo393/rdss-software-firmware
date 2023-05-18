@@ -1,8 +1,0 @@
-eeprom.c:3:6:m24c64_page_read	1
-eeprom.c:14:6:readPage	3
-eeprom.c:28:6:savePage	5
-eeprom.c:52:6:HAL_readPage	3
-eeprom.c:65:6:HAL_savePage	5
-eeprom.c:90:6:m24c64_init_16uvalue	2
-eeprom.c:100:6:saveU16	1
-eeprom.c:109:15:getULFromEeprom	2
