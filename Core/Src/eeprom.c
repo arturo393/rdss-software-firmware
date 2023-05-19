@@ -1,4 +1,4 @@
-#include <eeprom.h>
+#include "eeprom.h"
 
 void m24c64_page_read(uint8_t address, uint8_t page, uint8_t *data) {
 	uint8_t buff[2] = { 0 };
@@ -49,62 +49,40 @@ void savePage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
 	HAL_Delay(6);
 }
 
-bool HAL_readPage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
-    uint8_t buff[1] = { 0 };
-    uint16_t MemAddress = page << PADDRPOSITION | offset;
-    buff[0] = (uint8_t) MemAddress & 0xff;
+HAL_StatusTypeDef HAL_readPage(uint16_t page, uint8_t *data, uint16_t offset, uint16_t size) {
+    uint16_t MemAddress = (page << 8) | offset;
+    HAL_StatusTypeDef res;
+    res = HAL_I2C_Mem_Read(&hi2c1, M24C64_CHIP_ADDR, MemAddress, I2C_MEMADD_SIZE_16BIT, data, size, 1000);
+    if (res != HAL_OK)
+        return res;
 
-    if (HAL_I2C_Master_Transmit(&hi2c1, CHIP_ADDR << 1, buff, 1, 1000) != HAL_OK)
-        return false;
     HAL_Delay(5);
-    if (HAL_I2C_Master_Receive(&hi2c1, CHIP_ADDR << 1, data, size, 1000) != HAL_OK)
-        return false;
-    return true;
+    return res;
 }
 
-void HAL_savePage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
-    uint8_t buff[16 + 1];
-    uint8_t read[16];
-    uint8_t i = 0;
 
-    HAL_readPage(page, read, offset, size);
+HAL_StatusTypeDef HAL_savePage(uint16_t page, uint8_t *data, uint16_t offset, uint16_t size) {
+    uint8_t read[16]={0};
     bool notEqual = false;
+    HAL_StatusTypeDef res;
 
-    for (i = 0; i < size; i++)
+    res = HAL_readPage(page, read, offset, size);
+
+    for (uint16_t i = 0; i < size; i++)
         if (data[i] != read[i]) {
             notEqual = true;
             break;
         }
 
     if (notEqual) {
-        buff[0] = (uint8_t) (page << PADDRPOSITION | offset) & 0xff;
-        for (i = 0; i < size; i++) {
-            buff[i + 1] = data[i];
-        }
-        HAL_I2C_Master_Transmit(&hi2c1, CHIP_ADDR << 1, buff, size + 1, 50);
+        uint16_t memAddress = (page << 8) | offset;
+        res = HAL_I2C_Mem_Write(&hi2c1, M24C64_CHIP_ADDR, memAddress, I2C_MEMADD_SIZE_16BIT, data, size, 50);
     }
     HAL_Delay(6);
+
+    return res;
 }
 
-
-void m24c64_init_16uvalue(M24C64_ADDR_t addr, uint16_t value) {
-	uint8_t buff[2];
-	readPage(BASE_ADDR, buff, addr, 1);
-	if (!(buff[0] == IS_READY)) {
-		buff[0] = value >> 8;
-		buff[1] = value & 0xff;
-		savePage(BASE_ADDR, buff, addr + 1, 2);
-	}
-}
-
-void saveU16(M24C64_ADDR_t addr, uint16_t value) {
-	uint8_t buff[2];
-	buff[0] = value >> 8;
-	buff[1] = value & 0xff;
-	savePage(BASE_ADDR, buff, addr + 1, 2);
-	buff[0] = addr;
-	savePage(BASE_ADDR, buff, addr, 1);
-}
 
 unsigned long getULFromEeprom(uint8_t page) {
 	//uint8_t size = sizeof(unsigned long);

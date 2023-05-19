@@ -1,12 +1,4 @@
-/*
- * ltel.c
- *
- *  Created on: 27-09-2022
- *      Author: sigmadev
- */
-
-
-#include <eeprom.h>
+#include "module.h"
 
 void pa_init(Function_t funcion, Id_t id, Module_pa_t *module) {
 	module->function = funcion;
@@ -34,7 +26,7 @@ void toneUhfInit(Function_t funcion, Id_t id, Tone_uhf_t *uhf) {
 	uhf->id = id;
 }
 
-Vlad_t* vladInit(uint8_t id) {
+Vlad_t* vladInit(Function_t function) {
 	Vlad_t *vlad;
 	vlad = malloc(sizeof(Vlad_t));
 	vlad->agc152m = 0;
@@ -47,13 +39,13 @@ Vlad_t* vladInit(uint8_t id) {
 	vlad->vin = 0;
 	vlad->current = 0;
 	vlad->v_5v_real = 0;
-	vlad->lineVoltagereal = 0;
+	vlad->lineVoltageReal = 0;
 	vlad->lineCurrentReal = 0;
 	vlad->ucTemperature.i = 0;
 	vlad->lineCurrent.i = 0;
 	vlad->remoteAttenuation = 0;
 	vlad->v_5v_real = 0;
-	vlad->lineVoltagereal = 0;
+	vlad->lineVoltageReal = 0;
 	vlad->lineCurrentReal = 0;
 	vlad->agc152m_real = 0;
 	vlad->agc172m_real = 0;
@@ -65,15 +57,39 @@ Vlad_t* vladInit(uint8_t id) {
 	vlad->is_attenuation_updated = false;
 	vlad->state = 0;
 	vlad->calc_en = false;
-	vlad->function = VLADR;
-	vlad->id = id;
+	vlad->function = function;
+	vlad->id = 0;
 	vlad->lastUpdateTicks = HAL_GetTick();
 
-	HAL_readPage(CAT24C02_PAGE0_START_ADDR, &(vlad->function), 3, 1);
-	HAL_readPage(CAT24C02_PAGE0_START_ADDR, &(vlad->id), 4, 1);
+//	HAL_readPage(CAT24C02_PAGE0_START_ADDR, &(vlad->function), 3, 1);
+//	HAL_readPage(CAT24C02_PAGE0_START_ADDR, &(vlad->id), 4, 1);
 	return vlad;
 }
 
+uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad) {
+	uint8_t data_length = 12;
+	uint8_t index = 0;
+	uint16_t line_voltage = (uint16_t) (vlad->lineVoltageReal * 10);
+	uint16_t line_current = (uint16_t) (vlad->lineCurrent.f * 1000);
+	uint8_t downlink_agc_value = (uint8_t) (vlad->agc152m_real * 10);
+	uint8_t uplink_agc_value = (uint8_t) (vlad->agc172m_real * 10);
+	uint8_t vladRev23Id = 0xff;
+
+	frame[index++] = data_length;
+	frame[index++] = (uint8_t) vladRev23Id;
+	frame[index++] = (uint8_t) vlad->state;
+	frame[index++] = (uint8_t) line_voltage;
+	frame[index++] = (uint8_t) (line_voltage >> 8);
+	frame[index++] = (uint8_t) line_current;
+	frame[index++] = (uint8_t) (line_current >> 8);
+	frame[index++] = (uint8_t) vlad->tone_level;
+	frame[index++] = (uint8_t) (vlad->tone_level >> 8);
+	frame[index++] = (uint8_t) downlink_agc_value;
+	frame[index++] = (uint8_t) vlad->level152m_real;
+	frame[index++] = (uint8_t) uplink_agc_value;
+	frame[index++] = (uint8_t) vlad->level172m_real;
+	return index;
+}
 
 void module_init(Module_pa_t *module, Function_t funcion, Id_t id) {
 

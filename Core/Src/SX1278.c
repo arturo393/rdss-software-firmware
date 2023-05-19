@@ -6,7 +6,7 @@
  * https://github.com/realspinner/SX1278_LoRa
  */
 
-#include "SX1278.h"
+#include <SX1278.h>
 
 uint8_t readRegister(SPI_HandleTypeDef *spi, uint8_t address) {
 	uint8_t rec = 0;
@@ -186,7 +186,7 @@ void writeLoRaParametersReg(SX1278_t *module) {
 	writeRegister(module->spi, LR_RegIrqFlagsMask, &(module->flagsMode), 1);
 }
 
-void updateMode(SX1278_t *module, Lora_Mode_t mode) {
+void changeLoRaOperatingMode(SX1278_t *module, Lora_Mode_t mode) {
 
 	if (mode == SLAVE_SENDER || mode == MASTER_SENDER) {
 		module->frequency =
@@ -292,7 +292,6 @@ uint8_t waitForRxDone(SX1278_t *loRa) {
     return 0;
 }
 
-
 void setRxFifoAddr(SX1278_t *module) {
 	setLoraLowFreqModeReg(module, SLEEP); //Change modem mode Must in Sleep mode
 	uint8_t cmd = module->len;
@@ -357,7 +356,7 @@ void receive(SX1278_t *loRa) {
 	getRxFifoData(loRa);
 }
 
-void transmit(SX1278_t *loRa) {
+void transmitDataUsingLoRa(SX1278_t *loRa) {
 	setTxFifoData(loRa);
 	setLoraLowFreqModeReg(loRa, TX);
 	waitForTxEnd(loRa);
@@ -390,12 +389,12 @@ void readLoRaSettings(SX1278_t *loRa) {
 
 void HAL_readLoRaSettings(SX1278_t *loRa) {
 
-	HAL_readPage(CAT24C02_PAGE0_START_ADDR, &(loRa->spreadFactor), 0, 1);
-	HAL_readPage(CAT24C02_PAGE0_START_ADDR, &(loRa->bandwidth), 1, 1);
-	HAL_readPage(CAT24C02_PAGE0_START_ADDR, &(loRa->codingRate), 2, 1);
-	HAL_readPage(CAT24C02_PAGE1_START_ADDR, (uint8_t*) &(loRa->upFreq), 0, 4);
-	HAL_readPage(CAT24C02_PAGE1_START_ADDR, (uint8_t*) &(loRa->dlFreq), 4, 4);
-	if (loRa->spreadFactor < SF_9 || loRa->spreadFactor > SF_12)
+	HAL_readPage(M24C64_PAGE0, &(loRa->spreadFactor), 0, 1);
+	HAL_readPage(M24C64_PAGE0, &(loRa->bandwidth), 1, 1);
+	HAL_readPage(M24C64_PAGE0, &(loRa->codingRate), 2, 1);
+	HAL_readPage(M24C64_PAGE1, (uint8_t*) &(loRa->upFreq), 0, 4);
+	HAL_readPage(M24C64_PAGE1, (uint8_t*) &(loRa->dlFreq), 4, 4);
+	if (loRa->spreadFactor < SF_6 || loRa->spreadFactor > SF_12)
 		loRa->spreadFactor = SF_10;
 
 	if (loRa->bandwidth < LORABW_7_8KHZ || loRa->bandwidth > LORABW_500KHZ)
@@ -432,14 +431,7 @@ SX1278_t* loRaInit(SPI_HandleTypeDef *hspi1,Lora_Mode_t loRaMode) {
 	loRa->fhssValue = HOPS_PERIOD; // for L-TEL PROTOCOL
 	loRa->len = 9;
 	HAL_readLoRaSettings(loRa);
-	/*
-	 savePage(CAT24C02_PAGE0_START_ADDR, &(loRa.spreadFactor),0, 1);
-	 savePage(CAT24C02_PAGE0_START_ADDR, &(loRa.bandwidth),1, 1);
-	 savePage(CAT24C02_PAGE0_START_ADDR, &(loRa.codingRate),2, 1);
-	 savePage(CAT24C02_PAGE1_START_ADDR, (uint8_t*)&(loRa.upFreq),0, 4);
-	 savePage(CAT24C02_PAGE1_START_ADDR, (uint8_t*)&(loRa.dlFreq),4, 4);
-	 */
-	updateMode(loRa, loRaMode);
+	changeLoRaOperatingMode(loRa, loRaMode);
 	writeLoRaParametersReg(loRa);
 	return loRa;
 }

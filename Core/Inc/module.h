@@ -1,14 +1,8 @@
-/*
- * ltel.h
- *
- *  Created on: 27-09-2022
- *      Author: sigmadev
- */
-
 #include "main.h"
 #include "stdbool.h"
 #include "math.h"
-
+#include "stdlib.h"
+#include "eeprom.h"
 
 #ifndef INC_LTEL_H_
 #define INC_LTEL_H_
@@ -43,6 +37,7 @@ typedef enum MODULE_S{
 	OFF,
 	ON
 }State_t;
+
 typedef struct PA_MODULE {
 	uint8_t att;
 	uint8_t gain;
@@ -89,7 +84,7 @@ typedef struct VLAD_MODULE {
 	int8_t level152m_real;
 	int8_t level172m_real;
 	float v_5v_real;
-	float lineVoltagereal;
+	float lineVoltageReal;
 	float lineCurrentReal;
 	union floatConverter ucTemperature;
 	union floatConverter lineCurrent;
@@ -109,6 +104,7 @@ void module_calc_parameters(Module_pa_t m,uint16_t* media_array);
 void pa_sample_timer3_init();
 void module_pa_state_update(Module_pa_t *pa);
 void toneUhfInit(Function_t funcion, Id_t id, Tone_uhf_t *uhf);
-Vlad_t* vladInit(uint8_t id);
+Vlad_t* vladInit(Function_t id);
+uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad);
 
 #endif /* INC_LTEL_H_ */

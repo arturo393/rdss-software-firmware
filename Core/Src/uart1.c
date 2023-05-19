@@ -8,14 +8,14 @@
 #include <uart1.h>
 
 uint8_t cleanByTimeout(UART1_t *uart1, const char *str) {
-	if (HAL_GetTick() - uart1->timeout > SECONDS(5)) {
+	if (HAL_GetTick() - uart1->operationTimeout > SECONDS(5)) {
 
 		writeTxStr((char*) str);
 		writeTxStr("-TIMEOUT\r\n");
 
 		if (strlen(str) > 0)
 			cleanTx(uart1);
-		uart1->timeout = HAL_GetTick();
+		uart1->operationTimeout = HAL_GetTick();
 		return 1;
 	}
 	return 0;
@@ -137,11 +137,11 @@ uint8_t readRxReg(void) {
 }
 
 void readRx(UART1_t *u) {
-	if (u->rxLen >= RX_BUFFLEN) {
+	if (u->receivedDataLength >= RX_BUFFLEN) {
 		cleanRx(u);
-		u->rxLen = 0;
+		u->receivedDataLength = 0;
 	}
-	u->rx[u->rxLen++] = readRxReg();
+	u->receiveBuffer[u->receivedDataLength++] = readRxReg();
 }
 
 void writeTxStr(char *str) {
@@ -157,16 +157,16 @@ void writeTxBuffer(uint8_t str[], uint8_t len) {
 }
 
 void writeTx(UART1_t *uart1) {
-	writeTxBuffer(uart1->tx, uart1->tx_len);
+	writeTxBuffer(uart1->transmitBuffer, uart1->transmittedDataLength);
 }
 
 void cleanRx(UART1_t *u) {
-	memset(u->rx, 0, sizeof(u->rx));
-	u->rxLen = 0;
-	u->isReady = false;
+	memset(u->receiveBuffer, 0, sizeof(u->receiveBuffer));
+	u->receivedDataLength = 0;
+	u->isReceivedDataReady = false;
 }
 
 void cleanTx(UART1_t *u) {
-	memset(u->tx, 0, sizeof(u->tx));
-	u->tx_len = 0;
+	memset(u->transmitBuffer, 0, sizeof(u->transmitBuffer));
+	u->transmittedDataLength = 0;
 }
