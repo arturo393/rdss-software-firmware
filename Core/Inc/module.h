@@ -96,7 +96,7 @@ typedef struct VLAD_MODULE {
 	int8_t level152m_real;
 	int8_t level172m_real;
 	float v_5v_real;
-	float lineVoltagereal;
+	float lineVoltageReal;
 	float lineCurrentReal;
 	union floatConverter ucTemperature;
 	union floatConverter lineCurrent;
@@ -118,7 +118,7 @@ void updatePAState(PA_t *pa);
 void toneUhfInit(Function_t funcion, Id_t id, Tone_uhf_t *uhf);
 Vlad_t* vladInit(uint8_t id);
 uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad);
-uint8_t isValidCrc(uint8_t *buffer, uint8_t len);
+uint8_t checkCRCValidity(uint8_t *buffer, uint8_t len);
 uint16_t crc_get(uint8_t *buffer, uint8_t buff_len);
 void resetVladData(Vlad_t *vlad);
 uint8_t readVladMeasurements(Vlad_t *vlad);

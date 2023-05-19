@@ -24,12 +24,12 @@ bool readPage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
 	return true;
 }
 
-void savePage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
+uint8_t savePage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
 	uint8_t buff[16 + 1];
 	uint8_t read[16];
 	uint8_t i = 0;
-
-	readPage(page, read, offset, size);
+	uint8_t res = 0;
+	res = readPage(page, read, offset, size);
 	bool notEqual = false;
 
 	for (i = 0; i < size; i++)
@@ -43,9 +43,11 @@ void savePage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
 		for (i = 0; i < size; i++) {
 			buff[i + 1] = data[i];
 		}
-		i2c1MasterTransmit(CHIP_ADDR, buff, size + 1, 50);
+		res = i2c1MasterTransmit(CHIP_ADDR, buff, size + 1, 50);
 	}
 	HAL_Delay(6);
+
+	return res;
 }
 
 void m24c64_init_16uvalue(M24C64_ADDR_t addr, uint16_t value) {

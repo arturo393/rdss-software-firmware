@@ -99,10 +99,11 @@ uint16_t crc_get(uint8_t *buffer, uint8_t buff_len);
 RDSS_status_t rdssCheckFrame(RDSS_t *r, UART1_t *u);
 RDSS_status_t rs485_check_valid_module(UART1_t *uart1);
 RDSS_status_t rs485_check_CRC_module(UART1_t *uart1);
-RDSS_status_t isValidFrame(uint8_t *frame, uint8_t lenght);
-RDSS_status_t isValidModule(uint8_t *frame, uint8_t lenght);
-RDSS_status_t checkValidCrc(uint8_t *frame, uint8_t len);
+RDSS_status_t checkFrameValidity(uint8_t *frame, uint8_t lenght);
+RDSS_status_t checkModuleValidity(uint8_t *frame, uint8_t lenght);
+RDSS_status_t checkCRCValidity(uint8_t *frame, uint8_t len);
 RDSS_status_t isValidId(RDSS_t *r);
+RDSS_status_t validateBuffer(uint8_t *buffer,uint8_t length);
 RDSS_status_t checkBuffer(RDSS_t *rs485);
 void fillValidBuffer(RDSS_t *r, uint8_t *buff, uint8_t len);
 //void rs485_set_query_frame(RS485_t* , Module_t *module);
@@ -114,5 +115,7 @@ uint8_t setCrc(uint8_t* buff,uint8_t size);
 uint8_t setRdssStartData(RDSS_t *rdss, uint8_t *buffer);
 uint32_t freqDecode(uint8_t *buffer);
 void freqEncode(uint8_t *buffer, uint32_t freqIn);
+RDSS_status_t evaluateRdssStatus(RDSS_t *rdss);
+bool isModuleCommand(uint8_t cmd);
 #endif /* INC_RS485_H_ */
 

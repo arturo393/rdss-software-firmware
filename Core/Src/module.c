@@ -46,13 +46,13 @@ Vlad_t* vladInit(uint8_t id) {
 	vlad->vin = 0;
 	vlad->current = 0;
 	vlad->v_5v_real = 0;
-	vlad->lineVoltagereal = 0;
+	vlad->lineVoltageReal = 0;
 	vlad->lineCurrentReal = 0;
 	vlad->ucTemperature.i = 0;
 	vlad->lineCurrent.i = 0;
 	vlad->remoteAttenuation = 0;
 	vlad->v_5v_real = 0;
-	vlad->lineVoltagereal = 0;
+	vlad->lineVoltageReal = 0;
 	vlad->lineCurrentReal = 0;
 	vlad->agc152m_real = 0;
 	vlad->agc172m_real = 0;
@@ -74,7 +74,27 @@ Vlad_t* vladInit(uint8_t id) {
 }
 
 uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad) {
+	uint8_t data_length = 12;
+	uint8_t index = 0;
+	uint16_t line_voltage = (uint16_t) (vlad->lineVoltageReal * 10);
+	uint16_t line_current = (uint16_t) (vlad->lineCurrent.f * 1000);
+	uint8_t downlink_agc_value = (uint8_t) (vlad->agc152m_real * 10);
+	uint8_t uplink_agc_value = (uint8_t) (vlad->agc172m_real * 10);
+	uint8_t vladRev23Id = 0xff;
 
+	frame[index++] = data_length;
+	frame[index++] = (uint8_t) vladRev23Id;
+	frame[index++] = (uint8_t) vlad->state;
+	frame[index++] = (uint8_t) line_voltage;
+	frame[index++] = (uint8_t) (line_voltage >> 8);
+	frame[index++] = (uint8_t) line_current;
+	frame[index++] = (uint8_t) (line_current >> 8);
+	frame[index++] = (uint8_t) vlad->tone_level;
+	frame[index++] = (uint8_t) (vlad->tone_level >> 8);
+	frame[index++] = (uint8_t) downlink_agc_value;
+	frame[index++] = (uint8_t) vlad->level152m_real;
+	frame[index++] = (uint8_t) uplink_agc_value;
+	frame[index++] = (uint8_t) vlad->level172m_real;
 	return index;
 }
 
@@ -137,7 +157,7 @@ void resetVladData(Vlad_t *vlad) {
 	vlad->rotarySwitchAttenuation = 0;
 	vlad->is_attenuation_updated = false;
 	vlad->v_5v_real = 0;
-	vlad->lineVoltagereal = 0;
+	vlad->lineVoltageReal = 0;
 	vlad->lineCurrentReal = 0;
 	vlad->agc152m_real = 0;
 	vlad->agc172m_real = 0;
@@ -191,7 +211,7 @@ void updateVladMeasurements(Vlad_t *vlad) {
 	if (HAL_GetTick() - vlad->lastUpdateTicks > vladReadIntervalMs ) {
 		if (readVladMeasurements(vlad) > 0) {
 			vlad->v_5v_real = (float) vlad->v_5v * ADC_V5V_FACTOR;
-			vlad->lineVoltagereal = (float) vlad->vin * ADC_VOLTAGE_FACTOR;
+			vlad->lineVoltageReal = (float) vlad->vin * ADC_VOLTAGE_FACTOR;
 			vlad->lineCurrentReal =
 					(float) vlad->current * ADC_LINE_CURRENT_FACTOR;
 			vlad->agc152m_real = (int8_t) (MAX4003_AGC_SCOPE

@@ -23,15 +23,15 @@ RDSS_t* rdssInit(uint8_t id) {
 RDSS_status_t rs485_check_CRC_module(UART1_t *uart1) {
 	unsigned long crc_cal;
 	unsigned long crc_save;
-	crc_save = uart1->rx[7] << 8;
-	crc_save |= uart1->rx[6];
-	crc_cal = crc_get(&(uart1->rx[1]), 5); ///ajustar si se cambia el largo
+	crc_save = uart1->receiveBuffer[7] << 8;
+	crc_save |= uart1->receiveBuffer[6];
+	crc_cal = crc_get(&(uart1->receiveBuffer[1]), 5); ///ajustar si se cambia el largo
 	if (crc_cal == crc_save)
 		return DATA_OK;
 	return CRC_ERROR;
 }
 
-RDSS_status_t isValidModule(uint8_t *frame, uint8_t lenght) {
+RDSS_status_t checkModuleValidity(uint8_t *frame, uint8_t lenght) {
 	if (frame[1] == VLADR) {
 		for (int i = 3; i < lenght; i++)
 			if (frame[i] == LTEL_END_MARK)
@@ -41,7 +41,7 @@ RDSS_status_t isValidModule(uint8_t *frame, uint8_t lenght) {
 	return WRONG_MODULE_FUNCTION;
 }
 
-RDSS_status_t isValidFrame(uint8_t *frame, uint8_t lenght) {
+RDSS_status_t checkFrameValidity(uint8_t *frame, uint8_t lenght) {
 
 	if (lenght > (MINIMUN_FRAME_LEN)) {
 		if (frame[0] == LTEL_START_MARK) {
@@ -56,7 +56,7 @@ RDSS_status_t isValidFrame(uint8_t *frame, uint8_t lenght) {
 		return WAITING;
 }
 
-RDSS_status_t checkValidCrc(uint8_t *frame, uint8_t len) {
+RDSS_status_t checkCRCValidity(uint8_t *frame, uint8_t len) {
 	uint16_t calculatedCrc, savedCrc;
 	savedCrc = ((uint16_t) frame[len - 2] << 8);
 	savedCrc |= (uint16_t) frame[len - 3];
@@ -98,36 +98,47 @@ RDSS_status_t isValidId(RDSS_t *r) {
 	return WRONG_MODULE_ID;
 }
 
-RDSS_status_t isValid(uint8_t *buff,uint8_t len) {
-	RDSS_status_t status;
-	status = isValidFrame(buff,len);
-	if (!(status == VALID_FRAME))
-		return status;
-	status = isValidModule(buff,len);
-	if (!(status == VALID_MODULE))
-		return status;
-	status = checkValidCrc(buff,len);
-	if (!(status == DATA_OK))
-		return status;
-	return status;
+RDSS_status_t validateBuffer(uint8_t *buffer,uint8_t length) {
+	RDSS_status_t frameStatus = checkFrameValidity(buffer, length);
+	if (frameStatus != VALID_FRAME)
+		return frameStatus;
+	RDSS_status_t moduleStatus = checkModuleValidity(buffer, length);
+	if (moduleStatus != VALID_MODULE)
+		return moduleStatus;
+	RDSS_status_t crcStatus = checkCRCValidity(buffer, length);
+	if (crcStatus != DATA_OK)
+		return crcStatus;
+	return DATA_OK;
 }
 
 void fillValidBuffer(RDSS_t *r, uint8_t *buff, uint8_t len) {
-	r->status = isValid(buff, len);
+	r->status = validateBuffer(buff, len);
 	if (r->status == DATA_OK) {
 		r->len = len;
 		memcpy(r->buffer, buff, len);
 	}
 }
 
+RDSS_status_t evaluateRdssStatus(RDSS_t *rdss) {
+    if (rdss->buffer[MODULE_ID_INDEX] == rdss->id) {
+        return UART_VALID;
+    } else {
+        return LORA_SEND;
+    }
+}
+
+bool isModuleCommand(uint8_t cmd) {
+    return cmd == QUERY_MODULE_ID || cmd == SET_MODULE_ID;
+}
+
 RDSS_status_t checkBuffer(RDSS_t *rs485) {
-	rs485->status = isValidFrame(rs485->buffer, rs485->len);
+	rs485->status = checkFrameValidity(rs485->buffer, rs485->len);
 	if (!(rs485->status == VALID_FRAME))
 		return rs485->status;
-	rs485->status = isValidModule(rs485->buffer, rs485->len);
+	rs485->status = checkModuleValidity(rs485->buffer, rs485->len);
 	if (!(rs485->status == VALID_MODULE))
 		return rs485->status;
-	rs485->status = checkValidCrc(rs485->buffer,rs485->len);
+	rs485->status = checkCRCValidity(rs485->buffer,rs485->len);
 	if (!(rs485->status == DATA_OK))
 		return rs485->status;
 	rs485->status = isValidId(rs485);

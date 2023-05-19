@@ -80,7 +80,7 @@ typedef struct M24C64 {
 void m24c64_page_read(uint8_t address,uint8_t page, uint8_t *data);
 bool readPage(uint8_t page, uint8_t *data, uint8_t offset,uint8_t size);
 
-void savePage(uint8_t page, uint8_t *data, uint8_t offset,uint8_t size);
+uint8_t savePage(uint8_t page, uint8_t *data, uint8_t offset,uint8_t size);
 void m24c64_init_16uvalue(M24C64_ADDR_t addr,uint16_t value);
 void saveU16(M24C64_ADDR_t addr,uint16_t value);
 unsigned long getULFromEeprom(uint8_t page);
