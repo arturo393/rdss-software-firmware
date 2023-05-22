@@ -95,7 +95,7 @@ const Alerts = (props) => {
                             message = "Device updated successfully"
                           },
                           (error) => {
-                            message = "Error when try to save device data"
+                            message = "Error saving device data"
                             console.log(error)
                           }
                         ).then(() => {
