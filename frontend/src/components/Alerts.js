@@ -26,6 +26,7 @@ const Alerts = (props) => {
     monitorData?.map((monitor) => {
       const data = JSON.parse(monitor)
 
+      console.log(data)
       if (data.connected) {
         a_connected = green.src
         a_voltage = data.alerts.voltage ? red.src : green.src
@@ -52,9 +53,9 @@ const Alerts = (props) => {
         gupl: a_agcup,
         guwl: a_agcdown,
         power: a_ptx,
-        smartTune: data.smartTune || "no data",
-        reverse: data.reverse || "no data",
-        attenuation: data.attenuation
+        smartTune: data.rtData.smartTune || "no data",
+        reverse: data.rtData.reverse || "no data",
+        attenuation: data.rtData.attenuation
       }
       currentAlerts.push(device)
     })
