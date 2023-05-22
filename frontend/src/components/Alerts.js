@@ -92,7 +92,6 @@ const Alerts = (props) => {
                         let message
                         axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/device/save", device).then(
                           (result) => {
-                            console.log(result)
                             message = "Device updated successfully"
                           },
                           (error) => {
