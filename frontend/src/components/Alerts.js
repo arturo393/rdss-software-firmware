@@ -53,8 +53,8 @@ const Alerts = (props) => {
         gupl: a_agcup,
         guwl: a_agcdown,
         power: a_ptx,
-        smartTune: data.rtData.smartTune || "no data",
-        reverse: data.rtData.reverse || "no data",
+        smartTune: data.rtData.smartTune!=undefined?data.rtData.smartTune?"ON":"OFF":"no data",
+        reverse: data.rtData.reverse!=undefined?data.rtData.reverse?"ON":"OFF":"no data",
         attenuation: data.rtData.attenuation
       }
       currentAlerts.push(device)
@@ -175,7 +175,7 @@ const Alerts = (props) => {
                       {data.smartTune}
                     </td>
                     <td>
-                      {data.reverse}
+                    {data.reverse}
                     </td>
                     <td>
                       <form onSubmit={saveDevice}>
