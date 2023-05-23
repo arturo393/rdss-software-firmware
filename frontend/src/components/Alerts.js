@@ -64,17 +64,14 @@ const Alerts = (props) => {
 
   const handleChange = (e) => {
     e.preventDefault()
-    setDeviceData({
-      [e.target.id]: e.target.value,
-    })
   }
   const saveDevice = (e) => {
     e.preventDefault()
     let new_attenuation = e.target.attenuation.value || -1
-    if (new_attenuation < 0 || new_attenuation > 32) {
+    if (new_attenuation < 0 || new_attenuation > 30) {
       let resultado = document.getElementById(e.target.id.value+"status")
       resultado.style.display = "block"
-      resultado.innerHTML = "Value should be between 0 and 32"
+      resultado.innerHTML = "Value should be between 0 and 30"
       return false
     }
 
@@ -177,10 +174,12 @@ const Alerts = (props) => {
                     <td>
                     <img alt="" src={data.reverse} width={20} height={20} />
                     </td>
-                    <td>
+                    <td width={200}>
                       <form onSubmit={saveDevice}>
-                        <div className="input-group mb-3">
-                          <input type="number" className="form-control" id="attenuation" value={data?.attenuation} onChange={handleChange} />
+                      
+                        <div className="input-group col">
+                          <span className="input-group-text">{data?.attenuation}</span>
+                          <input type="number" className="form-control" id={"attenuation"}  onChange={handleChange} />
                           <button className="btn btn-primary" type="submit">Save</button>
                           <input type="hidden" name="id" id="id" value={data.id}/>
                         </div>
