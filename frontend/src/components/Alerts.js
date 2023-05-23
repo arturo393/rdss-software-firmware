@@ -53,8 +53,8 @@ const Alerts = (props) => {
         gupl: a_agcup,
         guwl: a_agcdown,
         power: a_ptx,
-        smartTune: data.rtData.smartTune!=undefined?data.rtData.smartTune?green.src:gray.src:gray.src,
-        reverse: data.rtData.reverse!=undefined?data.rtData.reverse?green.src:gray.src:gray.src,
+        smartTune: data.rtData.smartTune!=undefined?(data.rtData.smartTune?green.src:gray.src):gray.src,
+        reverse: data.rtData.reverse!=undefined?(data.rtData.reverse?green.src:gray.src):gray.src,
         attenuation: data.rtData.attenuation
       }
       currentAlerts.push(device)
@@ -70,7 +70,7 @@ const Alerts = (props) => {
   }
   const saveDevice = (e) => {
     e.preventDefault()
-    let new_attenuation = e.target.attenuation.value
+    let new_attenuation = e.target.attenuation.value || -1
     if (new_attenuation < 0 || new_attenuation > 32) {
       let resultado = document.getElementById(e.target.id.value+"status")
       resultado.style.display = "block"
