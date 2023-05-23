@@ -128,7 +128,7 @@ def getProvisionedDevices():
     try:
         collection_name = database["devices"]
         devices = list(collection_name.find(
-            {"status.provisioned": True}, {"id": 1, "type": 1, "name": 1,"attenuation":1, "_id": 0}).limit(cfg.MAX_DEVICES))
+            {"status.provisioned": True}, {"id": 1, "type": 1, "name": 1,"attenuation":1,"changed":1, "_id": 0}).limit(cfg.MAX_DEVICES))
     except Exception as e:
         logging.exception(e)
     return devices
@@ -272,7 +272,7 @@ def setAttenuation(ser,device,attenuation):
     # Pad the hexadecimal string with zeros to ensure it has at least two digits
     hex_string_padded = hex_string.zfill(2)
     hex_attenuation = hex_string_padded
-    cmd = hex(cmd)
+    cmd = hex(device)
     if(len(cmd) == 3):
         cmd_string = '05' + '0' + cmd[2:3] + '1201'+hex_attenuation
     else:
