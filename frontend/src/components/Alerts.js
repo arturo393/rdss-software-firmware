@@ -53,8 +53,8 @@ const Alerts = (props) => {
         gupl: a_agcup,
         guwl: a_agcdown,
         power: a_ptx,
-        smartTune: data.rtData.smartTune!=undefined?(data.rtData.smartTune?green.src:gray.src):gray.src,
-        reverse: data.rtData.reverse!=undefined?(data.rtData.reverse?green.src:gray.src):gray.src,
+        smartTune: data.rtData.smartTune!=undefined?(data.rtData.smartTune == "ON"?green.src:gray.src):gray.src,
+        reverse: data.rtData.reverse!=undefined?(data.rtData.reverse== "ON"?green.src:gray.src):gray.src,
         attenuation: data.rtData.attenuation
       }
       currentAlerts.push(device)
