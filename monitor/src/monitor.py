@@ -12,6 +12,7 @@ import struct
 from crccheck.crc import Crc16Xmodem
 from struct import *
 from sympy import *
+import random
 
 import json
 import base64
@@ -127,7 +128,7 @@ def getProvisionedDevices():
     try:
         collection_name = database["devices"]
         devices = list(collection_name.find(
-            {"status.provisioned": True}, {"id": 1, "type": 1, "name": 1, "attenuation": 1, "changed": 1, "_id": 0}).limit(cfg.MAX_DEVICES))
+            {"status.provisioned": True}, {"id": 1, "type": 1, "name": 1,"attenuation":1, "_id": 0}).limit(cfg.MAX_DEVICES))
     except Exception as e:
         logging.exception(e)
     return devices
@@ -159,7 +160,7 @@ def updateDeviceChangedFlag(device, changed):
     """
     database.devices.update_one(
         {"id": device}, {"$set": {"changed": changed}})
-
+        
 def insertDevicesDataIntoDB(rtData):
     """
     Saves collected devices data into DB collection
@@ -264,6 +265,74 @@ def setAttenuation(ser,device,attenuation):
     Returns:
         boolean: if changed was applied or error
     """
+    # 7e 05 05 12 01 17 f6e3 7f#
+
+    # Convert the integer to a hexadecimal string
+    hex_string = hex(attenuation)[2:]
+    # Pad the hexadecimal string with zeros to ensure it has at least two digits
+    hex_string_padded = hex_string.zfill(2)
+    hex_attenuation = hex_string_padded
+    cmd = hex(cmd)
+    if(len(cmd) == 3):
+        cmd_string = '05' + '0' + cmd[2:3] + '1201'+hex_attenuation
+    else:
+        cmd_string = '05' + cmd[2:4] + '1201'+hex_attenuation
+
+    checksum = getChecksum(cmd_string)
+    command = '7E' + cmd_string + checksum + '7F'
+
+    logging.debug("Attenuation:"+str(attenuation))
+    logging.debug("SENT: "+command)
+
+    cmd_bytes = bytearray.fromhex(command)
+    hex_byte = ''
+
+    try:
+        for cmd_byte in cmd_bytes:
+            hex_byte = ("{0:02x}".format(cmd_byte))
+            ser.write(bytes.fromhex(hex_byte))
+
+        # ---- Read from serial
+        hexResponse = ser.read(21)
+
+        logging.debug("GET: "+hexResponse.hex('-'))
+
+        # ---- Validations
+        if ((
+            (len(hexResponse) > 21)
+            or (len(hexResponse) < 21)
+            or hexResponse == None
+            or hexResponse == ""
+            or hexResponse == " "
+        ) or (
+            hexResponse[0] != 126
+            and hexResponse[20] != 127
+        ) or (
+            (hexResponse[3] != 17)
+        ) or (
+            (hexResponse[4] == 2 or hexResponse[4]
+                == 3 or hexResponse[4] == 4)
+        )):
+            return False
+        # ------------------------
+
+        data = list()
+
+        for i in range(0, 21):
+            if(6 <= i < 18):
+                data.append(hexResponse[i])
+
+        vladRev23Id = 0xff
+        if(data[0] == vladRev23Id):
+            data0 = data[0]
+
+        ser.flushInput()
+        ser.flushOutput()
+
+    except Exception as e:
+        logging.error(e)
+        sys.exit()
+
     logging.debug("changing attenuation")
     return True
 
@@ -319,6 +388,8 @@ def sendCmd(ser, cmd, createdevice):
         ) or (
             hexResponse[0] != 126
             and hexResponse[20] != 127
+        ) or ( 
+            hexResponse[2] != int(cmd,16)
         ) or (
             (hexResponse[3] != 17)
         ) or (
@@ -338,8 +409,8 @@ def sendCmd(ser, cmd, createdevice):
         if(data[0] == vladRev23Id):
             # decode the frame according to the specified format
             unsigned_byte = data[0] 
-            isReverse = bool(data[1] & 0x01)
-            isSmartTune = bool(data[1] & (0x1<<1))
+            isReverse = "ON" if(bool(data[1] & 0x01)) else "OFF"
+            isSmartTune = "ON" if (bool(data[1] & (0x1<<1))) else "OFF" 
             isRemoteAttenuation = bool(data[1] & (0x1<<2))
             attenuation = (data[1]>>3) & 0x1F
             lineVoltage = ( data[2] | (data[3] << 8) ) /10.0
@@ -371,7 +442,10 @@ def sendCmd(ser, cmd, createdevice):
                 "current": lineCurrent,
                 "gupl": uplinkAgcValue,
                 "gdwl": downlinkAgcValue,
-                "power": downlinkOutputPower
+                "power": downlinkOutputPower,
+                "smartTune": isSmartTune,
+                "reverse": isReverse,
+                "attenuation":attenuation
             }
         else:
         
@@ -501,7 +575,6 @@ def run_monitor():
             logging.debug("ID: %s", device)
 
             response = sendCmd(ser, device, False)
-
             deviceData["id"] = device
             # deviceData["type"] = x["type"]
             # deviceData["name"] = x["name"]
@@ -515,6 +588,7 @@ def run_monitor():
                 deviceData["name"] = ''
 
             if (response):
+
                 connectedDevices += 1
                 deviceData["connected"] = True
                 deviceData["rtData"] = response
@@ -525,12 +599,18 @@ def run_monitor():
                 #-------------------------------------------------
                 # Leyendo atenuación y estado de cambio
                 #-------------------------------------------------
-                # attenuationChanged = bool(x["changed"]) if ('changed' in x) else False
+                attenuation = 0
+                if "attenuation" in x:
+                    value = x["attenuation"]
+                    if value is not None:
+                         attenuation = int(value)
+                attenuationChanged = bool(x["changed"]) if ('changed' in x) else False
                 # TODO: Setear atenuación
-                # if (attenuationChanged):
-                    # setAttenuation(ser,device,int(x["attenuation"]))
+                if (attenuationChanged):
+                    setAttenuation(ser,device,attenuation)
                     # TODO: actualizar registro en DB para que no vuelva a setear la atenuación a menos que el usuario vuelva a cambiarla  manualmente
-                    # updateDeviceChangedFlag(device, False)
+                    updateDeviceChangedFlag(device, False)
+     
             else:
                 logging.debug("No response from device")
                 deviceData["connected"] = False
@@ -547,7 +627,6 @@ def run_monitor():
     else:
         sendStatusToFrontEnd([])
         logging.debug("No provisioned devices found in the DB")
-
 
 def listen():
     """
