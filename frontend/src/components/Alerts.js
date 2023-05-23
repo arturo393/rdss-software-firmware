@@ -53,8 +53,8 @@ const Alerts = (props) => {
         gupl: a_agcup,
         guwl: a_agcdown,
         power: a_ptx,
-        smartTune: data.rtData.smartTune!=undefined?data.rtData.smartTune?"ON":"OFF":"no data",
-        reverse: data.rtData.reverse!=undefined?data.rtData.reverse?"ON":"OFF":"no data",
+        smartTune: data.rtData.smartTune!=undefined?data.rtData.smartTune?green.src:gray.src:gray.src,
+        reverse: data.rtData.reverse!=undefined?data.rtData.reverse?green.src:gray.src:gray.src,
         attenuation: data.rtData.attenuation
       }
       currentAlerts.push(device)
@@ -172,10 +172,10 @@ const Alerts = (props) => {
                       <img alt="" src={data.power} width={20} height={20} />
                     </td>
                     <td>
-                      {data.smartTune}
+                    <img alt="" src={data.smartTune} width={20} height={20} />
                     </td>
                     <td>
-                    {data.reverse}
+                    <img alt="" src={data.reverse} width={20} height={20} />
                     </td>
                     <td>
                       <form onSubmit={saveDevice}>
