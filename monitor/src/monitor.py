@@ -127,7 +127,7 @@ def getProvisionedDevices():
     try:
         collection_name = database["devices"]
         devices = list(collection_name.find(
-            {"status.provisioned": True}, {"id": 1, "type": 1, "name": 1, "_id": 0}).limit(cfg.MAX_DEVICES))
+            {"status.provisioned": True}, {"id": 1, "type": 1, "name": 1, "attenuation": 1, "changed": 1, "_id": 0}).limit(cfg.MAX_DEVICES))
     except Exception as e:
         logging.exception(e)
     return devices
@@ -153,6 +153,12 @@ def updateDeviceConnectionStatus(device, status):
     database.devices.update_one(
         {"id": device}, {"$set": {"status.connected": status}})
 
+def updateDeviceChangedFlag(device, changed):
+    """
+    Updates device changed attribute
+    """
+    database.devices.update_one(
+        {"id": device}, {"$set": {"changed": changed}})
 
 def insertDevicesDataIntoDB(rtData):
     """
@@ -247,6 +253,19 @@ def evaluateAlerts(response):
         alerts["power"] = True
     return alerts
 
+def setAttenuation(ser,device,attenuation):
+    """Sets device downlink attenuation
+
+    Args:
+        ser: serial port
+        device: device ID
+        attenuation: integer between 0 and 32
+
+    Returns:
+        boolean: if changed was applied or error
+    """
+    logging.debug("changing attenuation")
+    return True
 
 def sendCmd(ser, cmd, createdevice):
     """
@@ -503,6 +522,15 @@ def run_monitor():
                 deviceData["rtData"]["alerts"] = alerts
                 deviceData["alerts"] = alerts
                 updateDeviceConnectionStatus(device, True)
+                #-------------------------------------------------
+                # Leyendo atenuación y estado de cambio
+                #-------------------------------------------------
+                # attenuationChanged = bool(x["changed"]) if ('changed' in x) else False
+                # TODO: Setear atenuación
+                # if (attenuationChanged):
+                    # setAttenuation(ser,device,int(x["attenuation"]))
+                    # TODO: actualizar registro en DB para que no vuelva a setear la atenuación a menos que el usuario vuelva a cambiarla  manualmente
+                    # updateDeviceChangedFlag(device, False)
             else:
                 logging.debug("No response from device")
                 deviceData["connected"] = False
