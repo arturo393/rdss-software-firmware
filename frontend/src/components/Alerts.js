@@ -176,7 +176,6 @@ const Alerts = (props) => {
                     </td>
                     <td width={200}>
                       <form onSubmit={saveDevice}>
-                      
                         <div className="input-group col">
                           <span className="input-group-text">{data?.attenuation}</span>
                           <input type="number" className="form-control" id={"attenuation"}  onChange={handleChange} />
