@@ -70,7 +70,7 @@ const Alerts = (props) => {
   }
   const saveDevice = (e) => {
     e.preventDefault()
-    let new_attenuation = e.target.attenuation.value
+    let new_attenuation = e.target.attenuation.value || -1
     if (new_attenuation < 0 || new_attenuation > 32) {
       let resultado = document.getElementById(e.target.id.value+"status")
       resultado.style.display = "block"
