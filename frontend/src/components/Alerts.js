@@ -26,7 +26,7 @@ const Alerts = (props) => {
     monitorData?.map((monitor) => {
       const data = JSON.parse(monitor)
 
-      console.log(data)
+      // console.log(data)
       if (data.connected) {
         a_connected = green.src
         a_voltage = data.alerts.voltage ? red.src : green.src
