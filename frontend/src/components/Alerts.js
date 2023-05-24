@@ -140,7 +140,7 @@ const Alerts = (props) => {
                   <h6>Reverse</h6>
                 </th>
                 <th>
-                  <h6>Downlink Attenuation</h6>
+                  <h6>Downlink Attenuation [dB]</h6>
                 </th>
                 
               </tr>
