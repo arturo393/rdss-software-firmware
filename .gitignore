@@ -120,3 +120,6 @@ Src/wwdg.c
 *.jou
 *.log
 
+.settings/language.settings.xml
+
+.settings/language.settings.xml
