@@ -223,8 +223,6 @@ void updateVladMeasurements(Vlad_t *vlad) {
 			vlad->level172m_real = (int8_t) (MAX4003_DBM_SCOPE
 					* (float) vlad->level172m + MAX4003_DBM_FACTOR);
 
-
-
 		} else {
 			resetVladData(vlad);
 		}

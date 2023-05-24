@@ -24,6 +24,7 @@
 #define LTEL_SET_LENGTH  13
 #define LTEL_QUERY_LENGTH  9
 #define MINIMUN_FRAME_LEN 6
+#define ATTENUATION_VALUE_INDEX 5
 
 typedef enum RS485_CMD {
 	NONE,

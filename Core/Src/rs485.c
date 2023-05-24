@@ -213,7 +213,7 @@ uint32_t freqDecode(uint8_t *buffer) {
 	freq.i |= (buffer[3] << 24);
 	freq.f = freq.f * 1000000.0f;
 
-	return freq.i;
+	return freq.f;
 }
 
 void freqEncode(uint8_t *buffer, uint32_t freqIn) {
