@@ -42,3 +42,10 @@ Debug/Core/Src/*.d
 
 Debug/Core/Src/*.cyclo
 Debug/rdss_master.map
+Debug/objects.list
+Debug/Core/Src/subdir.mk
+/Release/
+Debug/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.o
+rdss_master.ioc
+.settings/language.settings.xml
+.gitignore
