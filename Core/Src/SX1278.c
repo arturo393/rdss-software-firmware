@@ -150,7 +150,7 @@ void readOperatingMode(SX1278_t *module) {
 	LR_RegOpMode));
 }
 
-void setLoraLowFreqModeReg(SX1278_t *module, OPERATING_MODE_t mode) {
+void setLoRaLowFreqModeReg(SX1278_t *module, OPERATING_MODE_t mode) {
 	uint8_t cmd = LORA_MODE_ACTIVATION | LOW_FREQUENCY_MODE | mode;
 	writeRegister(module->spi, LR_RegOpMode, &cmd, 1);
 	module->operatingMode = mode;
@@ -162,7 +162,7 @@ void clearIrqFlagsReg(SX1278_t *module) {
 }
 
 void writeLoRaParametersReg(SX1278_t *module) {
-	setLoraLowFreqModeReg(module, SLEEP);
+	setLoRaLowFreqModeReg(module, SLEEP);
 	HAL_Delay(15);
 	setRFFrequencyReg(module);
 	writeRegister(module->spi, RegSyncWord, &(module->syncWord), 1);
@@ -210,7 +210,7 @@ void changeLoRaOperatingMode(SX1278_t *module, Lora_Mode_t mode) {
 		module->mode = mode;
 		module->status = RX_MODE;
 	}
-	setLoraLowFreqModeReg(module, STANDBY);
+	setLoRaLowFreqModeReg(module, STANDBY);
 	HAL_Delay(15);
 	setRFFrequencyReg(module);
 	writeRegister(module->spi, LR_RegDioMapping1, &(module->dioConfig), 1);
@@ -294,7 +294,7 @@ uint8_t waitForRxDone(SX1278_t *loRa) {
 
 
 void setRxFifoAddr(SX1278_t *module) {
-	setLoraLowFreqModeReg(module, SLEEP); //Change modem mode Must in Sleep mode
+	setLoRaLowFreqModeReg(module, SLEEP); //Change modem mode Must in Sleep mode
 	uint8_t cmd = module->len;
 	//cmd = 9;
 	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1); //RegPayloadLength 21byte
@@ -314,16 +314,27 @@ int crcErrorActivation(SX1278_t *module) {
 	return errorActivation;
 }
 
-void getRxFifoData(SX1278_t *module) {
-	module->len = readRegister(module->spi, LR_RegRxNbBytes); //Number for received bytes
-	uint8_t addr = 0x00;
-	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET); // pull the pin low
-	HAL_Delay(1);
-	HAL_SPI_Transmit(module->spi, &addr, 1, 100); // send address
-	HAL_SPI_Receive(module->spi, module->buffer, module->len, 100); // receive 6 bytes data
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET); // pull the pin high
-	module->status = RX_DONE;
+/**
+ * Retrieves data from the receive FIFO of the SX1278 LoRa module.
+ * This function reads the number of received bytes, sends an address to the module,
+ * receives the data from the module, and updates the module status.
+ *
+ * @param loraModule Pointer to the SX1278_t structure representing the LoRa module.
+ * @return The number of received bytes.
+ */
+uint8_t getRxFifoData(SX1278_t *loraModule) {
+    loraModule->len = readRegister(loraModule->spi, LR_RegRxNbBytes);  // Read the number of received bytes
+    uint8_t addr = 0x00;
+
+    HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET);  // Pull the NSS pin low
+    HAL_Delay(1);
+    HAL_SPI_Transmit(loraModule->spi, &addr, 1, 100);  // Send the address
+    HAL_SPI_Receive(loraModule->spi, loraModule->buffer, loraModule->len, 100);  // Receive the data
+    HAL_Delay(1);
+    HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET);  // Pull the NSS pin high
+
+    loraModule->status = RX_DONE;  // Update the module status to indicate successful reception
+    return loraModule->len;  // Return the number of received bytes
 }
 
 void setTxFifoAddr(SX1278_t *module) {
@@ -343,7 +354,7 @@ void setTxFifoData(SX1278_t *module) {
 	}
 }
 
-void clearMemForRx(SX1278_t *module) {
+void clearRxMemory(SX1278_t *module) {
 	if (module->status == RX_MODE) {
 		memset(module->buffer, 0, SX1278_MAX_PACKET);
 	}
@@ -351,15 +362,15 @@ void clearMemForRx(SX1278_t *module) {
 
 void receive(SX1278_t *loRa) {
 	setRxFifoAddr(loRa);
-	setLoraLowFreqModeReg(loRa, RX_CONTINUOUS);
-	clearMemForRx(loRa);
+	setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS);
+	clearRxMemory(loRa);
 	waitForRxDone(loRa);
 	getRxFifoData(loRa);
 }
 
 void transmitDataUsingLoRa(SX1278_t *loRa) {
 	setTxFifoData(loRa);
-	setLoraLowFreqModeReg(loRa, TX);
+	setLoRaLowFreqModeReg(loRa, TX);
 	waitForTxEnd(loRa);
 	memset(loRa->buffer, 0, sizeof(loRa->buffer));
 	loRa->len = 0;

@@ -84,7 +84,7 @@ void printStatus(UART1_t *u1, RDSS_t *rdss);
 void printLoRaStatus(UART1_t *u1, SX1278_t *loRa);
 void dinamicFrame(SX1278_t *loRa);
 void parseLoRaMaster(RDSS_t *rs485, SX1278_t *loRa);
-void parseLoRaSlave(RDSS_t *rs485, SX1278_t *loRa);
+uint8_t parseLoRaSlave(RDSS_t *remoteDiagnoticServer, SX1278_t *loRa);
 void parseUart(UART1_t *u1, RDSS_t *rdss);
 void sendLoRaMasterQuery(RDSS_t *rs485, SX1278_t *loRa);
 uint8_t setBufferWithLtelCmd(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa,
@@ -93,7 +93,7 @@ uint8_t processReceivedLoraCommand(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad,
 		UART1_t *u1);
 void processReceivedUartCommand(Vlad_t *vlad, UART1_t *u1, RDSS_t *rdss,
 		SX1278_t *loRa);
-GPIO_PinState processLoRaSlaveReceiver(SX1278_t *loRa, UART1_t *u1);
+uint8_t processLoRaSlaveReceiver(SX1278_t *loRa, UART1_t *u1);
 void handleCommunication(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad,
 		UART1_t *u1);
 void handleDefaultCase(RDSS_t *rdss, SX1278_t *loRa, UART1_t *u1);
@@ -168,11 +168,12 @@ int main(void) {
 			processReceivedUartCommand(vlad, u1, rdss, loRa);
 		}
 		if (loRa->mode == SLAVE_RECEIVER) {
-			processLoRaSlaveReceiver(loRa, u1);
-			if (loRa->len > 0) {
-				parseLoRaSlave(rdss, loRa);
-				processReceivedLoraCommand(rdss, loRa, vlad, u1);
-			}
+			if (processLoRaSlaveReceiver(loRa, u1) > 0)
+				if (parseLoRaSlave(rdss, loRa))
+					processReceivedLoraCommand(rdss, loRa, vlad, u1);
+
+			rdssReinit(rdss);
+
 		}
 	}
 	/* USER CODE END WHILE */
@@ -698,20 +699,37 @@ void parseLoRaMaster(RDSS_t *rs485, SX1278_t *loRa) {
 	}
 }
 
-void parseLoRaSlave(RDSS_t *rs485, SX1278_t *loRa) {
-	fillValidBuffer(&*rs485, loRa->buffer, loRa->len);
+/**
+ * Parses the received LoRa data for the remote diagnostic server.
+ * This function fills the valid buffer, resets the LoRa buffer, and updates the server status based on the received data.
+ *
+ * @param remoteDiagnosticServer Pointer to the RDSS_t structure representing the remote diagnostic server.
+ * @param loRa Pointer to the SX1278_t structure representing the LoRa module.
+ * @return 1 if the data is valid and received for the correct module, 0 otherwise.
+ */
+uint8_t parseLoRaSlave(RDSS_t *remoteDiagnosticServer, SX1278_t *loRa) {
+	if (loRa->len <= 0)
+		return 0;
+
+	fillValidBuffer(remoteDiagnosticServer, loRa->buffer, loRa->len);
 	memset(loRa->buffer, 0, sizeof(loRa->buffer));
 	loRa->len = 0;
-	if (rs485->status == DATA_OK) {
-		rs485->cmd = rs485->buffer[CMD_INDEX];
-		rs485->idReceived = rs485->buffer[MODULE_ID_INDEX];
-		if (rs485->idReceived == rs485->id)
-			rs485->status = LORA_RECEIVE;
-		else
-			rs485->status = WRONG_MODULE_ID;
 
-		rs485->idQuery = 0;
+	if (remoteDiagnosticServer->status == DATA_OK) {
+		remoteDiagnosticServer->cmd = remoteDiagnosticServer->buffer[CMD_INDEX];
+		remoteDiagnosticServer->idReceived =
+				remoteDiagnosticServer->buffer[MODULE_ID_INDEX];
+
+		if (remoteDiagnosticServer->idReceived == remoteDiagnosticServer->id) {
+			remoteDiagnosticServer->status = LORA_RECEIVE;
+			return 1; // Data is valid and received for the correct module
+		} else {
+			remoteDiagnosticServer->status = WRONG_MODULE_ID;
+			return 0; // Data received for the wrong module
+		}
 	}
+
+	return 0; // Invalid data or status not OK
 }
 
 void parseUart(UART1_t *uart1, RDSS_t *rdss) {
@@ -934,29 +952,43 @@ void processReceivedUartCommand(Vlad_t *vlad, UART1_t *u1, RDSS_t *rdss,
 	u1->transmittedDataLength = 0;
 }
 
-GPIO_PinState processLoRaSlaveReceiver(SX1278_t *loRa, UART1_t *u1) {
+/**
+ * Processes the receive operation of the LoRa slave receiver.
+ * This function handles the LoRa operating mode, receives data from the FIFO,
+ * checks for CRC errors, updates the LoRa status, and prints the LoRa status.
+ *
+ * @param loRa Pointer to the SX1278_t structure representing the LoRa module.
+ * @param u1 Pointer to the UART1_t structure for UART communication.
+ * @return The length of the received data.
+ */
+uint8_t processLoRaSlaveReceiver(SX1278_t *loRa, UART1_t *u1) {
+	uint8_t receivedLength = 0;
+
 	if (loRa->operatingMode != RX_CONTINUOUS) {
 		changeLoRaOperatingMode(loRa, SLAVE_RECEIVER);
 		setRxFifoAddr(loRa);
-		setLoraLowFreqModeReg(loRa, RX_CONTINUOUS);
+		setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS);
 	}
-	clearMemForRx(loRa);
-	GPIO_PinState bussy = HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port,
-	LORA_BUSSY_Pin);
-	if (bussy == GPIO_PIN_SET)
+	clearRxMemory(loRa);
+
+	// Check BUSY pin status
+	GPIO_PinState busy = HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port, LORA_BUSSY_Pin);
+	if (busy == GPIO_PIN_SET) {
 		if (crcErrorActivation(loRa) != 1) {
-			getRxFifoData(loRa);
+			receivedLength = getRxFifoData(loRa);
 			printLoRaStatus(u1, loRa);
 		}
+	}
 
 	if (loRa->status == RX_DONE) {
 		setRxFifoAddr(loRa);
-		setLoraLowFreqModeReg(loRa, RX_CONTINUOUS);
+		setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS);
 		readOperatingMode(loRa);
 		loRa->status = RX_MODE;
 		printLoRaStatus(u1, loRa);
 	}
-	return bussy;
+
+	return receivedLength;
 }
 
 /**

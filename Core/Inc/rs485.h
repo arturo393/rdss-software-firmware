@@ -120,5 +120,6 @@ uint32_t freqDecode(uint8_t *buffer);
 void freqEncode(uint8_t *buffer, uint32_t freqIn);
 RDSS_status_t evaluateRdssStatus(RDSS_t *rdss);
 bool isModuleCommand(uint8_t cmd);
+void rdssReinit(RDSS_t *rdss);
 #endif /* INC_RS485_H_ */
 

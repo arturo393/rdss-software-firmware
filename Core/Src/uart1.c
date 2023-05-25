@@ -164,6 +164,8 @@ void writeTxBuffer(uint8_t *str, uint8_t len) {
 
 void writeTx(UART1_t *uart1) {
 	writeTxBuffer(uart1->transmitBuffer, uart1->transmittedDataLength);
+
+
 }
 
 void cleanRx(UART1_t *u) {
