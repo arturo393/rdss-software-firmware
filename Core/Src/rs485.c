@@ -20,6 +20,24 @@ RDSS_t* rdssInit(uint8_t id) {
 	return r;
 }
 
+/**
+ * Reinitializes the RDSS_t structure.
+ * This function resets all the fields of the RDSS_t structure to their initial values.
+ *
+ * @param rdss Pointer to the RDSS_t structure to be reinitialized.
+ */
+void rdssReinit(RDSS_t *rdss) {
+    rdss->len = 0;              // Reset the length of the buffer
+    memset(rdss->buffer, 0, sizeof(rdss->buffer));  // Clear the buffer
+    rdss->cmd = NONE;           // Reset the command field
+    rdss->crcReceived = 0;      // Reset the received CRC value
+    rdss->crcCalculated = 0;    // Reset the calculated CRC value
+    rdss->idQuery = 0;          // Reset the query ID
+    rdss->status = WAITING;     // Set the status to waiting
+    rdss->idReceived = 0;       // Reset the received ID
+}
+
+
 RDSS_status_t rs485_check_CRC_module(UART1_t *uart1) {
 	unsigned long crc_cal;
 	unsigned long crc_save;
