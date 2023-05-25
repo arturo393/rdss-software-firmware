@@ -204,9 +204,8 @@ uint8_t readVladMeasurements(Vlad_t *vlad) {
 	return bufferIndex;
 }
 
-void updateVladMeasurements(Vlad_t *vlad) {
+uint8_t updateVladMeasurements(Vlad_t *vlad) {
 	const uint32_t vladReadIntervalMs  = VLAD_READ_TIMER;
-
 
 	if (HAL_GetTick() - vlad->lastUpdateTicks > vladReadIntervalMs ) {
 		if (readVladMeasurements(vlad) > 0) {
@@ -227,5 +226,8 @@ void updateVladMeasurements(Vlad_t *vlad) {
 			resetVladData(vlad);
 		}
 		vlad->lastUpdateTicks = HAL_GetTick();
+		return 1;
 	}
+
+	return 0;
 }

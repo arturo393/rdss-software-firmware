@@ -16,6 +16,7 @@ bool readPage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
 	uint16_t MemAddress = page << PADDRPOSITION | offset;
 	buff[0] = (uint8_t) MemAddress & 0xff;
 
+
 	if (!i2c1MasterTransmit(CHIP_ADDR, buff, 1, 1000))
 		return false;
 	HAL_Delay(5);

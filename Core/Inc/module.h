@@ -122,6 +122,6 @@ uint8_t checkCRCValidity(uint8_t *buffer, uint8_t len);
 uint16_t crc_get(uint8_t *buffer, uint8_t buff_len);
 void resetVladData(Vlad_t *vlad);
 uint8_t readVladMeasurements(Vlad_t *vlad);
-void updateVladMeasurements(Vlad_t *vlad);
+uint8_t updateVladMeasurements(Vlad_t *vlad);
 
 #endif /* INC_LTEL_H_ */

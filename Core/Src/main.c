@@ -98,6 +98,18 @@ void handleCommunication(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad,
 		UART1_t *u1);
 void handleDefaultCase(RDSS_t *rdss, SX1278_t *loRa, UART1_t *u1);
 
+void setQueryStatusBuffer(RDSS_t *rdss, Vlad_t *vlad) {
+	uint8_t index = 0;
+	rdss->queryBuffer[index++] = LTEL_START_MARK;
+	rdss->queryBuffer[index++] = VLADR;
+	rdss->queryBuffer[index++] = vlad->id;
+	rdss->queryBuffer[index++] = QUERY_STATUS;
+	rdss->queryBuffer[index++] = 0x00;
+	index += encodeVladToLtel(rdss->queryBuffer + index, vlad);
+	index += setCrc(rdss->queryBuffer, index);
+	rdss->queryBuffer[index++] = LTEL_END_MARK;
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -148,8 +160,20 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		updateVladMeasurements(vlad);
-		handleCommunication(rdss, loRa, vlad, u1);
+		if (updateVladMeasurements(vlad))
+			setQueryStatusBuffer(rdss, vlad);
+		//handleCommunication(rdss, loRa, vlad, u1);
+		if (u1->isReceivedDataReady) {
+			parseUart(u1, rdss);
+			processReceivedUartCommand(vlad, u1, rdss, loRa);
+		}
+		if (loRa->mode == SLAVE_RECEIVER) {
+			processLoRaSlaveReceiver(loRa, u1);
+			if (loRa->len > 0) {
+				parseLoRaSlave(rdss, loRa);
+				processReceivedLoraCommand(rdss, loRa, vlad, u1);
+			}
+		}
 	}
 	/* USER CODE END WHILE */
 
@@ -736,12 +760,14 @@ uint8_t setBufferWithLtelCmd(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa,
 	if (rdss->len < LTEL_QUERY_LENGTH || rdss->len > LTEL_SET_LENGTH)
 		return 0;
 
+	if (rdss->cmd == QUERY_STATUS) {
+		memcpy(buffer, rdss->queryBuffer, QUERY_STATUS_BUFFER_SIZE);
+		return QUERY_STATUS_BUFFER_SIZE;
+	}
+
 	index = setRdssStartData(rdss, buffer);
 
 	switch (rdss->cmd) {
-	case QUERY_STATUS:
-		index += encodeVladToLtel(buffer + index, vlad);
-		break;
 	case QUERY_RX_FREQ:
 		buffer[index++] = 4;
 		freqEncode(buffer + index, loRa->dlFreq);
@@ -843,7 +869,8 @@ uint8_t setBufferWithLtelCmd(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa,
  @param u1 Pointer to the UART1_t structure for UART communication.
  @return The index value indicating the progress of the function execution.
  */
-uint8_t processReceivedLoraCommand(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad, UART1_t *u1) {
+uint8_t processReceivedLoraCommand(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad,
+		UART1_t *u1) {
 	uint8_t index = 0;
 
 	// Update LoRa buffer with LTel command
@@ -860,7 +887,8 @@ uint8_t processReceivedLoraCommand(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad, U
 		attenuationCommand[1] = rdss->buffer[ATTENUATION_VALUE_INDEX];
 
 		// Transmit attenuation command via I2C
-		vlad->is_attenuation_updated = i2c1MasterTransmit(i2cSlaveAddress, attenuationCommand, sizeof(attenuationCommand), 10);
+		vlad->is_attenuation_updated = i2c1MasterTransmit(i2cSlaveAddress,
+				attenuationCommand, sizeof(attenuationCommand), 10);
 
 		loRa->buffer[index++] = vlad->is_attenuation_updated;
 		index += setCrc(loRa->buffer, index); // Set CRC in the LoRa buffer
@@ -880,7 +908,6 @@ uint8_t processReceivedLoraCommand(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad, U
 
 	return index; // Return the index value indicating the progress of the function execution
 }
-
 
 void processReceivedUartCommand(Vlad_t *vlad, UART1_t *u1, RDSS_t *rdss,
 		SX1278_t *loRa) {
@@ -941,7 +968,8 @@ GPIO_PinState processLoRaSlaveReceiver(SX1278_t *loRa, UART1_t *u1) {
  @param vlad Pointer to the Vlad_t structure containing additional data.
  @param u1 Pointer to the UART1_t structure for UART communication.
  */
-void handleCommunication(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad, UART1_t *u1) {
+void handleCommunication(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad,
+		UART1_t *u1) {
 	switch (rdss->status) {
 	case LORA_RECEIVE:
 		// Process received LoRa command
@@ -967,10 +995,10 @@ void handleCommunication(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad, UART1_t *u1
 	}
 }
 
-
 void handleDefaultCase(RDSS_t *rdss, SX1278_t *loRa, UART1_t *u1) {
 	if (u1->isReceivedDataReady) {
 		parseUart(u1, rdss);
+		processReceivedUartCommand(vlad, u1, rdss, loRa);
 		printStatus(u1, rdss);
 	} else if (loRa->len > 0) {
 		parseLoRaSlave(rdss, loRa);
@@ -978,6 +1006,12 @@ void handleDefaultCase(RDSS_t *rdss, SX1278_t *loRa, UART1_t *u1) {
 		printLoRaStatus(u1, loRa);
 	} else if (loRa->mode == SLAVE_RECEIVER) {
 		processLoRaSlaveReceiver(loRa, u1);
+		if (loRa->len > 0) {
+			parseLoRaSlave(rdss, loRa);
+			printStatus(u1, rdss);
+			printLoRaStatus(u1, loRa);
+			processReceivedLoraCommand(rdss, loRa, vlad, u1);
+		}
 	}
 }
 /* USER CODE END 4 */

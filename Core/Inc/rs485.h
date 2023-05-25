@@ -25,6 +25,7 @@
 #define LTEL_QUERY_LENGTH  9
 #define MINIMUN_FRAME_LEN 6
 #define ATTENUATION_VALUE_INDEX 5
+#define QUERY_STATUS_BUFFER_SIZE 21
 
 typedef enum RS485_CMD {
 	NONE,
@@ -94,6 +95,7 @@ typedef struct RS485 {
 	uint8_t idReceived;
 	uint8_t id;
 	RDSS_status_t status;
+	uint8_t queryBuffer[QUERY_STATUS_BUFFER_SIZE];
 } RDSS_t;
 
 uint16_t crc_get(uint8_t *buffer, uint8_t buff_len);
