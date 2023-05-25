@@ -150,7 +150,7 @@ void readOperatingMode(SX1278_t *module) {
 	LR_RegOpMode));
 }
 
-void setLoraLowFreqModeReg(SX1278_t *module, OPERATING_MODE_t mode) {
+void setLoRaLowFreqModeReg(SX1278_t *module, OPERATING_MODE_t mode) {
 	uint8_t cmd = LORA_MODE_ACTIVATION | LOW_FREQUENCY_MODE | mode;
 	writeRegister(module->spi, LR_RegOpMode, &cmd, 1);
 	module->operatingMode = mode;
@@ -162,7 +162,7 @@ void clearIrqFlagsReg(SX1278_t *module) {
 }
 
 void writeLoRaParametersReg(SX1278_t *module) {
-	setLoraLowFreqModeReg(module, SLEEP);
+	setLoRaLowFreqModeReg(module, SLEEP);
 	HAL_Delay(15);
 	setRFFrequencyReg(module);
 	writeRegister(module->spi, RegSyncWord, &(module->syncWord), 1);
@@ -210,7 +210,7 @@ void changeLoRaOperatingMode(SX1278_t *module, Lora_Mode_t mode) {
 		module->mode = mode;
 		module->status = RX_MODE;
 	}
-	setLoraLowFreqModeReg(module, STANDBY);
+	setLoRaLowFreqModeReg(module, STANDBY);
 	HAL_Delay(15);
 	setRFFrequencyReg(module);
 	writeRegister(module->spi, LR_RegDioMapping1, &(module->dioConfig), 1);
@@ -293,7 +293,7 @@ uint8_t waitForRxDone(SX1278_t *loRa) {
 }
 
 void setRxFifoAddr(SX1278_t *module) {
-	setLoraLowFreqModeReg(module, SLEEP); //Change modem mode Must in Sleep mode
+	setLoRaLowFreqModeReg(module, SLEEP); //Change modem mode Must in Sleep mode
 	uint8_t cmd = module->len;
 	//cmd = 9;
 	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1); //RegPayloadLength 21byte
@@ -342,7 +342,7 @@ void setTxFifoData(SX1278_t *module) {
 	}
 }
 
-void clearMemForRx(SX1278_t *module) {
+void clearRxMemory(SX1278_t *module) {
 	if (module->status == RX_MODE) {
 		memset(module->buffer, 0, SX1278_MAX_PACKET);
 	}
@@ -350,15 +350,15 @@ void clearMemForRx(SX1278_t *module) {
 
 void receive(SX1278_t *loRa) {
 	setRxFifoAddr(loRa);
-	setLoraLowFreqModeReg(loRa, RX_CONTINUOUS);
-	clearMemForRx(loRa);
+	setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS);
+	clearRxMemory(loRa);
 	waitForRxDone(loRa);
 	getRxFifoData(loRa);
 }
 
 void transmitDataUsingLoRa(SX1278_t *loRa) {
 	setTxFifoData(loRa);
-	setLoraLowFreqModeReg(loRa, TX);
+	setLoRaLowFreqModeReg(loRa, TX);
 	waitForTxEnd(loRa);
 	memset(loRa->buffer, 0, sizeof(loRa->buffer));
 	loRa->len = 0;

@@ -1306,9 +1306,9 @@ GPIO_PinState processLoRaSlaveReceiver(SX1278_t *loRa, UART1_t *u1) {
 	if (loRa->operatingMode != RX_CONTINUOUS) {
 		changeLoRaOperatingMode(loRa, SLAVE_RECEIVER);
 		setRxFifoAddr(loRa);
-		setLoraLowFreqModeReg(loRa, RX_CONTINUOUS);
+		setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS);
 	}
-	clearMemForRx(loRa);
+	clearRxMemory(loRa);
 	GPIO_PinState bussy = HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port,
 	LORA_BUSSY_Pin);
 	if (bussy == GPIO_PIN_SET)
@@ -1319,7 +1319,7 @@ GPIO_PinState processLoRaSlaveReceiver(SX1278_t *loRa, UART1_t *u1) {
 
 	if (loRa->status == RX_DONE) {
 		setRxFifoAddr(loRa);
-		setLoraLowFreqModeReg(loRa, RX_CONTINUOUS);
+		setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS);
 		readOperatingMode(loRa);
 		loRa->status = RX_MODE;
 		printLoRaStatus(u1, loRa);
@@ -1363,10 +1363,10 @@ void processMasterReceiverMode(UART1_t *uartHandle, SX1278_t *loRaHandle) {
 	if (loRaHandle->operatingMode != RX_CONTINUOUS) {
 		changeLoRaOperatingMode(loRaHandle, MASTER_RECEIVER);
 		setRxFifoAddr(loRaHandle);
-		setLoraLowFreqModeReg(loRaHandle, RX_CONTINUOUS);
+		setLoRaLowFreqModeReg(loRaHandle, RX_CONTINUOUS);
 		printLoRaStatus(uartHandle, loRaHandle);
 	}
-	clearMemForRx(loRaHandle);
+	clearRxMemory(loRaHandle);
 	GPIO_PinState bussy = HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port,
 	LORA_BUSSY_Pin);
 	if (bussy == GPIO_PIN_SET && crcErrorActivation(loRaHandle) != 1) {
@@ -1375,7 +1375,7 @@ void processMasterReceiverMode(UART1_t *uartHandle, SX1278_t *loRaHandle) {
 	}
 	if (loRaHandle->status == RX_DONE) {
 		setRxFifoAddr(loRaHandle);
-		setLoraLowFreqModeReg(loRaHandle, RX_CONTINUOUS);
+		setLoRaLowFreqModeReg(loRaHandle, RX_CONTINUOUS);
 		loRaHandle->status = RX_MODE;
 		printLoRaStatus(uartHandle, loRaHandle);
 	}
