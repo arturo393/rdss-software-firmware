@@ -211,7 +211,7 @@ void changeLoRaOperatingMode(SX1278_t *module, Lora_Mode_t mode) {
 		module->status = RX_MODE;
 	}
 	setLoRaLowFreqModeReg(module, STANDBY);
-	HAL_Delay(15);
+	HAL_Delay(1);
 	setRFFrequencyReg(module);
 	writeRegister(module->spi, LR_RegDioMapping1, &(module->dioConfig), 1);
 	clearIrqFlagsReg(module);
@@ -247,8 +247,8 @@ void waitForTxEnd(SX1278_t *loRa) {
 		if (HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port, LORA_BUSSY_Pin)) {
 			int timeEnd = HAL_GetTick();
 			loRa->lastTxTime = timeEnd - timeStart;
-			readRegister(loRa->spi, LR_RegIrqFlags);
-			clearIrqFlagsReg(loRa);
+//			readRegister(loRa->spi, LR_RegIrqFlags);
+//			clearIrqFlagsReg(loRa);
 			loRa->status = TX_DONE;
 			return;
 		}
@@ -257,7 +257,7 @@ void waitForTxEnd(SX1278_t *loRa) {
 			loRa->status = TX_TIMEOUT;
 			return;
 		}
-		HAL_Delay(1);
+		//HAL_Delay(1);
 	}
 }
 
@@ -372,8 +372,8 @@ void transmitDataUsingLoRa(SX1278_t *loRa) {
 	setTxFifoData(loRa);
 	setLoRaLowFreqModeReg(loRa, TX);
 	waitForTxEnd(loRa);
-	memset(loRa->buffer, 0, sizeof(loRa->buffer));
-	loRa->len = 0;
+//	memset(loRa->buffer, 0, sizeof(loRa->buffer));
+//	loRa->len = 0;
 }
 
 void readLoRaSettings(SX1278_t *loRa) {

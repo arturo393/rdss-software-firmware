@@ -914,16 +914,11 @@ uint8_t processReceivedLoraCommand(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad,
 		loRa->len = index;
 		loRa->status = TX_BUFFER_READY;
 	}
-
-	printLoRaStatus(u1, loRa); // Print LoRa status
+	loRa->lastTxTime1 = HAL_GetTick() - loRa->lastRxTime;
 	changeLoRaOperatingMode(loRa, SLAVE_SENDER); // Change LoRa operating mode to SLAVE_SENDER
-	printStatus(u1, &*rdss); // Print status
 	transmitDataUsingLoRa(loRa); // Transmit data using LoRa
-	printLoRaStatus(u1, loRa); // Print LoRa status
-	reinit(&*rdss); // Reinitialize the RDSS structure
+	loRa->lastTxTime = HAL_GetTick() - loRa->lastRxTime;
 	changeLoRaOperatingMode(loRa, SLAVE_RECEIVER); // Change LoRa operating mode to SLAVE_RECEIVER
-	printLoRaStatus(u1, loRa); // Print LoRa status
-
 	return index; // Return the index value indicating the progress of the function execution
 }
 
@@ -976,10 +971,10 @@ uint8_t processLoRaSlaveReceiver(SX1278_t *loRa, UART1_t *u1) {
 	if (busy == GPIO_PIN_SET) {
 		if (crcErrorActivation(loRa) != 1) {
 			receivedLength = getRxFifoData(loRa);
-			printLoRaStatus(u1, loRa);
+			loRa->lastRxTime = HAL_GetTick();
 		}
 	}
-
+/*
 	if (loRa->status == RX_DONE) {
 		setRxFifoAddr(loRa);
 		setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS);
@@ -987,7 +982,7 @@ uint8_t processLoRaSlaveReceiver(SX1278_t *loRa, UART1_t *u1) {
 		loRa->status = RX_MODE;
 		printLoRaStatus(u1, loRa);
 	}
-
+*/
 	return receivedLength;
 }
 

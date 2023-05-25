@@ -303,6 +303,7 @@ typedef struct {
 	uint8_t flagsMode;
 	HEADER_MODE_t headerMode;
 	bool saveParameters;
+	uint32_t lastTxTime1;
 	uint32_t lastTxTime;
 	uint32_t lastRxTime;
 	OPERATING_MODE_t operatingMode;
