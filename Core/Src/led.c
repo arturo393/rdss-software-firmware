@@ -28,13 +28,6 @@ void enableLedKeepAlive(LED_t *l) {
 		SYS_RP_LED_ON();
 	} else if (HAL_GetTick() - l->kaCounter > LED_KA_ON_TIMEOUT)
 		SYS_RP_LED_OFF();
-
-}
-void led_i2c_toggle(LED_t *l) {
-	if (READ_BIT(GPIOB->ODR, GPIO_ODR_ODR1))
-		i2c1_irq_led_off();
-	else
-		i2c1_irq_led_on();
 }
 
 void led_reset(LED_t *l) {

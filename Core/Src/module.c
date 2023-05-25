@@ -66,7 +66,30 @@ Vlad_t* vladInit(Function_t function) {
 	return vlad;
 }
 
+Server_t* serverInit(Function_t function) {
+	Server_t *server;
+	server = malloc(sizeof(Server_t));
+
+	if (server != NULL) {
+        server->ref152m = 0;
+        server->level152m = 0;
+        server->agc172m = 0;
+        server->level172m = 0;
+        server->inputVoltage = 0;
+        server->lineCurrent = 0;
+        server->analoglineCurrentReal = 0;
+        server->ucTemperature.f = 0.0;
+        server->lm75Temperature = 0;
+        server->id = 0;  // assuming id can be zero initialized
+        server->function = function;  // Use the function parameter passed in
+        server->lastUpdateTicks = 0;
+	}
+	return server;
+}
+
 uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad) {
+	if(vlad == NULL)
+		return 0;
 	uint8_t data_length = 12;
 	uint8_t index = 0;
 	uint16_t line_voltage = (uint16_t) (vlad->lineVoltageReal * 10);

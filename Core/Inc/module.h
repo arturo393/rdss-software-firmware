@@ -7,11 +7,16 @@
 #ifndef INC_LTEL_H_
 #define INC_LTEL_H_
 
+
 #define MAX_TEMPERATURE 100
 #define SAFE_TEMPERATURE 50
 #define MAX_VSWR 1.7
 #define SAFE_VSWR 1.0
 
+static const float ADC_CONSUMPTION_CURRENT_FACTOR = 0.06472492f;
+static const float ADC_LINE_CURRENT_FACTOR = 0.0010989f;
+static const float ADC_VOLTAGE_FACTOR = 0.01387755f;
+static const float ADC_V5V_FACTOR = 0.00161246f;
 //#define pa_on() SET_BIT(GPIOA->ODR,GPIO_ODR_OD3)
 //#define pa_off() CLEAR_BIT(GPIOA->ODR,GPIO_ODR_OD3)
 //#define pa_state()  READ_BIT(GPIOA->ODR,GPIO_ODR_OD3) ? 1 : 0
@@ -99,12 +104,32 @@ typedef struct VLAD_MODULE {
 	uint8_t state;
 } Vlad_t;
 
+typedef struct SERVER_MODULE {
+	uint16_t ref152m;
+	uint16_t level152m;  // downlink 150 mhz
+	uint16_t agc172m;
+	uint16_t level172m;
+	uint16_t inputVoltage;
+	uint16_t lineCurrent;
+	float inputVoltageReal;
+	float analoglineCurrentReal;
+	float mcp3421lineCurrentReal;
+	union floatConverter ucTemperature;
+	uint16_t lm75Temperature;
+	uint16_t analogTemperature;
+	Id_t id;
+	Function_t function;
+	uint32_t lastUpdateTicks;
+} Server_t;
+
+
 void module_init(Module_pa_t*,Function_t,Id_t);
 void module_calc_parameters(Module_pa_t m,uint16_t* media_array);
 void pa_sample_timer3_init();
 void module_pa_state_update(Module_pa_t *pa);
 void toneUhfInit(Function_t funcion, Id_t id, Tone_uhf_t *uhf);
 Vlad_t* vladInit(Function_t id);
+Server_t* serverInit(Function_t function);
 uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad);
 
 #endif /* INC_LTEL_H_ */

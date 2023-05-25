@@ -79,8 +79,8 @@ void Error_Handler(void);
 #define MODE_GPIO_Port GPIOB
 #define LED2_Pin GPIO_PIN_4
 #define LED2_GPIO_Port GPIOB
-#define LED1_Pin GPIO_PIN_5
-#define LED1_GPIO_Port GPIOB
+#define KEEP_ALIVE_Pin GPIO_PIN_5
+#define KEEP_ALIVE_GPIO_Port GPIOB
 #define RS485_DE_Pin GPIO_PIN_8
 #define RS485_DE_GPIO_Port GPIOB
 #define BUZZER_Pin GPIO_PIN_9
