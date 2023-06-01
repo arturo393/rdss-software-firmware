@@ -13,6 +13,7 @@ from crccheck.crc import Crc16Xmodem
 from struct import *
 from sympy import *
 import random
+import binascii
 
 import json
 import base64
@@ -226,9 +227,10 @@ def getChecksum(cmd):
     data = bytearray.fromhex(cmd)
 
     crc = hex(Crc16Xmodem.calc(data))
-
     if (len(crc) == 5):
         checksum = crc[3:5] + '0' + crc[2:3]
+    elif(len(crc) == 4):
+        checksum = crc[2:4].zfill(2) + crc[4:6].zfill(2)
     else:
         checksum = crc[4:6] + crc[2:4]
     return checksum
@@ -514,6 +516,115 @@ def sendCmd(ser, cmd, createdevice):
 
     return finalData
 
+def isCrcOk(hexResponse):
+    logging.debug("GET: " + hexResponse.hex('-'))
+    dataBytes = hexResponse[1:18]
+    checksumBytes = hexResponse[18:20]
+    checksumString = binascii.hexlify(checksumBytes).decode('utf-8')
+    dataString = binascii.hexlify(dataBytes).decode('utf-8')
+    calculatedChecksum = getChecksum(dataString)
+    crcMessage = "CRC Calculated: " + calculatedChecksum + " CRC Received: " +checksumString+ " - DATA "
+    if(calculatedChecksum == checksumString):
+        logging.debug(crcMessage+"OK: "+calculatedChecksum + " == " +checksumString )
+        return true
+    else:
+        logging.debug(crcMessage+"ERROR: "+calculatedChecksum + " != " +checksumString )
+        return false
+
+def sendVladRev23Query(ser, cmd,times):
+    """
+    Sends a command, waits for one minute if data is received, and returns the data.
+    Args:
+        ser: Serial object.
+        cmd: Command to send.
+    Returns:
+        Dictionary containing the received data, or False if an error occurs.
+    """
+    if times == 0:
+        return false
+    
+    finalData = {}
+    cmd = hex(cmd)
+    if len(cmd) == 3:
+        cmdString = '05' + '0' + cmd[2:3] + '110000'
+    else:
+        cmdString = '05' + cmd[2:4] + '110000'
+
+    checksum = getChecksum(cmdString)
+    command = '7E' + cmdString + checksum + '7F'
+    logging.debug("Attempt: " + str(times))
+    logging.debug("SENT: " + command)
+
+    try:
+        cmdBytes = bytearray.fromhex(command)
+        for cmdByte in cmdBytes:
+            hexByte = "{0:02x}".format(cmdByte)
+            ser.write(bytes.fromhex(hexByte))
+
+        hexResponse = ser.read(21)
+
+        if (
+            len(hexResponse) != 21
+            or hexResponse[0] != 126
+            or hexResponse[20] != 127
+            or hexResponse[2] != int(cmd, 16)
+            or hexResponse[3] != 17
+            or hexResponse[4] in [2, 3, 4]
+            or isCrcOk(hexResponse) == false
+        ):
+            sendVladRev23Query(ser, cmd,times-1)
+            return False
+
+        data = list(hexResponse[i] for i in range(6, 18))
+
+        vladRev23Id = 0xff
+        isReverse = "ON" if bool(data[1] & 0x01) else "OFF"
+        isSmartTune = "ON" if bool(data[1] & (0x1 << 1)) else "OFF"
+        isRemoteAttenuation = bool(data[1] & (0x1 << 2))
+        attenuation = (data[1] >> 3) & 0x1F
+        inputVoltage = (data[2] | (data[3] << 8)) / 10.0
+        baseCurrent = (data[4] | (data[5] << 8)) / 1000.0
+        toneLevel = ((data[6] | (data[7] << 8)) - 400) * (-35 - -35) / (4095 - 400) + -35
+        downlinkAgcValue = data[8] / 10.0
+        downlinkOutputPower = data[9] if data[9] < 128 else data[9] - 256
+        uplinkAgcValue = data[10] / 10.0
+        uplinkOutputPower = data[11] if data[11] < 128 else data[11] - 256
+
+        logging.debug(f"Voltage: {inputVoltage:.2f}[V]")
+        logging.debug(f"Base Current: {baseCurrent:.3f}[A]")
+        logging.debug(f"Attenuation: {attenuation:.1f}[dB]")
+        logging.debug(f"Tone Level: {toneLevel:.1f}[dBm]")
+        logging.debug(f"AGC Uplink: {uplinkAgcValue:.1f}[dB]")
+        logging.debug(f"Downlink Output Power: {downlinkOutputPower}[dBm]")
+        logging.debug(f"AGC Downlink: {downlinkAgcValue:.1f}[dB]")
+        logging.debug(f"Uplink Output Power: {uplinkOutputPower}[dBm]")
+        logging.debug(f"Is Software Attenuation: {isRemoteAttenuation}")
+        logging.debug(f"Is Reverse: {isReverse}")
+        logging.debug(f"Is SmartTune: {isSmartTune}")
+
+        sampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        timeNow = datetime.datetime.strptime(sampleTime, "%Y-%m-%dT%H:%M:%SZ")
+        finalData = {
+            "sampleTime": timeNow,
+            "voltage": inputVoltage,
+            "current": baseCurrent,
+            "gupl": uplinkAgcValue,
+            "gdwl": downlinkAgcValue,
+            "power": downlinkOutputPower,
+            "smartTune": isSmartTune,
+            "reverse": isReverse,
+            "attenuation": attenuation
+        }
+
+        ser.flushInput()
+        ser.flushOutput()
+
+    except Exception as e:
+        logging.error(e)
+        sys.exit()
+
+    return finalData
+
 
 def sendStatusToFrontEnd(rtData):
     """
@@ -563,6 +674,7 @@ def run_monitor():
     rtData = []
     provisionedDevicesArr = getProvisionedDevices()
     connectedDevices = 0
+    times = 3
     SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
     showBanner(provisionedDevicesArr, timeNow)
@@ -574,7 +686,7 @@ def run_monitor():
             deviceData["rtData"] = {}
             logging.debug("ID: %s", device)
 
-            response = sendCmd(ser, device, False)
+            
             deviceData["id"] = device
             # deviceData["type"] = x["type"]
             # deviceData["name"] = x["name"]
@@ -587,8 +699,12 @@ def run_monitor():
             else:
                 deviceData["name"] = ''
 
-            if (response):
+            if(deviceData["type"] == "vlad-rev23"):
+                response = sendVladRev23Query(ser, device,times)
+            else:
+                response = sendCmd(ser, device, False)
 
+            if (response):
                 connectedDevices += 1
                 deviceData["connected"] = True
                 deviceData["rtData"] = response
