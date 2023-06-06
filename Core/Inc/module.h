@@ -17,6 +17,28 @@ static const float ADC_CONSUMPTION_CURRENT_FACTOR = 0.06472492f;
 static const float ADC_LINE_CURRENT_FACTOR = 0.0010989f;
 static const float ADC_VOLTAGE_FACTOR = 0.01387755f;
 static const float ADC_V5V_FACTOR = 0.00161246f;
+
+#define VREF 5 // Reference voltage in volts
+#define RESOLUTION 12 // ADC resolution in bits
+
+#define MAX4003_VOLTAGE_MAX 4.2f
+#define MAX4003_VOLTAGE_MIN 0.5f
+
+#define MAX4003_DBM_MAX 0
+#define MAX4003_DBM_MIN -30
+#define MAX4003_AGC_MIN 30
+#define MAX4003_AGC_MAX 0
+#define MAX4003_ADC_MAX  1888.0f
+#define MAX4003_ADC_MIN   487.0f
+
+#define MAX4003_DBM_SCOPE ( MAX4003_DBM_MAX -  MAX4003_DBM_MIN) / (MAX4003_ADC_MAX - MAX4003_ADC_MIN)
+#define MAX4003_DBM_FACTOR   (MAX4003_DBM_MAX - MAX4003_ADC_MAX * MAX4003_DBM_SCOPE)
+
+#define MAX4003_AGC_SCOPE ( MAX4003_AGC_MAX -  MAX4003_AGC_MIN) / (4095.0f)
+#define MAX4003_AGC_FACTOR   (MAX4003_AGC_MAX - 4095.0f * MAX4003_AGC_SCOPE)
+#define MAX4003_VOLTAGE_SCOPE ( MAX4003_VOLTAGE_MAX -  MAX4003_VOLTAGE_MIN) / (4095.0f)
+#define MAX4003_VOLTAGE_FACTOR MAX4003_VOLTAGE_MAX - 4096.0f * MAX4003_VOLTAGE_SCOPE
+#define MAX4003_IS_CALIBRATED 0xAA
 //#define pa_on() SET_BIT(GPIOA->ODR,GPIO_ODR_OD3)
 //#define pa_off() CLEAR_BIT(GPIOA->ODR,GPIO_ODR_OD3)
 //#define pa_state()  READ_BIT(GPIOA->ODR,GPIO_ODR_OD3) ? 1 : 0
@@ -89,14 +111,16 @@ typedef struct VLAD_MODULE {
 	int8_t level152m_real;
 	int8_t level172m_real;
 	float v_5v_real;
-	float lineVoltageReal;
-	float lineCurrentReal;
-	union floatConverter ucTemperature;
-	union floatConverter lineCurrent;
-	uint8_t remoteAttenuation;
-	uint8_t rotarySwitchAttenuation;
+	float inputVoltageReal;
+	uint16_t currentReal;
+	uint8_t ucTemperature;
+	uint16_t baseCurrentReal;
+	uint8_t attenuation;
 	bool isRemoteAttenuation;
 	bool is_attenuation_updated;
+	bool isSmartTune;
+	bool isReverse;
+	bool isOverCurrent;
 	Id_t id;
 	Function_t function;
 	bool calc_en;
@@ -131,5 +155,5 @@ void toneUhfInit(Function_t funcion, Id_t id, Tone_uhf_t *uhf);
 Vlad_t* vladInit(Function_t id);
 Server_t* serverInit(Function_t function);
 uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad);
-
+uint8_t decodeVladMeasurements(Vlad_t *vlad, uint8_t *buffer);
 #endif /* INC_LTEL_H_ */

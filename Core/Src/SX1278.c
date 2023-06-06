@@ -214,7 +214,7 @@ void changeLoRaOperatingMode(SX1278_t *module, Lora_Mode_t mode) {
 		module->status = RX_MODE;
 	}
 	setLoRaLowFreqModeReg(module, STANDBY);
-	HAL_Delay(1);
+	HAL_Delay(15);
 	setRFFrequencyReg(module);
 	writeRegister(module->spi, LR_RegDioMapping1, &(module->dioConfig), 1);
 	clearIrqFlagsReg(module);
@@ -317,34 +317,47 @@ int crcErrorActivation(SX1278_t *module) {
 	return errorActivation;
 }
 
-uint8_t getRxFifoData(SX1278_t *module) {
-	module->len = readRegister(module->spi, LR_RegRxNbBytes); //Number for received bytes
-	uint8_t addr = 0x00;
-	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET); // pull the pin low
-	HAL_Delay(1);
-	HAL_SPI_Transmit(module->spi, &addr, 1, 100); // send address
-	HAL_SPI_Receive(module->spi, module->buffer, module->len, 100); // receive 6 bytes data
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET); // pull the pin high
-	module->status = RX_DONE;
-	return module->len;
+uint8_t* getRxFifoData(SX1278_t *module) {
+	module->rxSize = readRegister(module->spi, LR_RegRxNbBytes); //Number for received bytes
+	if (module->rxSize > 0) {
+		module->rxData = malloc(sizeof(uint8_t) * module->len);
+		uint8_t addr = 0x00;
+		HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET); // pull the pin low
+		HAL_Delay(1);
+		HAL_SPI_Transmit(module->spi, &addr, 1, 100); // send address
+		HAL_SPI_Receive(module->spi, module->rxData, module->rxSize, 100); // receive 6 bytes data
+		HAL_Delay(1);
+		HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET); // pull the pin high
+		module->status = RX_DONE;
+	}
+
+	return module->rxData;
 }
 
-void setTxFifoAddr(SX1278_t *module) {
+uint8_t setTxFifoAddr(SX1278_t *module) {
 	uint8_t cmd = module->len;
 	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1);
 	uint8_t addr = readRegister(module->spi, LR_RegFifoTxBaseAddr);
 	addr = 0x80;
 	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1);
-	module->len = readRegister(module->spi, LR_RegPayloadLength);
+	cmd = readRegister(module->spi, LR_RegPayloadLength);
+
+	return cmd;
 }
 
-void setTxFifoData(SX1278_t *module) {
-	setTxFifoAddr(module);
+uint8_t setTxFifoData(SX1278_t *module) {
+	uint8_t payloadLength;
+	payloadLength = setTxFifoAddr(module);
+
+	if (payloadLength != module->len)
+		return 0;
+
 	for (int i = 0; i < module->len; i++) {
 		uint8_t data = module->buffer[i];
 		writeRegister(module->spi, 0x00, &data, 1);
 	}
+
+	return payloadLength;
 }
 
 /** Clears the receive (Rx) memory of the LoRa module.
@@ -369,21 +382,23 @@ void receive(SX1278_t *loRa) {
 	getRxFifoData(loRa);
 }
 
-void transmitDataUsingLoRa(SX1278_t *loRa) {
-	setTxFifoData(loRa);
-	setLoRaLowFreqModeReg(loRa, TX);
-	waitForTxEnd(loRa);
-	memset(loRa->buffer, 0, sizeof(loRa->buffer));
-	loRa->len = 0;
+uint8_t transmitDataUsingLoRa(SX1278_t *loRa) {
+	uint8_t txDataLength;
+	txDataLength = setTxFifoData(loRa);
+	if (txDataLength == loRa->len) {
+		setLoRaLowFreqModeReg(loRa, TX);
+		waitForTxEnd(loRa);
+	}
+	return txDataLength;
 }
 
 void readLoRaSettings(SX1278_t *loRa) {
 
-	readPage(CAT24C02_PAGE0_START_ADDR, &(loRa->spreadFactor), 0, 1);
-	readPage(CAT24C02_PAGE0_START_ADDR, &(loRa->bandwidth), 1, 1);
-	readPage(CAT24C02_PAGE0_START_ADDR, &(loRa->codingRate), 2, 1);
-	readPage(CAT24C02_PAGE1_START_ADDR, (uint8_t*) &(loRa->upFreq), 0, 4);
-	readPage(CAT24C02_PAGE1_START_ADDR, (uint8_t*) &(loRa->dlFreq), 4, 4);
+	readPage(M24C64_PAGE0, &(loRa->spreadFactor), 0, 1);
+	readPage(M24C64_PAGE0, &(loRa->bandwidth), 1, 1);
+	readPage(M24C64_PAGE0, &(loRa->codingRate), 2, 1);
+	readPage(M24C64_PAGE1, (uint8_t*) &(loRa->dlFreq), 0, 4);
+	readPage(M24C64_PAGE1, (uint8_t*) &(loRa->upFreq), 4, 4);
 	if (loRa->spreadFactor < SF_9 || loRa->spreadFactor > SF_12)
 		loRa->spreadFactor = SF_10;
 
@@ -405,8 +420,8 @@ void HAL_readLoRaSettings(SX1278_t *loRa) {
 	HAL_readPage(M24C64_PAGE0, &(loRa->spreadFactor), 0, 1);
 	HAL_readPage(M24C64_PAGE0, &(loRa->bandwidth), 1, 1);
 	HAL_readPage(M24C64_PAGE0, &(loRa->codingRate), 2, 1);
-	HAL_readPage(M24C64_PAGE1, (uint8_t*) &(loRa->upFreq), 0, 4);
-	HAL_readPage(M24C64_PAGE1, (uint8_t*) &(loRa->dlFreq), 4, 4);
+	HAL_readPage(M24C64_PAGE1, (uint8_t*) &(loRa->dlFreq), 0, 4);
+	HAL_readPage(M24C64_PAGE1, (uint8_t*) &(loRa->upFreq), 4, 4);
 	if (loRa->spreadFactor < SF_6 || loRa->spreadFactor > SF_12)
 		loRa->spreadFactor = SF_10;
 
@@ -443,6 +458,7 @@ SX1278_t* loRaInit(SPI_HandleTypeDef *hspi1, Lora_Mode_t loRaMode) {
 	loRa->preambleLengthLsb = 12; // for L-TEL PROTOCOL
 	loRa->fhssValue = HOPS_PERIOD; // for L-TEL PROTOCOL
 	loRa->len = 9;
+	loRa->rxSize = 0;
 	HAL_readLoRaSettings(loRa);
 	changeLoRaOperatingMode(loRa, loRaMode);
 	writeLoRaParametersReg(loRa);

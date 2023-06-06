@@ -87,6 +87,7 @@ typedef struct RS485 {
 	Rs485_cmd_t cmd;
 	uint8_t len;
 	uint8_t buffer[300];
+	uint8_t *buff;
 	uint16_t crcCalculated;
 	uint16_t crcReceived;
 	uint8_t idQuery;

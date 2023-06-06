@@ -39,20 +39,18 @@ Vlad_t* vladInit(Function_t function) {
 	vlad->vin = 0;
 	vlad->current = 0;
 	vlad->v_5v_real = 0;
-	vlad->lineVoltageReal = 0;
-	vlad->lineCurrentReal = 0;
-	vlad->ucTemperature.i = 0;
-	vlad->lineCurrent.i = 0;
-	vlad->remoteAttenuation = 0;
+	vlad->inputVoltageReal = 0;
+	vlad->currentReal = 0;
+	vlad->ucTemperature = 0;
+	vlad->baseCurrentReal = 0;
+	vlad->attenuation = 0;
 	vlad->v_5v_real = 0;
-	vlad->lineVoltageReal = 0;
-	vlad->lineCurrentReal = 0;
+	vlad->inputVoltageReal = 0;
+	vlad->currentReal = 0;
 	vlad->agc152m_real = 0;
 	vlad->agc172m_real = 0;
 	vlad->level152m_real = 0;
 	vlad->level172m_real = 0;
-	vlad->remoteAttenuation = 0;
-	vlad->rotarySwitchAttenuation = 0;
 	vlad->isRemoteAttenuation = false;
 	vlad->is_attenuation_updated = false;
 	vlad->state = 0;
@@ -92,24 +90,26 @@ uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad) {
 		return 0;
 	uint8_t data_length = 12;
 	uint8_t index = 0;
-	uint16_t line_voltage = (uint16_t) (vlad->lineVoltageReal * 10);
-	uint16_t line_current = (uint16_t) (vlad->lineCurrent.f * 1000);
+	uint16_t line_voltage = (uint16_t) (vlad->inputVoltageReal * 10);
+	uint16_t current = (vlad->currentReal * 1000);
+	uint16_t baseCurrent = vlad->baseCurrentReal * 1000;
+	uint16_t tunnelCurrent = 0;
 	uint8_t downlink_agc_value = (uint8_t) (vlad->agc152m_real * 10);
 	uint8_t uplink_agc_value = (uint8_t) (vlad->agc172m_real * 10);
 	uint8_t vladRev23Id = 0xff;
 
 	frame[index++] = data_length;
-	frame[index++] = (uint8_t) vladRev23Id;
-	frame[index++] = (uint8_t) vlad->state;
 	frame[index++] = (uint8_t) line_voltage;
 	frame[index++] = (uint8_t) (line_voltage >> 8);
-	frame[index++] = (uint8_t) line_current;
-	frame[index++] = (uint8_t) (line_current >> 8);
-	frame[index++] = (uint8_t) vlad->tone_level;
-	frame[index++] = (uint8_t) (vlad->tone_level >> 8);
-	frame[index++] = (uint8_t) downlink_agc_value;
-	frame[index++] = (uint8_t) vlad->level152m_real;
+	frame[index++] = (uint8_t) baseCurrent;
+	frame[index++] = (uint8_t) (baseCurrent >> 8);
+	frame[index++] = (uint8_t) tunnelCurrent;
+	frame[index++] = (uint8_t) (tunnelCurrent >> 8);
+	frame[index++] = (uint8_t) current;
+	frame[index++] = (uint8_t) (current >> 8);
 	frame[index++] = (uint8_t) uplink_agc_value;
+	frame[index++] = (uint8_t) vlad->level152m_real;
+	frame[index++] = (uint8_t) downlink_agc_value;
 	frame[index++] = (uint8_t) vlad->level172m_real;
 	return index;
 }
@@ -151,3 +151,48 @@ void module_pa_state_update(Module_pa_t *pa) {
 		pa_off();
 }
 
+uint8_t decodeVladMeasurements(Vlad_t *vlad, uint8_t *buffer) {
+	uint8_t bufferIndex = 0;
+	typedef enum measurements {
+		level152m,
+		level172m,
+		agc152m,
+		agc172m,
+		ref152m,
+		tone_level,
+		vin,
+		v_5v,
+		current,
+		baseCurrent,
+		num_variables
+	} measurements_t;
+
+	uint16_t measurement[num_variables];
+	for (int i = 0; i < num_variables; i++) {
+		measurement[i] = (uint16_t) buffer[bufferIndex++];
+		measurement[i] |= (uint16_t) (buffer[bufferIndex++] << 8);
+	}
+	vlad->state = buffer[bufferIndex++];
+
+	vlad->isReverse = vlad->state & 0x01;
+	vlad->isSmartTune = (vlad->state >> 1) & 0x01;
+	vlad->isRemoteAttenuation = (vlad->state >> 2) & 0x01;
+	vlad->attenuation = (vlad->state >> 3) & 0x0F;
+	vlad->ucTemperature = buffer[bufferIndex++];
+
+	vlad->v_5v_real = (float) measurement[v_5v] * ADC_V5V_FACTOR;
+	vlad->inputVoltageReal = (float) measurement[vin] * ADC_VOLTAGE_FACTOR;
+	vlad->currentReal = measurement[current] * ADC_CONSUMPTION_CURRENT_FACTOR;
+	vlad->agc152m_real = (int8_t) (MAX4003_AGC_SCOPE * measurement[agc152m]
+			+ MAX4003_AGC_FACTOR);
+	vlad->agc172m_real = (int8_t) (MAX4003_AGC_SCOPE * measurement[agc172m]
+			+ MAX4003_AGC_FACTOR);
+	vlad->level152m_real = (int8_t) (MAX4003_DBM_SCOPE * measurement[level152m]
+			+ MAX4003_DBM_FACTOR);
+	vlad->level172m_real = (int8_t) (MAX4003_DBM_SCOPE * measurement[level172m]
+			+ MAX4003_DBM_FACTOR);
+	vlad->baseCurrentReal = (measurement[baseCurrent] * 1000 * VREF)
+			/ (1 << (RESOLUTION - 0x00));
+
+	return bufferIndex;
+}

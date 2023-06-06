@@ -310,6 +310,8 @@ typedef struct {
 	Lora_Mode_t mode;
 	SX1278_Status_t status;
 	uint8_t buffer[SX1278_MAX_PACKET];
+	uint8_t *rxData;
+	uint8_t rxSize;
 	uint8_t readBytes;
 	SPI_HandleTypeDef *spi;
 } SX1278_t;
@@ -337,14 +339,14 @@ void changeLoRaOperatingMode(SX1278_t *module, Lora_Mode_t mode);
 void initLoRaParameters(SX1278_t *module);
 uint8_t waitForRxDone(SX1278_t *loRa);
 void waitForTxEnd(SX1278_t *loRa);
-uint8_t getRxFifoData(SX1278_t *module);
+uint8_t* getRxFifoData(SX1278_t *module);
 int crcErrorActivation(SX1278_t *module);
 uint8_t setRxFifoAddr(SX1278_t *module);
-void setTxFifoAddr(SX1278_t *module);
+uint8_t setTxFifoAddr(SX1278_t *module);
 void clearRxMemory(SX1278_t *module);
-void setTxFifoData(SX1278_t *module);
+uint8_t setTxFifoData(SX1278_t *module);
 void receive(SX1278_t *loRa);
-void transmitDataUsingLoRa(SX1278_t *loRa);
+uint8_t transmitDataUsingLoRa(SX1278_t *loRa);
 void readLoRaSettings(SX1278_t* loRa);
 void HAL_readLoRaSettings(SX1278_t* loRa);
 SX1278_t* loRaInit(SPI_HandleTypeDef *hspi1 ,Lora_Mode_t loRaMode

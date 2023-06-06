@@ -41,9 +41,9 @@ void rdssReinit(RDSS_t *rdss) {
 RDSS_status_t rs485_check_CRC_module(UART1_t *uart1) {
 	unsigned long crc_cal;
 	unsigned long crc_save;
-	crc_save = uart1->receiveBuffer[7] << 8;
-	crc_save |= uart1->receiveBuffer[6];
-	crc_cal = crc_get(&(uart1->receiveBuffer[1]), 5); ///ajustar si se cambia el largo
+	crc_save = uart1->rxData[7] << 8;
+	crc_save |= uart1->rxData[6];
+	crc_cal = crc_get(&(uart1->rxData[1]), 5); ///ajustar si se cambia el largo
 	if (crc_cal == crc_save)
 		return DATA_OK;
 	return CRC_ERROR;
