@@ -20,13 +20,12 @@
 #define SIGMA_FRAME_SIZE 14
 #define LTEL_START_MARK 0x7e
 #define LTEL_END_MARK  0x7f
-#define RDSS_BUFFER_SIZE 50
+#define RDSS_BUFFER_SIZE 25
 #define LTEL_SET_LENGTH  13
 #define LTEL_QUERY_LENGTH  9
 #define MINIMUN_FRAME_LEN 6
 #define ATTENUATION_VALUE_INDEX 5
-#define QUERY_STATUS_BUFFER_SIZE 21
-
+#define QUERY_STATUS_BUFFER_SIZE 34
 typedef enum RS485_CMD {
 	NONE,
 	QUERY_MODULE_ID = 0x10,
@@ -88,7 +87,8 @@ typedef enum RS485_i {
 typedef struct RS485 {
 	Rs485_cmd_t cmd;
 	uint8_t len;
-	uint8_t buffer[RDSS_BUFFER_SIZE];
+	uint8_t *buff;
+	uint8_t buffSize;
 	uint16_t crcCalculated;
 	uint16_t crcReceived;
 	uint8_t idQuery;
@@ -96,6 +96,7 @@ typedef struct RS485 {
 	uint8_t id;
 	RDSS_status_t status;
 	uint8_t queryBuffer[QUERY_STATUS_BUFFER_SIZE];
+	uint32_t lastUpdateTicks;
 } RDSS_t;
 
 uint16_t crc_get(uint8_t *buffer, uint8_t buff_len);

@@ -13,7 +13,7 @@ RDSS_t* rdssInit(uint8_t id) {
 	r->status = WAITING;
 	r->cmd = NONE;
 	r->id = id;
-	memset(r->buffer, 0, RDSS_BUFFER_SIZE);
+//	memset(r->buffer, 0, RDSS_BUFFER_SIZE);
 	/* PB9 DE485 as output  */
 	SET_BIT(GPIOB->MODER, GPIO_MODER_MODE9_0);
 	CLEAR_BIT(GPIOB->MODER, GPIO_MODER_MODE9_1);
@@ -27,8 +27,6 @@ RDSS_t* rdssInit(uint8_t id) {
  * @param rdss Pointer to the RDSS_t structure to be reinitialized.
  */
 void rdssReinit(RDSS_t *rdss) {
-    rdss->len = 0;              // Reset the length of the buffer
-    memset(rdss->buffer, 0, sizeof(rdss->buffer));  // Clear the buffer
     rdss->cmd = NONE;           // Reset the command field
     rdss->crcReceived = 0;      // Reset the received CRC value
     rdss->crcCalculated = 0;    // Reset the calculated CRC value
@@ -40,9 +38,9 @@ void rdssReinit(RDSS_t *rdss) {
 RDSS_status_t rs485_check_CRC_module(UART1_t *uart1) {
 	unsigned long crc_cal;
 	unsigned long crc_save;
-	crc_save = uart1->receiveBuffer[7] << 8;
-	crc_save |= uart1->receiveBuffer[6];
-	crc_cal = crc_get(&(uart1->receiveBuffer[1]), 5); ///ajustar si se cambia el largo
+	crc_save = uart1->rxData[7] << 8;
+	crc_save |= uart1->rxData[6];
+	crc_cal = crc_get(&(uart1->rxData[1]), 5); ///ajustar si se cambia el largo
 	if (crc_cal == crc_save)
 		return DATA_OK;
 	return CRC_ERROR;
@@ -103,6 +101,7 @@ uint16_t crc_get(uint8_t *buffer, uint8_t buff_len) {
 	return crc;
 }
 
+/*
 RDSS_status_t isValidId(RDSS_t *r) {
 
 	r->idReceived = r->buffer[2];
@@ -114,6 +113,8 @@ RDSS_status_t isValidId(RDSS_t *r) {
 		return LORA_SEND;
 	return WRONG_MODULE_ID;
 }
+
+*/
 
 RDSS_status_t validateBuffer(uint8_t *buffer,uint8_t length) {
 	RDSS_status_t frameStatus = checkFrameValidity(buffer, length);
@@ -127,7 +128,7 @@ RDSS_status_t validateBuffer(uint8_t *buffer,uint8_t length) {
 		return crcStatus;
 	return DATA_OK;
 }
-
+/*
 void fillValidBuffer(RDSS_t *r, uint8_t *buff, uint8_t len) {
 	r->status = validateBuffer(buff, len);
 	if (r->status == DATA_OK) {
@@ -144,10 +145,12 @@ RDSS_status_t evaluateRdssStatus(RDSS_t *rdss) {
     }
 }
 
+*/
+
 bool isModuleCommand(uint8_t cmd) {
     return cmd == QUERY_MODULE_ID || cmd == SET_MODULE_ID;
 }
-
+/*
 RDSS_status_t checkBuffer(RDSS_t *rs485) {
 	rs485->status = checkFrameValidity(rs485->buffer, rs485->len);
 	if (!(rs485->status == VALID_FRAME))
@@ -163,7 +166,13 @@ RDSS_status_t checkBuffer(RDSS_t *rs485) {
 		return rs485->status;
 	return rs485->status;
 }
+*/
 
+void reinit(RDSS_t *rs485) {
+	rs485->cmd = NONE;
+	rs485->status = WAITING;
+}
+/*
 void reinit(RDSS_t *rs485) {
 	rs485->cmd = NONE;
 	rs485->status = WAITING;
@@ -172,6 +181,7 @@ void reinit(RDSS_t *rs485) {
 	memset(rs485->buffer, 0, sizeof(rs485->buffer));
 	rs485->len = 0;
 }
+*/
 
 void encodeVlad(uint8_t* buff){
 	uint16_t lineVoltage = (uint16_t) rand() % 610;

@@ -29,6 +29,15 @@
 #define ADC_VOLTAGE_FACTOR  0.01387755f
 #define ADC_V5V_FACTOR  0.00161246f
 
+#define VREF 5 // Reference voltage in volts
+#define RESOLUTION 12 // ADC resolution in bits
+#define SENSE_RESISTOR 0.01 // Sense resistor value in ohms
+#define MCP3421A0T_ECH_ADDRESS 0xD0 // MCP3421A0T-E/CH I2C address with A0-A2 set to GND
+#define RESISTANCE 10e-3
+
+#define TEMP30_CAL_ADDR  ((uint16_t*)((uint32_t)0x1FFFF7B8))
+#define TEMP110_CAL_ADDR ((uint16_t*)((uint32_t)0x1FFFF7C2))
+
 typedef enum MODULE_FUNCTION {
 	SERVER,
 	QUAD_BAND,
@@ -49,6 +58,7 @@ typedef enum MODULE_ID {
 typedef enum MODULE_S {
 	OFF, ON
 } State_t;
+
 
 typedef struct PA_MODULE {
 	uint8_t att;
@@ -82,32 +92,34 @@ union floatConverter {
 };
 
 typedef struct VLAD_MODULE {
-	uint16_t agc152m;
+/*	uint16_t agc152m;
 	uint16_t ref152m;
 	uint16_t level152m;  // downlink 150 mhz
 	uint16_t agc172m;
 	uint16_t level172m; //uplink 170 mhz
-	uint16_t tone_level;
+
 	uint16_t v_5v;
 	uint16_t vin;
 	uint16_t current;
+	*/
+	uint16_t tone_level;
+	uint16_t baseCurrentReal;
 	int8_t agc152m_real;
 	int8_t agc172m_real;
 	int8_t level152m_real;
 	int8_t level172m_real;
+	uint8_t ucTemperature;
 	float v_5v_real;
-	float lineVoltageReal;
-	float lineCurrentReal;
-	union floatConverter ucTemperature;
-	union floatConverter lineCurrent;
+	float inputVoltageReal;
+	uint16_t currentReal;
 	uint8_t remoteAttenuation;
 	uint8_t rotarySwitchAttenuation;
 	bool isRemoteAttenuation;
 	bool is_attenuation_updated;
 	Id_t id;
 	Function_t function;
-	bool calc_en;
 	uint32_t lastUpdateTicks;
+	bool calc_en;
 	uint8_t state;
 } Vlad_t;
 
@@ -123,5 +135,7 @@ uint16_t crc_get(uint8_t *buffer, uint8_t buff_len);
 void resetVladData(Vlad_t *vlad);
 uint8_t readVladMeasurements(Vlad_t *vlad);
 uint8_t updateVladMeasurements(Vlad_t *vlad);
+uint8_t encodeVladToRdss(uint8_t *frame, Vlad_t *vlad);
+uint8_t decodeVladMeasurements(Vlad_t *vlad ,uint8_t*buffer);
 
 #endif /* INC_LTEL_H_ */

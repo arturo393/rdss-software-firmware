@@ -57,6 +57,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define KA_LED_Pin GPIO_PIN_4
+#define KA_LED_GPIO_Port GPIOA
 #define LORA_NSS_Pin GPIO_PIN_0
 #define LORA_NSS_GPIO_Port GPIOB
 #define LORA_RST_Pin GPIO_PIN_1

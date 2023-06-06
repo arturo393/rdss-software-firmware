@@ -16,8 +16,8 @@
 #define LED_MAX_CURRENT 600
 #define LED_MIN_CURRENT 100
 #define LED_MAX_TEMPERATURE 75
-#define SYS_RP_LED_ON() SET_BIT(GPIOB->ODR,GPIO_ODR_OD1)
-#define SYS_RP_LED_OFF() CLEAR_BIT(GPIOB->ODR,GPIO_ODR_OD1)
+#define SYS_RP_LED_ON() SET_BIT(GPIOA->ODR,GPIO_ODR_OD4)
+#define SYS_RP_LED_OFF() CLEAR_BIT(GPIOA->ODR,GPIO_ODR_OD4)
 
 #define TX_MODE_ON_LED() SET_BIT(GPIOA->ODR,GPIO_ODR_OD7)
 #define TX_MODE_OFF_LED() CLEAR_BIT(GPIOA->ODR,GPIO_ODR_OD7)
@@ -35,7 +35,7 @@ typedef struct LED{
 //	uint32_t thCounter;
 }LED_t;
 
-void ledInit(LED_t *led);
+LED_t * ledInit();
 void led_off(void);
 void enableLedKeepAlive(LED_t *l);
 void led_reset(LED_t *l);

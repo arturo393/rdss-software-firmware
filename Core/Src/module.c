@@ -2,7 +2,8 @@
  * ltel.c
  *
  *  Created on: 27-09-2022
- *      Author: sigmadev
+ *      Author: Arturo Veras
+ *      email: arturo@uqomm.com
  */
 
 #include <module.h>
@@ -36,28 +37,32 @@ void toneUhfInit(Function_t funcion, Id_t id, Tone_uhf_t *uhf) {
 Vlad_t* vladInit(uint8_t id) {
 	Vlad_t *vlad;
 	vlad = malloc(sizeof(Vlad_t));
+/*
 	vlad->agc152m = 0;
 	vlad->ref152m = 0;
 	vlad->level152m = 0;  // downlink 150 mhz
 	vlad->agc172m = 0;
 	vlad->level172m = 0; //uplink 170 mhz
-	vlad->tone_level = 0;
+
 	vlad->v_5v = 0;
 	vlad->vin = 0;
 	vlad->current = 0;
+*/
+	vlad->tone_level = 0;
 	vlad->v_5v_real = 0;
-	vlad->lineVoltageReal = 0;
-	vlad->lineCurrentReal = 0;
-	vlad->ucTemperature.i = 0;
-	vlad->lineCurrent.i = 0;
+	vlad->inputVoltageReal = 0;
+	vlad->currentReal = 0;
+	vlad->ucTemperature = 0;
+	vlad->baseCurrentReal = 0;
 	vlad->remoteAttenuation = 0;
 	vlad->v_5v_real = 0;
-	vlad->lineVoltageReal = 0;
-	vlad->lineCurrentReal = 0;
+	vlad->inputVoltageReal = 0;
+	vlad->currentReal = 0;
 	vlad->agc152m_real = 0;
 	vlad->agc172m_real = 0;
 	vlad->level152m_real = 0;
 	vlad->level172m_real = 0;
+	vlad->baseCurrentReal = 0;
 	vlad->remoteAttenuation = 0;
 	vlad->rotarySwitchAttenuation = 0;
 	vlad->isRemoteAttenuation = false;
@@ -76,8 +81,8 @@ Vlad_t* vladInit(uint8_t id) {
 uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad) {
 	uint8_t data_length = 12;
 	uint8_t index = 0;
-	uint16_t line_voltage = (uint16_t) (vlad->lineVoltageReal * 10);
-	uint16_t line_current = (uint16_t) (vlad->lineCurrent.f * 1000);
+	uint16_t inputVoltage = (uint16_t) (vlad->inputVoltageReal * 10);
+	uint16_t baseCurrent = (uint16_t) (vlad->baseCurrentReal * 1000);
 	uint8_t downlink_agc_value = (uint8_t) (vlad->agc152m_real * 10);
 	uint8_t uplink_agc_value = (uint8_t) (vlad->agc172m_real * 10);
 	uint8_t vladRev23Id = 0xff;
@@ -85,10 +90,10 @@ uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad) {
 	frame[index++] = data_length;
 	frame[index++] = (uint8_t) vladRev23Id;
 	frame[index++] = (uint8_t) vlad->state;
-	frame[index++] = (uint8_t) line_voltage;
-	frame[index++] = (uint8_t) (line_voltage >> 8);
-	frame[index++] = (uint8_t) line_current;
-	frame[index++] = (uint8_t) (line_current >> 8);
+	frame[index++] = (uint8_t) inputVoltage;
+	frame[index++] = (uint8_t) (inputVoltage >> 8);
+	frame[index++] = (uint8_t) baseCurrent;
+	frame[index++] = (uint8_t) (baseCurrent >> 8);
 	frame[index++] = (uint8_t) vlad->tone_level;
 	frame[index++] = (uint8_t) (vlad->tone_level >> 8);
 	frame[index++] = (uint8_t) downlink_agc_value;
@@ -97,6 +102,31 @@ uint8_t encodeVladToLtel(uint8_t *frame, Vlad_t *vlad) {
 	frame[index++] = (uint8_t) vlad->level172m_real;
 	return index;
 }
+
+/*
+
+uint8_t encodeVladToRdss(uint8_t *frame, Vlad_t *vlad) {
+	uint8_t index = 0;
+	uint8_t data_length = 22;
+	const uint8_t slaveAddress = 0x08;
+	const uint8_t vladMeasurementsCmd[2] = { 0x10, 0x00 };
+	const uint8_t querySize = 30;
+
+	uint16_t vlad_values[] = { vlad->level152m, vlad->level172m, vlad->agc152m,
+			vlad->agc172m, vlad->ref152m, vlad->tone_level, vlad->vin,
+			vlad->v_5v, vlad->current, vlad->baseCurrentReal };
+	frame[index++] = data_length;
+	for (uint8_t i = 0; i < sizeof(vlad_values) / sizeof(vlad_values[0]); i++) {
+		frame[index++] = (uint8_t) vlad_values[i];
+		frame[index++] = (uint8_t) (vlad_values[i] >> 8);
+	}
+
+	frame[index++] = vlad->state;
+	frame[index++] = vlad->ucTemperature;
+	return index;
+}
+
+*/
 
 void pa_sample_timer3_init() {
 	/*enable clock access to timer 2 */
@@ -141,78 +171,139 @@ float current_calc(uint16_t _current) {
 	return ADC_CONSUMPTION_CURRENT_FACTOR * _current / 4095.0f;
 }
 
+/*
 void resetVladData(Vlad_t *vlad) {
 	vlad->level152m = 0;
 	vlad->level172m = 0;
 	vlad->agc152m = 0;
 	vlad->agc172m = 0;
 	vlad->ref152m = 0;
-	vlad->tone_level = 0;
+
 	vlad->vin = 0;
 	vlad->v_5v = 0;
 	vlad->current = 0;
-	vlad->ucTemperature.i = 0;
-	vlad->lineCurrent.i = 0;
+
+	vlad->tone_level = 0;
+	vlad->ucTemperature = 0;
+	vlad->baseCurrentReal = 0;
 	vlad->remoteAttenuation = 0;
 	vlad->rotarySwitchAttenuation = 0;
 	vlad->is_attenuation_updated = false;
 	vlad->v_5v_real = 0;
-	vlad->lineVoltageReal = 0;
-	vlad->lineCurrentReal = 0;
+	vlad->inputVoltageReal = 0;
+	vlad->currentReal = 0;
 	vlad->agc152m_real = 0;
 	vlad->agc172m_real = 0;
 	vlad->level152m_real = 0;
 	vlad->level172m_real = 0;
 	vlad->state = 0;
 }
+*/
 
+/*
 uint8_t readVladMeasurements(Vlad_t *vlad) {
 	uint8_t slaveAddress = 0x08;
-	uint8_t vladMeasurementsCmd[2] = {0x10,0x00};
-	uint8_t query_size = 30;
+	uint8_t vladMeasurementsCmd[2] = { 0x10, 0x00 };
+	uint8_t query_size = 22;
 	uint8_t bufferIndex = 0;
-	uint8_t buffer[30];
+	uint8_t buffer[22];
 
-	if (!i2c1MasterTransmit(slaveAddress, vladMeasurementsCmd, sizeof(vladMeasurementsCmd), 10))
+	if (!i2c1MasterTransmit(slaveAddress, vladMeasurementsCmd,
+			sizeof(vladMeasurementsCmd), 10))
 		return bufferIndex;
 	HAL_Delay(6);
 	if (!i2c1MasterReceive(slaveAddress, buffer, query_size, 10))
 		return bufferIndex;
 
-	uint16_t *vladValues[] = { &vlad->level152m, &vlad->level172m,
-			&vlad->agc152m, &vlad->agc172m, &vlad->ref152m, &vlad->tone_level,
-			&vlad->vin, &vlad->v_5v, &vlad->current };
-
-	size_t num_values = sizeof(vladValues) / sizeof(vladValues[0]);
-
-	for (size_t i = 0; i < num_values; i++) {
-		*vladValues[i] = (uint16_t) buffer[bufferIndex++];
-		*vladValues[i] |= (uint16_t) (buffer[bufferIndex++] << 8);
-	}
-
-	vlad->remoteAttenuation = buffer[bufferIndex++];
-	vlad->rotarySwitchAttenuation = buffer[bufferIndex++];
+	vlad->level152m = (uint16_t) buffer[bufferIndex++]
+			| (uint16_t) (buffer[bufferIndex++] << 8);
+	vlad->level172m = (uint16_t) buffer[bufferIndex++]
+			| (uint16_t) (buffer[bufferIndex++] << 8);
+	vlad->agc152m = (uint16_t) buffer[bufferIndex++]
+			| (uint16_t) (buffer[bufferIndex++] << 8);
+	vlad->agc172m = (uint16_t) buffer[bufferIndex++]
+			| (uint16_t) (buffer[bufferIndex++] << 8);
+	vlad->ref152m = (uint16_t) buffer[bufferIndex++]
+			| (uint16_t) (buffer[bufferIndex++] << 8);
+	vlad->tone_level = (uint16_t) buffer[bufferIndex++]
+			| (uint16_t) (buffer[bufferIndex++] << 8);
+	vlad->vin = (uint16_t) buffer[bufferIndex++]
+			| (uint16_t) (buffer[bufferIndex++] << 8);
+	vlad->v_5v = (uint16_t) buffer[bufferIndex++]
+			| (uint16_t) (buffer[bufferIndex++] << 8);
+	vlad->current = (uint16_t) buffer[bufferIndex++]
+			| (uint16_t) (buffer[bufferIndex++] << 8);
+	vlad->baseCurrentReal = (uint16_t) buffer[bufferIndex++]
+			| (uint16_t) (buffer[bufferIndex++] << 8);
 	vlad->state = buffer[bufferIndex++];
-	vlad->lineCurrent.i =buffer[bufferIndex++];
-	vlad->lineCurrent.i |=buffer[bufferIndex++]<<8;
-	vlad->lineCurrent.i |=buffer[bufferIndex++]<<16;
-	vlad->lineCurrent.i |=buffer[bufferIndex++]<<24;
-	vlad->ucTemperature.i = buffer[bufferIndex++];
-	vlad->ucTemperature.i |= buffer[bufferIndex++] << 8;
-	vlad->ucTemperature.i |= buffer[bufferIndex++] << 16;
-	vlad->ucTemperature.i |= buffer[bufferIndex++] << 24;
+	vlad->ucTemperature = buffer[bufferIndex++];
 	return bufferIndex;
 }
 
-uint8_t updateVladMeasurements(Vlad_t *vlad) {
-	const uint32_t vladReadIntervalMs  = VLAD_READ_TIMER;
+*/
 
-	if (HAL_GetTick() - vlad->lastUpdateTicks > vladReadIntervalMs ) {
+uint8_t encode16u(uint8_t *buffer) {
+
+	uint16_t temp = (uint16_t) buffer[0] | (uint16_t) (buffer[1] << 8);
+
+	return temp;
+}
+
+uint8_t decodeVladMeasurements(Vlad_t *vlad, uint8_t *buffer) {
+	uint8_t bufferIndex = 0;
+	typedef enum measurements {
+		vin,
+		v_5v,
+		current,
+		agc152m,
+		ref152m,
+		level152m,
+		agc172m,
+		ref172m,
+		level172m,
+		tono_level,
+		ucTemperature,
+		baseCurrent,
+		num_variables
+	} measurements_t;
+
+	uint16_t measurement[num_variables];
+	for (int i = 0; i < num_variables; i++) {
+		measurement[i] = (uint16_t) buffer[bufferIndex++];
+		measurement[i] |= (uint16_t) (buffer[bufferIndex++] << 8);
+	}
+	vlad->state = buffer[bufferIndex++];
+	uint8_t temperature;
+	temperature = (uint8_t) ((float) measurement[ucTemperature]
+			- (float) (*TEMP30_CAL_ADDR)) * (110.0 - 30.0)
+			/ (float) (*TEMP110_CAL_ADDR - *TEMP30_CAL_ADDR);
+	vlad->ucTemperature = temperature + 30.0;
+	vlad->v_5v_real = (float) measurement[v_5v] * ADC_V5V_FACTOR;
+	vlad->inputVoltageReal = (float) measurement[vin] * ADC_VOLTAGE_FACTOR;
+	vlad->currentReal = measurement[current] * ADC_CONSUMPTION_CURRENT_FACTOR;
+	vlad->agc152m_real = (int8_t) (MAX4003_AGC_SCOPE * measurement[agc152m]
+			+ MAX4003_AGC_FACTOR);
+	vlad->agc172m_real = (int8_t) (MAX4003_AGC_SCOPE * measurement[agc172m]
+			+ MAX4003_AGC_FACTOR);
+	vlad->level152m_real = (int8_t) (MAX4003_DBM_SCOPE * measurement[level152m]
+			+ MAX4003_DBM_FACTOR);
+	vlad->level172m_real = (int8_t) (MAX4003_DBM_SCOPE * measurement[level172m]
+			+ MAX4003_DBM_FACTOR);
+	vlad->baseCurrentReal = (measurement[baseCurrent] * 1000 * VREF)
+			/ (1 << (RESOLUTION - 0x00));
+
+	return bufferIndex;
+}
+/*
+uint8_t updateVladMeasurements(Vlad_t *vlad) {
+	const uint32_t vladReadIntervalMs = VLAD_READ_TIMER;
+
+	if (HAL_GetTick() - vlad->lastUpdateTicks > vladReadIntervalMs) {
 		if (readVladMeasurements(vlad) > 0) {
 			vlad->v_5v_real = (float) vlad->v_5v * ADC_V5V_FACTOR;
-			vlad->lineVoltageReal = (float) vlad->vin * ADC_VOLTAGE_FACTOR;
-			vlad->lineCurrentReal =
-					(float) vlad->current * ADC_LINE_CURRENT_FACTOR;
+			vlad->inputVoltageReal = (float) vlad->vin * ADC_VOLTAGE_FACTOR;
+			vlad->currentReal = (float) vlad->current
+					* ADC_CONSUMPTION_CURRENT_FACTOR;
 			vlad->agc152m_real = (int8_t) (MAX4003_AGC_SCOPE
 					* (float) vlad->agc152m + MAX4003_AGC_FACTOR);
 			vlad->agc172m_real = (int8_t) (MAX4003_AGC_SCOPE
@@ -221,7 +312,8 @@ uint8_t updateVladMeasurements(Vlad_t *vlad) {
 					* (float) vlad->level152m + MAX4003_DBM_FACTOR);
 			vlad->level172m_real = (int8_t) (MAX4003_DBM_SCOPE
 					* (float) vlad->level172m + MAX4003_DBM_FACTOR);
-
+			vlad->baseCurrentReal = ((float) vlad->baseCurrentReal * VREF)
+					/ (1 << (RESOLUTION - 0x00));
 		} else {
 			resetVladData(vlad);
 		}
@@ -231,3 +323,4 @@ uint8_t updateVladMeasurements(Vlad_t *vlad) {
 
 	return 0;
 }
+*/

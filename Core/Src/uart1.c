@@ -47,9 +47,7 @@ UART1_t* uart1Init(uint32_t pclk, uint32_t baud_rate) {
 	UART1_t * u1;
 	u1 = malloc(sizeof(UART1_t));
 
-	memset(u1->receiveBuffer,0,sizeof(u1->receiveBuffer));
-	memset(u1->transmitBuffer,0,sizeof(u1->transmitBuffer));
-
+	memset(u1->rxData,0,sizeof(u1->rxData));
 	u1->isReceivedDataReady = false;
 
 	uart1_gpio_init();
@@ -67,7 +65,7 @@ UART1_t* uart1Init(uint32_t pclk, uint32_t baud_rate) {
 	USART1->BRR = (uint16_t) br_value;
 	/* transmitter enable*/
 	USART1->CR1 = USART_CR1_TE | USART_CR1_RE;
-	u1->transmittedDataLength = 0;
+	u1->txSize = 0;
 
 	//uart1_clean_buffer(u);
 
@@ -143,11 +141,11 @@ uint8_t readRxReg(void) {
 		return '\0';
 }
 void readRx(UART1_t *u) {
-	if (u->receivedDataLength >= RX_BUFFLEN) {
+	if (u->rxSize >= RX_BUFFLEN) {
 		cleanRx(u);
-		u->receivedDataLength = 0;
+		u->rxSize = 0;
 	}
-	u->receiveBuffer[u->receivedDataLength++] = readRxReg();
+	u->rxData[u->rxSize++] = readRxReg();
 }
 
 void writeTxStr(char *str) {
@@ -163,18 +161,18 @@ void writeTxBuffer(uint8_t *str, uint8_t len) {
 }
 
 void writeTx(UART1_t *uart1) {
-	writeTxBuffer(uart1->transmitBuffer, uart1->transmittedDataLength);
+	writeTxBuffer(uart1->txData, uart1->txSize);
 
 
 }
 
 void cleanRx(UART1_t *u) {
-	memset(u->receiveBuffer, 0, sizeof(u->receiveBuffer));
-	u->receivedDataLength = 0;
+	memset(u->rxData, 0, sizeof(u->rxData));
+	u->rxSize = 0;
 	u->isReceivedDataReady = false;
 }
 
 void cleanTx(UART1_t *u) {
-	memset(u->transmitBuffer, 0, sizeof(u->transmitBuffer));
-	u->transmittedDataLength = 0;
+	memset(u->txData, 0, sizeof(u->txData));
+	u->txSize = 0;
 }

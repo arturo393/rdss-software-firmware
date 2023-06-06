@@ -13,15 +13,15 @@
 #include "stdlib.h"
 #include "string.h"
 
-#define RX_BUFFLEN 50
+#define RX_BUFFLEN 20
 #define TX_BUFFLEN  50
 #define SECONDS(x) x*1000
 
 typedef struct UART1 {
-	uint8_t receiveBuffer[RX_BUFFLEN];
-	uint8_t transmitBuffer[TX_BUFFLEN];
-	uint8_t transmittedDataLength;
-	uint8_t receivedDataLength;
+	uint8_t rxData[RX_BUFFLEN];
+	uint8_t *txData;
+	uint8_t txSize;
+	uint8_t rxSize;
 	uint32_t operationTimeout;
 	bool isReceivedDataReady;
 	bool isDebugModeEnabled;
