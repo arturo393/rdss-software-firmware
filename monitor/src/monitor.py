@@ -25,6 +25,24 @@ import eventlet
 
 logging.basicConfig(filename=cfg.LOGGING_FILE, level=logging.DEBUG)
 
+class VladModule:
+    def __init__(self):
+        self.toneLevel = 0
+        self.baseCurrent = 0
+        self.agc152m = 0
+        self.agc172m = 0
+        self.level152m = 0
+        self.level172m = 0
+        self.ref152m = 0
+        self.ref172m = 0
+        self.ucTemperature = 0
+        self.v_5v = 0.0
+        self.inputVoltage = 0.0
+        self.current = 0
+        self.isRemoteAttenuation = False
+        self.isSmartTune = False
+        self.isReverse = False
+        self.attenuation = 0
 
 app = Flask(__name__)
 
@@ -516,14 +534,83 @@ def sendCmd(ser, cmd, createdevice):
 
     return finalData
 
-def isCrcOk(hexResponse):
-    logging.debug("GET: " + hexResponse.hex('-'))
-    dataBytes = hexResponse[1:18]
-    checksumBytes = hexResponse[18:20]
+def decodeVladMeasurements(vlad, buffer):
+    bufferIndex = 0
+    
+    Measurements = (
+        'vin',
+        'v5v',
+        'current',
+        'agc152m',
+        'ref152m',
+        'level152m',
+        'agc172m',
+        'ref172m',
+        'level172m',
+        'toneLevel',
+        'ucTemperature',
+        'baseCurrent'
+    )
+    
+    measurement = [0] * len(Measurements)
+
+    for i in range(len(Measurements)):
+        measurement[i] = buffer[bufferIndex] | (buffer[bufferIndex + 1] << 8)
+        bufferIndex += 2
+
+    state = buffer[bufferIndex]
+    vlad.isReverse = bool(state & 0x01)
+    vlad.isSmartTune = bool((state >> 1) & 0x01)
+    vlad.isRemoteAttenuation = bool((state >> 2) & 0x01)
+    vlad.attenuation = (state >> 3) & 0xFF
+    bufferIndex += 1
+
+    TEMP30_CAL_ADDR = 1781  # Adjust the address accordingly
+    TEMP110_CAL_ADDR = 1327  # Adjust the address accordingly
+    ADC_CONSUMPTION_CURRENT_FACTOR = 0.06472492
+    ADC_LINE_CURRENT_FACTOR = 0.0010989
+    ADC_VOLTAGE_FACTOR = 0.01387755
+    ADC_V5V_FACTOR = 0.00161246
+    VREF = 5 
+    RESOLUTION = 12 
+
+    MAX4003_DBM_MAX = 0   
+    MAX4003_DBM_MIN = -30
+    MAX4003_AGC_MIN = 30
+    MAX4003_AGC_MAX = 0
+    MAX4003_ADC_MAX = 1888
+    MAX4003_ADC_MIN = 487
+
+    MAX4003_DBM_SCOPE= (MAX4003_DBM_MAX -  MAX4003_DBM_MIN) / (MAX4003_ADC_MAX - MAX4003_ADC_MIN)
+    MAX4003_DBM_FACTOR= (MAX4003_DBM_MAX - MAX4003_ADC_MAX) * MAX4003_DBM_SCOPE
+    MAX4003_AGC_SCOPE = ( MAX4003_AGC_MAX -  MAX4003_AGC_MIN) / 4095
+    MAX4003_AGC_FACTOR = MAX4003_AGC_MAX - 4095 * MAX4003_AGC_SCOPE
+
+ #   temperature = float((float(measurement[Measurements.index('ucTemperature')]) - float(TEMP30_CAL_ADDR)) * (110.0 - 30.0) / (float(TEMP110_CAL_ADDR) - float(TEMP30_CAL_ADDR)))
+    vlad.ucTemperature = int(measurement[Measurements.index('ucTemperature')])
+    vlad.v_5v = round(measurement[Measurements.index('v5v')] * ADC_V5V_FACTOR,1)
+    vlad.inputVoltage = round(measurement[Measurements.index('vin')] * ADC_VOLTAGE_FACTOR,2)
+    vlad.current = int(measurement[Measurements.index('current')] * ADC_CONSUMPTION_CURRENT_FACTOR)
+    vlad.agc152m = int(MAX4003_AGC_SCOPE * measurement[Measurements.index('agc152m')] + MAX4003_AGC_FACTOR)
+    vlad.agc172m = int(MAX4003_AGC_SCOPE * measurement[Measurements.index('agc172m')] + MAX4003_AGC_FACTOR)
+    vlad.level152m = int(MAX4003_DBM_SCOPE * measurement[Measurements.index('level152m')] + MAX4003_DBM_FACTOR)
+    vlad.level172m = int(MAX4003_DBM_SCOPE * measurement[Measurements.index('level172m')] + MAX4003_DBM_FACTOR)
+    vlad.ref152m = int(MAX4003_DBM_SCOPE * measurement[Measurements.index('ref152m')] + MAX4003_DBM_FACTOR)
+    vlad.ref172m = int(MAX4003_DBM_SCOPE * measurement[Measurements.index('ref172m')] + MAX4003_DBM_FACTOR)
+    vlad.toneLevel = int(MAX4003_DBM_SCOPE * measurement[Measurements.index('toneLevel')] + MAX4003_DBM_FACTOR)
+    vlad.baseCurrent = int((measurement[Measurements.index('baseCurrent')] * 1000 * VREF) / (1 << (RESOLUTION - 0x00)))
+
+    return bufferIndex
+
+def isCrcOk(hexResponse,size):
+    dataEnd = size-3
+    crcEnd = size-1
+    dataBytes = hexResponse[1:dataEnd]
+    checksumBytes = hexResponse[dataEnd:crcEnd]
     checksumString = binascii.hexlify(checksumBytes).decode('utf-8')
     dataString = binascii.hexlify(dataBytes).decode('utf-8')
     calculatedChecksum = getChecksum(dataString)
-    crcMessage = "CRC Calculated: " + calculatedChecksum + " CRC Received: " +checksumString+ " - DATA "
+    crcMessage = "CRC Calculated: " + calculatedChecksum + " CRC Received: " +checksumString+ " - D"
     if(calculatedChecksum == checksumString):
         logging.debug(crcMessage+"OK: "+calculatedChecksum + " == " +checksumString )
         return true
@@ -531,7 +618,7 @@ def isCrcOk(hexResponse):
         logging.debug(crcMessage+"ERROR: "+calculatedChecksum + " != " +checksumString )
         return false
 
-def sendVladRev23Query(ser, cmd,times):
+def sendVladRev23Query(ser, deviceID,times):
     """
     Sends a command, waits for one minute if data is received, and returns the data.
     Args:
@@ -544,7 +631,7 @@ def sendVladRev23Query(ser, cmd,times):
         return false
     
     finalData = {}
-    cmd = hex(cmd)
+    cmd = hex(deviceID)
     if len(cmd) == 3:
         cmdString = '05' + '0' + cmd[2:3] + '110000'
     else:
@@ -561,59 +648,63 @@ def sendVladRev23Query(ser, cmd,times):
             hexByte = "{0:02x}".format(cmdByte)
             ser.write(bytes.fromhex(hexByte))
 
-        hexResponse = ser.read(21)
+        hexResponse = ser.read(34)
+        logging.debug("GET: " + hexResponse.hex('-'))
+        responseLen = len(hexResponse)
+        logging.debug("receive len: " + str(responseLen))
+        if responseLen != 34:
+            return false
+        if  hexResponse[0] != 126:
+            return false
+        if hexResponse[responseLen - 1 ] != 127:
+            return false
+        if hexResponse[2] != int(cmd, 16):
+            sendVladRev23Query(ser, deviceID,times-1)
+            return false
+        if  hexResponse[3] != 17:
+            return false
+        if hexResponse[4] in [2, 3, 4]:
+            return false
+        if isCrcOk(hexResponse,responseLen) == false:
+            sendVladRev23Query(ser, deviceID,times-1)
+            return false
+        
+        data = list(hexResponse[i] for i in range(6, responseLen - 3))
+        vlad = VladModule()
 
-        if (
-            len(hexResponse) != 21
-            or hexResponse[0] != 126
-            or hexResponse[20] != 127
-            or hexResponse[2] != int(cmd, 16)
-            or hexResponse[3] != 17
-            or hexResponse[4] in [2, 3, 4]
-            or isCrcOk(hexResponse) == false
-        ):
-            sendVladRev23Query(ser, cmd,times-1)
-            return False
-
-        data = list(hexResponse[i] for i in range(6, 18))
-
-        vladRev23Id = 0xff
-        isReverse = "ON" if bool(data[1] & 0x01) else "OFF"
-        isSmartTune = "ON" if bool(data[1] & (0x1 << 1)) else "OFF"
-        isRemoteAttenuation = bool(data[1] & (0x1 << 2))
-        attenuation = (data[1] >> 3) & 0x1F
-        inputVoltage = (data[2] | (data[3] << 8)) / 10.0
-        baseCurrent = (data[4] | (data[5] << 8)) / 1000.0
-        toneLevel = ((data[6] | (data[7] << 8)) - 400) * (-35 - -35) / (4095 - 400) + -35
-        downlinkAgcValue = data[8] / 10.0
-        downlinkOutputPower = data[9] if data[9] < 128 else data[9] - 256
-        uplinkAgcValue = data[10] / 10.0
-        uplinkOutputPower = data[11] if data[11] < 128 else data[11] - 256
-
-        logging.debug(f"Voltage: {inputVoltage:.2f}[V]")
-        logging.debug(f"Base Current: {baseCurrent:.3f}[A]")
-        logging.debug(f"Attenuation: {attenuation:.1f}[dB]")
-        logging.debug(f"Tone Level: {toneLevel:.1f}[dBm]")
-        logging.debug(f"AGC Uplink: {uplinkAgcValue:.1f}[dB]")
-        logging.debug(f"Downlink Output Power: {downlinkOutputPower}[dBm]")
-        logging.debug(f"AGC Downlink: {downlinkAgcValue:.1f}[dB]")
-        logging.debug(f"Uplink Output Power: {uplinkOutputPower}[dBm]")
-        logging.debug(f"Is Software Attenuation: {isRemoteAttenuation}")
-        logging.debug(f"Is Reverse: {isReverse}")
-        logging.debug(f"Is SmartTune: {isSmartTune}")
+        decodeVladMeasurements(vlad, data)
+    
+        logging.debug(f"Voltage: {vlad.inputVoltage:.2f}[V]")
+        logging.debug(f"Current: {vlad.current:.0f}[mA]")
+        logging.debug(f"Base Current: {vlad.baseCurrent:}[mA]")
+        logging.debug(f"Attenuation: {vlad.attenuation:}[dB]")
+        logging.debug(f"Tone Level: {vlad.toneLevel:}[dBm]")
+        logging.debug(f"AGC Uplink: {vlad.agc172m:}[dB]")
+        logging.debug(f"Downlink Output Power: {vlad.level152m}[dBm]")
+        logging.debug(f"AGC Downlink: {vlad.agc152m:}[dB]")
+        logging.debug(f"Uplink Output Power: {vlad.level172m}[dBm]")
+        logging.debug(f"Tone Level: {vlad.toneLevel}[dBm]")
+        logging.debug(f"Downlink Reference: {vlad.ref152m}[dBm]")
+        logging.debug(f"Uplink Reference: {vlad.ref172m}[dBm]")
+        logging.debug(f"Uplink Output Power: {vlad.level172m}[dBm]")
+        logging.debug(f"Is Software Attenuation: {vlad.isRemoteAttenuation}")
+        logging.debug(f"Is Reverse: {vlad.isReverse}")
+        logging.debug(f"Is SmartTune: {vlad.isSmartTune}")
+        logging.debug(f"Voltage reference: {vlad.v_5v}[V]]")      
+        logging.debug(f"uC Temperature: {vlad.ucTemperature}[°C]")
 
         sampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         timeNow = datetime.datetime.strptime(sampleTime, "%Y-%m-%dT%H:%M:%SZ")
         finalData = {
             "sampleTime": timeNow,
-            "voltage": inputVoltage,
-            "current": baseCurrent,
-            "gupl": uplinkAgcValue,
-            "gdwl": downlinkAgcValue,
-            "power": downlinkOutputPower,
-            "smartTune": isSmartTune,
-            "reverse": isReverse,
-            "attenuation": attenuation
+            "voltage": vlad.inputVoltage,
+            "current": vlad.baseCurrent,
+            "gupl": vlad.agc172m,
+            "gdwl": vlad.agc152m,
+            "power": vlad.level152m,
+            "smartTune": vlad.isSmartTune,
+            "reverse": vlad.isReverse,
+            "attenuation": vlad.attenuation
         }
 
         ser.flushInput()
