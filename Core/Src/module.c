@@ -69,14 +69,8 @@ Server_t* serverInit(Function_t function) {
 	server = malloc(sizeof(Server_t));
 
 	if (server != NULL) {
-        server->ref152m = 0;
-        server->level152m = 0;
-        server->agc172m = 0;
-        server->level172m = 0;
         server->inputVoltage = 0;
-        server->lineCurrent = 0;
-        server->analoglineCurrentReal = 0;
-        server->ucTemperature.f = 0.0;
+        server->counsumptionCurrentReal = 0;
         server->lm75Temperature = 0;
         server->id = 0;  // assuming id can be zero initialized
         server->function = function;  // Use the function parameter passed in

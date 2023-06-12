@@ -19,8 +19,7 @@
 
 typedef struct UART1 {
 	uint8_t rxData[RX_BUFFLEN];
-	uint8_t txData[TX_BUFFLEN];
-	uint8_t *txBuffer;
+	uint8_t *txData;
 	uint8_t txSize;
 	uint8_t rxSize;
 	uint32_t operationTimeout;

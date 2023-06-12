@@ -75,10 +75,10 @@ void Error_Handler(void);
 #define USB_TX_GPIO_Port GPIOA
 #define USB_RX_Pin GPIO_PIN_10
 #define USB_RX_GPIO_Port GPIOA
-#define MODE_Pin GPIO_PIN_3
-#define MODE_GPIO_Port GPIOB
-#define LED2_Pin GPIO_PIN_4
-#define LED2_GPIO_Port GPIOB
+#define LORA_TX_OK_Pin GPIO_PIN_3
+#define LORA_TX_OK_GPIO_Port GPIOB
+#define LORA_RX_OK_Pin GPIO_PIN_4
+#define LORA_RX_OK_GPIO_Port GPIOB
 #define KEEP_ALIVE_Pin GPIO_PIN_5
 #define KEEP_ALIVE_GPIO_Port GPIOB
 #define RS485_DE_Pin GPIO_PIN_8

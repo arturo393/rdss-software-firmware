@@ -37,7 +37,7 @@ typedef struct LED{
 
 void ledInit(LED_t *led);
 void led_off(void);
-void enableLedKeepAlive(LED_t *l);
+void blinkKALed(LED_t *l);
 void led_reset(LED_t *l);
 void led_current_update(int16_t current);
 uint8_t led_temperature_update(uint8_t tempearture);

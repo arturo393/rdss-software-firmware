@@ -30,6 +30,7 @@ typedef enum RS485_CMD {
 	QUERY_MODULE_ID = 0x10,
 	QUERY_STATUS,
 	SET_VLAD_ATTENUATION,
+	QUERY_MASTER_STATUS,
 
 	QUERY_TX_FREQ = 0x20,
 	QUERY_RX_FREQ,
@@ -45,8 +46,6 @@ typedef enum RS485_CMD {
 	SET_BANDWIDTH,
 	SET_SPREAD_FACTOR,
 	SET_CODING_RATE,
-
-
 
 	SET_VLAD_MODE,
 	SET_PARAMETER_FREQOUT = 0x31,
@@ -85,9 +84,8 @@ typedef enum RS485_i {
 
 typedef struct RS485 {
 	Rs485_cmd_t cmd;
-	uint8_t len;
-	uint8_t buffer[300];
 	uint8_t *buff;
+	uint8_t buffSize;
 	uint16_t crcCalculated;
 	uint16_t crcReceived;
 	uint8_t idQuery;
@@ -95,6 +93,8 @@ typedef struct RS485 {
 	uint8_t id;
 	RDSS_status_t status;
 	RDSS_status_t lastStatus;
+	uint8_t queryBuffer[30];
+	uint32_t lastUpdateTicks;
 } RDSS_t;
 
 uint16_t crc_get(uint8_t *buffer, uint8_t buff_len);
@@ -106,7 +106,7 @@ RDSS_status_t checkModuleValidity(uint8_t *frame, uint8_t lenght);
 RDSS_status_t checkCRCValidity(uint8_t *frame, uint8_t len);
 RDSS_status_t isValidCrc2(RDSS_t *rs485);
 RDSS_status_t isValidId(RDSS_t *r);
-RDSS_status_t validateBuffer(uint8_t *buffer, uint8_t length);
+RDSS_status_t validate(uint8_t *buffer, uint8_t length);
 RDSS_status_t checkCRCValidity(uint8_t *frame, uint8_t len);
 RDSS_status_t checkBuffer(RDSS_t *rs485);
 void fillValidBuffer(RDSS_t *r, uint8_t *buff, uint8_t len);
@@ -121,4 +121,5 @@ void freqEncode(uint8_t *buffer, uint32_t freqIn);
 RDSS_status_t evaluateRdssStatus(RDSS_t *rdss);
 bool isModuleCommand(uint8_t cmd);
 void rdssReinit(RDSS_t *rdss);
+void updateRdss(RDSS_t *rdss, uint8_t *buffer, uint8_t bufferSize);
 #endif /* INC_RS485_H_ */

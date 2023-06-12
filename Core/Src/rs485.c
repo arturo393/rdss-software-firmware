@@ -9,11 +9,10 @@
 RDSS_t* rdssInit(uint8_t id) {
 	RDSS_t *r;
 	r = malloc(sizeof(RDSS_t));
-	r->len = 0;
 	r->status = WAITING;
 	r->cmd = NONE;
 	r->id = id;
-	memset(r->buffer, 0, RDSS_BUFFER_SIZE);
+
 	/* PB9 DE485 as output  */
 //	SET_BIT(GPIOB->MODER, GPIO_MODER_MODE9_0);
 //	CLEAR_BIT(GPIOB->MODER, GPIO_MODER_MODE9_1);
@@ -27,12 +26,10 @@ RDSS_t* rdssInit(uint8_t id) {
  * @param rdss Pointer to the RDSS_t structure to be reinitialized.
  */
 void rdssReinit(RDSS_t *rdss) {
-    rdss->len = 0;              // Reset the length of the buffer
-    memset(rdss->buffer, 0, sizeof(rdss->buffer));  // Clear the buffer
     rdss->cmd = NONE;           // Reset the command field
     rdss->crcReceived = 0;      // Reset the received CRC value
     rdss->crcCalculated = 0;    // Reset the calculated CRC value
-    rdss->idQuery = 0;          // Reset the query ID
+//    rdss->idQuery = 0;          // Reset the query ID
     rdss->status = WAITING;     // Set the status to waiting
     rdss->idReceived = 0;       // Reset the received ID
 }
@@ -104,19 +101,7 @@ uint16_t crc_get(uint8_t *buffer, uint8_t buff_len) {
 	return crc;
 }
 
-RDSS_status_t isValidId(RDSS_t *r) {
-
-	r->idReceived = r->buffer[2];
-	if (r->idReceived == r->id)
-		return DATA_OK;
-	else if (r->idReceived == r->idQuery)
-		return DATA_OK;
-	else if (r->id == ID0)
-		return LORA_SEND;
-	return WRONG_MODULE_ID;
-}
-
-RDSS_status_t validateBuffer(uint8_t *buffer, uint8_t length) {
+RDSS_status_t validate(uint8_t *buffer, uint8_t length) {
 	RDSS_status_t frameStatus = checkFrameValidity(buffer, length);
 	if (frameStatus != VALID_FRAME)
 		return frameStatus;
@@ -129,50 +114,11 @@ RDSS_status_t validateBuffer(uint8_t *buffer, uint8_t length) {
 	return DATA_OK;
 }
 
-void fillValidBuffer(RDSS_t *r, uint8_t *buff, uint8_t len) {
-	r->status = validateBuffer(buff, len);
-	if (r->status == DATA_OK) {
-		r->len = len;
-		memcpy(r->buffer, buff, len);
-	}
-}
-
-RDSS_status_t evaluateRdssStatus(RDSS_t *rdss) {
-    if (rdss->buffer[MODULE_ID_INDEX] == rdss->id) {
-        return UART_VALID;
-    } else {
-        return LORA_SEND;
-    }
-}
 
 bool isModuleCommand(uint8_t cmd) {
     return cmd == QUERY_MODULE_ID || cmd == SET_MODULE_ID;
 }
 
-RDSS_status_t checkBuffer(RDSS_t *rs485) {
-	rs485->status = checkFrameValidity(rs485->buffer, rs485->len);
-	if (!(rs485->status == VALID_FRAME))
-		return rs485->status;
-	rs485->status = checkModuleValidity(rs485->buffer, rs485->len);
-	if (!(rs485->status == VALID_MODULE))
-		return rs485->status;
-	rs485->status = checkCRCValidity(rs485->buffer, rs485->len);
-	if (!(rs485->status == DATA_OK))
-		return rs485->status;
-	rs485->status = isValidId(rs485);
-	if (!(rs485->status == WRONG_MODULE_ID))
-		return rs485->status;
-	return rs485->status;
-}
-
-void reinit(RDSS_t *rs485) {
-	rs485->cmd = NONE;
-	rs485->status = WAITING;
-	if (rs485->buffer[0] == '\0')
-		return;
-	memset(rs485->buffer, 0, sizeof(rs485->buffer));
-	rs485->len = 0;
-}
 
 void encodeVlad(uint8_t *buff) {
 	uint16_t lineVoltage = (uint16_t) rand() % 610;
@@ -222,6 +168,8 @@ uint8_t setRdssStartData(RDSS_t *rdss, uint8_t *buffer, Function_t function) {
 	return i;
 }
 
+
+
 uint32_t freqDecode(uint8_t *buffer) {
 	union floatConverter freq;
 	freq.i = 0;
@@ -238,4 +186,15 @@ void freqEncode(uint8_t *buffer, uint32_t freqIn) {
 	union floatConverter freqOut;
 	freqOut.f = freqIn / 1000000.0f;
 	memcpy(buffer, &freqOut.i, sizeof(freqOut.i));
+}
+
+void updateRdss(RDSS_t *rdss, uint8_t *buffer, uint8_t bufferSize) {
+	if (buffer == NULL)
+		return;
+	if (bufferSize <= 0)
+		return;
+	rdss->cmd = buffer[CMD_INDEX]; // Update the command from the received data
+	rdss->idReceived = buffer[MODULE_ID_INDEX]; // Update the received ID
+	rdss->buffSize = bufferSize;
+	rdss->buff = buffer;
 }

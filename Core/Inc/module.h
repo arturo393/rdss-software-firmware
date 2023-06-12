@@ -129,18 +129,13 @@ typedef struct VLAD_MODULE {
 } Vlad_t;
 
 typedef struct SERVER_MODULE {
-	uint16_t ref152m;
-	uint16_t level152m;  // downlink 150 mhz
-	uint16_t agc172m;
-	uint16_t level172m;
 	uint16_t inputVoltage;
-	uint16_t lineCurrent;
+	uint16_t consumptionCurrent;
 	float inputVoltageReal;
-	float analoglineCurrentReal;
-	float mcp3421lineCurrentReal;
-	union floatConverter ucTemperature;
+	float counsumptionCurrentReal;
+	float vrefintVoltage;
 	uint16_t lm75Temperature;
-	uint16_t analogTemperature;
+	uint16_t ucTemperature;
 	Id_t id;
 	Function_t function;
 	uint32_t lastUpdateTicks;
