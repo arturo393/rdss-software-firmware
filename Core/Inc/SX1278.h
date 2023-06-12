@@ -335,7 +335,7 @@ void clearIrqFlagsReg(SX1278_t *module);
 void readOperatingMode(SX1278_t *module);
 void setLoRaLowFreqModeReg(SX1278_t *module, OPERATING_MODE_t mode);
 void writeLoRaParametersReg(SX1278_t *module);
-void changeLoRaOperatingMode(SX1278_t *module, Lora_Mode_t mode);
+void changeMode(SX1278_t *module, Lora_Mode_t mode);
 void initLoRaParameters(SX1278_t *module);
 uint8_t waitForRxDone(SX1278_t *loRa);
 void waitForTxEnd(SX1278_t *loRa);
@@ -346,9 +346,10 @@ void setTxFifoAddr(SX1278_t *module);
 void clearRxMemory(SX1278_t *module);
 uint8_t setTxFifoData(SX1278_t *module);
 void receive(SX1278_t *loRa);
-void transmitDataUsingLoRa(SX1278_t *loRa);
+void transmit(SX1278_t *loRa);
 void readLoRaSettings(SX1278_t* loRa);
 SX1278_t* loRaInit(SPI_HandleTypeDef *hspi1 ,Lora_Mode_t loRaMode
 );
+void configureLoRaRx(SX1278_t *loRa, Lora_Mode_t mode);
 
 #endif

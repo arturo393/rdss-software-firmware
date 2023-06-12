@@ -116,7 +116,7 @@ RDSS_status_t isValidId(RDSS_t *r) {
 
 */
 
-RDSS_status_t validateBuffer(uint8_t *buffer,uint8_t length) {
+RDSS_status_t validate(uint8_t *buffer,uint8_t length) {
 	RDSS_status_t frameStatus = checkFrameValidity(buffer, length);
 	if (frameStatus != VALID_FRAME)
 		return frameStatus;
@@ -247,4 +247,22 @@ void freqEncode(uint8_t *buffer, uint32_t freqIn) {
 	union floatConverter freqOut;
 	freqOut.f = freqIn / 1000000.0f;
 	memcpy(buffer, &freqOut.i, sizeof(freqOut.i));
+}
+
+void updateRdss(RDSS_t *rdss, uint8_t *buffer, uint8_t bufferSize) {
+	if (buffer == NULL)
+		return;
+	if (bufferSize <= 0)
+		return;
+	rdss->cmd = buffer[CMD_INDEX]; // Update the command from the received data
+	rdss->idReceived = buffer[MODULE_ID_INDEX]; // Update the received ID
+	rdss->buffSize = bufferSize;
+	rdss->buff = buffer;
+}
+
+void updateStatus(RDSS_t *rdss, uint32_t timeout) {
+	if (HAL_GetTick() - rdss->lastUpdateTicks > timeout) {
+		i2cSetQueryRdssBuffer(rdss);
+		rdss->lastUpdateTicks = HAL_GetTick();
+	}
 }

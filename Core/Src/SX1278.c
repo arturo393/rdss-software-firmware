@@ -189,7 +189,7 @@ void writeLoRaParametersReg(SX1278_t *module) {
 	writeRegister(module->spi, LR_RegIrqFlagsMask, &(module->flagsMode), 1);
 }
 
-void changeLoRaOperatingMode(SX1278_t *module, Lora_Mode_t mode) {
+void changeMode(SX1278_t *module, Lora_Mode_t mode) {
 
 	if (mode == SLAVE_SENDER || mode == MASTER_SENDER) {
 		module->frequency =
@@ -300,13 +300,13 @@ uint8_t waitForRxDone(SX1278_t *loRa) {
 
 void setRxFifoAddr(SX1278_t *module) {
 	setLoRaLowFreqModeReg(module, SLEEP); //Change modem mode Must in Sleep mode
-	uint8_t cmd = module->len;
+	uint8_t cmd = module->rxSize;
 	//cmd = 9;
 	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1); //RegPayloadLength 21byte
 	uint8_t addr = readRegister(module->spi, LR_RegFifoRxBaseAddr); //RegFiFoTxBaseAddr
 	addr = 0x00;
 	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1); //RegFifoAddrPtr
-	module->len = readRegister(module->spi, LR_RegPayloadLength);
+	module->rxSize = readRegister(module->spi, LR_RegPayloadLength);
 }
 
 int crcErrorActivation(SX1278_t *module) {
@@ -359,15 +359,6 @@ uint8_t setTxFifoData(SX1278_t *loRa) {
 	return loRa->txSize;
 }
 
-/*
- void clearRxMemory(SX1278_t *module) {
- if (module->status == RX_MODE) {
- memset(module->buffer, 0, SX1278_MAX_PACKET);
- }
- }
-
- */
-
 void receive(SX1278_t *loRa) {
 	setRxFifoAddr(loRa);
 	setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS);
@@ -376,7 +367,7 @@ void receive(SX1278_t *loRa) {
 	getRxFifoData(loRa);
 }
 
-void transmitDataUsingLoRa(SX1278_t *loRa) {
+void transmit(SX1278_t *loRa) {
 	setTxFifoData(loRa);
 	setLoRaLowFreqModeReg(loRa, TX);
 	waitForTxEnd(loRa);
@@ -431,7 +422,17 @@ SX1278_t* loRaInit(SPI_HandleTypeDef *hspi1, Lora_Mode_t loRaMode) {
 	loRa->rxSize = 0;
 	loRa->txSize = 0;
 	readLoRaSettings(loRa);
-	changeLoRaOperatingMode(loRa, loRaMode);
+	changeMode(loRa, loRaMode);
 	writeLoRaParametersReg(loRa);
 	return loRa;
+}
+
+void configureLoRaRx(SX1278_t *loRa, Lora_Mode_t mode) {
+	if (loRa->mode != mode)
+		return;
+	if (loRa->operatingMode == RX_CONTINUOUS)
+		return;
+	changeMode(loRa, mode);
+	setRxFifoAddr(loRa);
+	setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS);
 }

@@ -107,7 +107,7 @@ RDSS_status_t checkFrameValidity(uint8_t *frame, uint8_t lenght);
 RDSS_status_t checkModuleValidity(uint8_t *frame, uint8_t lenght);
 RDSS_status_t checkCRCValidity(uint8_t *frame, uint8_t len);
 RDSS_status_t isValidId(RDSS_t *r);
-RDSS_status_t validateBuffer(uint8_t *buffer,uint8_t length);
+RDSS_status_t validate(uint8_t *buffer,uint8_t length);
 RDSS_status_t checkBuffer(RDSS_t *rs485);
 void fillValidBuffer(RDSS_t *r, uint8_t *buff, uint8_t len);
 //void rs485_set_query_frame(RS485_t* , Module_t *module);
@@ -122,5 +122,7 @@ void freqEncode(uint8_t *buffer, uint32_t freqIn);
 RDSS_status_t evaluateRdssStatus(RDSS_t *rdss);
 bool isModuleCommand(uint8_t cmd);
 void rdssReinit(RDSS_t *rdss);
+void updateRdss(RDSS_t *rdss, uint8_t *buffer, uint8_t bufferSize);
+void updateStatus(RDSS_t *rdss, uint32_t timeout);
 #endif /* INC_RS485_H_ */
 

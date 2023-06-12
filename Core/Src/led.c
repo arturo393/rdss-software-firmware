@@ -20,7 +20,7 @@ void led_off(void) {
 
 }
 
-void enableLedKeepAlive(LED_t *l) {
+void blinkKALed(LED_t *l) {
 	if (HAL_GetTick() - l->kaCounter > LED_KA_STATE_TIMEOUT)
 		l->kaCounter = HAL_GetTick();
 	else {

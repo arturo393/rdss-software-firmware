@@ -82,26 +82,17 @@ void USART1_IRQHandler(void);
 void print_parameters(UART1_t *u1, Vlad_t vlad);
 void printStatus(UART1_t *u1, RDSS_t *rdss);
 void printLoRaStatus(UART1_t *u1, SX1278_t *loRa);
-void dinamicFrame(SX1278_t *loRa);
-void parseLoRaMaster(RDSS_t *rs485, SX1278_t *loRa);
-uint8_t parseLoRaSlave(RDSS_t *remoteDiagnoticServer, SX1278_t *loRa);
-void parseUart(UART1_t *u1, RDSS_t *rdss);
-void sendLoRaMasterQuery(RDSS_t *rs485, SX1278_t *loRa);
-uint8_t* executeCmd(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad);
-uint8_t processReceivedLoraCommand(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad,
-		UART1_t *u1);
-void processReceivedUartCommand(Vlad_t *vlad, UART1_t *u1, RDSS_t *rdss,
-		SX1278_t *loRa);
-uint8_t processLoRaSlaveReceiver(SX1278_t *loRa, UART1_t *u1);
-void handleCommunication(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad,
-		UART1_t *u1);
-void handleDefaultCase(RDSS_t *rdss, SX1278_t *loRa, UART1_t *u1);
-uint8_t i2cGetVladMeasurements(uint8_t *buffer, uint8_t querySize);
-
 void setQueryStatusBuffer(RDSS_t *rdss, Vlad_t *vlad);
 void setQueryRdssBuffer(RDSS_t *rdss, Vlad_t *vlad);
 void i2cSetQueryRdssBuffer(RDSS_t *rdss);
-uint8_t cmdExecute(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad);
+uint8_t executeCommand(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa,
+		Vlad_t *vlad);
+void processUart1Rx(UART1_t *u1, RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad);
+void processCommand(SX1278_t *loRa, RDSS_t *rdss, Vlad_t *vlad);
+void transmitStatus(SX1278_t *loRa, RDSS_t *rdss);
+void slaveProcessRdss(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad);
+void slaveProcessLoRaRx(SX1278_t *loRa, RDSS_t *rdss, Vlad_t *vlad);
+
 /* USER CODE END 0 */
 
 /**
@@ -139,7 +130,6 @@ int main(void) {
 
 // Initialize the I2C peripheral (hi2c1) here
 	i2c1MasterInit();
-
 	u1 = uart1Init(HS16_CLK, BAUD_RATE);
 	u1->isDebugModeEnabled = false;
 	vlad = vladInit(0);
@@ -162,95 +152,14 @@ int main(void) {
 		 setQueryRdssBuffer(rdss, vlad);
 
 		 */
-
-		if (HAL_GetTick() - rdss->lastUpdateTicks > 3000) {
-			i2cSetQueryRdssBuffer(rdss);
-			//decodeVladMeasurements(vlad, rdss->queryBuffer + DATA_START_INDEX);
-			rdss->lastUpdateTicks = HAL_GetTick();
-		}
-
-		if (u1->isReceivedDataReady) {
-			u1->isReceivedDataReady = false;
-			rdss->status = validateBuffer(u1->rxData, u1->rxSize);
-
-			if (rdss->status == DATA_OK) {
-				// Copy from UART buffer to RDSS buffer
-				rdss->cmd = u1->rxData[CMD_INDEX];
-				rdss->idReceived = u1->rxData[MODULE_ID_INDEX];
-				rdss->buff = u1->rxData;
-				rdss->buffSize = u1->rxSize;
-				u1->txData = malloc(sizeof(uint8_t) * 25);
-				u1->txSize = cmdExecute(u1->txData, rdss, loRa, vlad);
-				for(uint8_t i = 0; i<u1->txSize; i++)
-					writeTxReg(u1->txData[i]);
-				free(u1->txData);
-				memset(u1->rxData, 0, sizeof(u1->rxData));
-				u1->rxSize = 0;
-			}
-			reinit(rdss);
-		}
-
-		if (loRa->mode == SLAVE_RECEIVER) {
-			if (loRa->operatingMode != RX_CONTINUOUS) {
-				changeLoRaOperatingMode(loRa, SLAVE_RECEIVER);
-				setRxFifoAddr(loRa);
-				setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS);
-			}
-
-			// Check BUSY pin status
-			GPIO_PinState busy = HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port,
-			LORA_BUSSY_Pin);
-			if (busy == GPIO_PIN_SET) { // if (crcErrorActivation(loRa) != 1)
-
-				loRa->rxData = getRxFifoData(loRa);
-				loRa->lastRxTime = HAL_GetTick();
-
-				if (loRa->rxSize > 0) {
-					rdss->status = validateBuffer(loRa->rxData, loRa->rxSize);
-
-					if (rdss->status == DATA_OK) {
-						rdss->cmd = loRa->rxData[CMD_INDEX]; // Update the command from the received data
-						rdss->idReceived = loRa->rxData[MODULE_ID_INDEX]; // Update the received ID
-						rdss->len = loRa->rxSize;
-						rdss->buff = loRa->rxData;
-
-						if (rdss->idReceived == rdss->id) {
-							if (rdss->cmd == QUERY_STATUS) {
-								loRa->txData = rdss->queryBuffer;
-								loRa->txSize = QUERY_STATUS_BUFFER_SIZE;
-								changeLoRaOperatingMode(loRa, SLAVE_SENDER); // Change LoRa operating mode to SLAVE_SENDER
-								transmitDataUsingLoRa(loRa); // Transmit data using LoRa
-								loRa->lastTxTime = HAL_GetTick()
-										- loRa->lastRxTime;
-								changeLoRaOperatingMode(loRa, SLAVE_RECEIVER); // Change LoRa operating mode to SLAVE_RECEIVER
-
-							} else {
-								loRa->txData = malloc(sizeof(uint8_t) * 25);
-								loRa->txSize = cmdExecute(loRa->txData, rdss,
-										loRa, vlad);
-								changeLoRaOperatingMode(loRa, SLAVE_SENDER); // Change LoRa operating mode to SLAVE_SENDER
-								transmitDataUsingLoRa(loRa); // Transmit data using LoRa
-								loRa->lastTxTime = HAL_GetTick()
-										- loRa->lastRxTime;
-								changeLoRaOperatingMode(loRa, SLAVE_RECEIVER); // Change LoRa operating mode to SLAVE_RECEIVER
-								free(loRa->txData);
-							}
-
-						} else
-							rdss->status = WRONG_MODULE_ID;
-
-					}
-					rdssReinit(rdss);
-					free(loRa->rxData);
-				}
-			}
-
-		}
-
-		enableLedKeepAlive(led);
+		updateStatus(rdss, 3000);
+		processUart1Rx(u1, rdss, loRa, vlad);
+		configureLoRaRx(loRa,SLAVE_RECEIVER);
+		slaveProcessLoRaRx(loRa, rdss, vlad);
+		blinkKALed(led);
 #ifdef IWDG_ENABLE
-		HAL_IWDG_Refresh(&hiwdg);
-#endif
+			HAL_IWDG_Refresh(&hiwdg);
+	#endif
 	}
 	/* USER CODE END WHILE */
 
@@ -509,12 +418,14 @@ static void MX_GPIO_Init(void) {
 }
 
 /* USER CODE BEGIN 4 */
+
 void USART1_IRQHandler(void) {
 	if (u1->rxSize >= RX_BUFFLEN) {
 		memset(u1->rxData, 0, RX_BUFFLEN);
 		u1->rxSize = 0;
 		u1->isReceivedDataReady = false;
 	}
+
 	u1->rxData[u1->rxSize++] = readRxReg();
 	if (u1->rxData[u1->rxSize - 1] == LTEL_END_MARK)
 		u1->isReceivedDataReady = true;
@@ -526,13 +437,13 @@ void USART1_IRQHandler(void) {
 
 }
 
-uint8_t cmdExecute(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad) {
+uint8_t executeCommand(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa,
+		Vlad_t *vlad) {
 	uint8_t index = 0;
-	uint8_t eepromResponse = 0;
 	uint8_t attenuationCommand[2];
 	const uint8_t i2cSlaveAddress = 0x08;
 
-	if (rdss->len < LTEL_QUERY_LENGTH || rdss->len > LTEL_SET_LENGTH)
+	if (rdss->buffSize < LTEL_QUERY_LENGTH || rdss->buffSize > LTEL_SET_LENGTH)
 		return 0;
 
 	index = setRdssStartData(rdss, buffer);
@@ -587,33 +498,43 @@ uint8_t cmdExecute(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad) 
 		buffer[index++] = 4;
 		loRa->upFreq = freqDecode(rdss->buff + index);
 		index += sizeof(loRa->upFreq);
-		eepromResponse = savePage(
+		savePage(
 		CAT24C02_PAGE1_START_ADDR, (uint8_t*) &(loRa->upFreq), 0, 4);
+		changeMode(loRa, loRa->mode);
+		writeLoRaParametersReg(loRa);
 		break;
 	case SET_RX_FREQ:
 		buffer[index++] = 4;
 		loRa->dlFreq = freqDecode(rdss->buff + index);
 		index += sizeof(loRa->dlFreq);
-		eepromResponse = savePage(
+		savePage(
 		CAT24C02_PAGE1_START_ADDR, (uint8_t*) &(loRa->dlFreq), 4, 4);
+		changeMode(loRa, loRa->mode);
+		writeLoRaParametersReg(loRa);
 		break;
 	case SET_BANDWIDTH:
 		buffer[index++] = 1;
 		loRa->bandwidth = rdss->buff[index++] - 1;
-		eepromResponse = savePage(
+		savePage(
 		CAT24C02_PAGE0_START_ADDR, &(loRa->bandwidth), 1, 1);
+		changeMode(loRa, loRa->mode);
+		writeLoRaParametersReg(loRa);
 		break;
 	case SET_SPREAD_FACTOR:
 		buffer[index++] = 1;
 		loRa->spreadFactor = rdss->buff[index++] + 6;
-		eepromResponse = savePage(
+		savePage(
 		CAT24C02_PAGE0_START_ADDR, &(loRa->spreadFactor), 0, 1);
+		changeMode(loRa, loRa->mode);
+		writeLoRaParametersReg(loRa);
 		break;
 	case SET_CODING_RATE:
 		buffer[index++] = 1;
 		loRa->codingRate = rdss->buff[index++];
-		eepromResponse = savePage(
+		savePage(
 		CAT24C02_PAGE0_START_ADDR, &(loRa->codingRate), 2, 1);
+		changeMode(loRa, loRa->mode);
+		writeLoRaParametersReg(loRa);
 		break;
 	case SET_VLAD_ATTENUATION:
 
@@ -633,158 +554,6 @@ uint8_t cmdExecute(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad) 
 
 }
 
-/*
- void print_parameters(UART1_t *u1, Vlad_t vlad) {
- if (!u1->isDebugModeEnabled)
- return;
-
- char *buff;
- uint8_t size;
- buff = malloc(sizeof(char) * 20);
- size = (uint8_t) sprintf(buff, "vin %d [V]\r\n",
- vlad.vin);
- writeTx(u1);
- size = (uint8_t) sprintf(buff,
- "current real %d [A]\r\n", (uint8_t) vlad.currentReal);
- writeTx(u1);
- size = (uint8_t) sprintf(buff,
- "tone level %d[dBm]\r\n", vlad.tone_level);
- writeTx(u1);
- size = (uint8_t) sprintf(buff, "current %d[A]\r\n",
- vlad.current);
- writeTx(u1);
- size = (uint8_t) sprintf(buff, "agc150m %d[dBm]\r\n",
- vlad.agc152m);
- writeTx(u1);
- size = (uint8_t) sprintf(buff, "level150m %d[dBm]\r\n",
- vlad.level152m);
- writeTx(u1);
- size = (uint8_t) sprintf(buff, "agc170m %d[dBm]\r\n",
- vlad.agc172m);
- writeTx(u1);
- size = (uint8_t) sprintf(buff, "level170m %d[dBm]\r\n",
- vlad.level172m);
- for (uint8_t i = 0; i < size; i++) {
- writeTxReg(buff[i]);
- }
-
- free(buff);
-
-
- }
-
- */
-
-/*
- void printStatus(UART1_t *u1, RDSS_t *rdss) {
-
- if (!u1->isDebugModeEnabled)
- return;
-
- char *str = (char*) u1->transmitBuffer;
- uint8_t i = 0;
- switch (rdss->status) {
- case CRC_ERROR:
- checkCRCValidity(rdss->buffer, rdss->len);
- u1->transmittedDataLength = (uint8_t) sprintf(str, "CRC mismatch:\r\n");
- writeTx(u1);
- u1->transmittedDataLength = 0;
- break;
- case WRONG_MODULE_ID:
- u1->transmittedDataLength = (uint8_t) sprintf(str,
- "ID mismatch - ID %d and ID received %d \r\n", rdss->id,
- rdss->idReceived);
- writeTx(u1);
- u1->transmittedDataLength = 0;
- break;
- case NOT_VALID_FRAME:
- u1->transmittedDataLength = (uint8_t) sprintf(str,
- "Not valid start byte \r\n");
- writeTx(u1);
- u1->transmittedDataLength = 0;
- break;
- case DATA_OK:
- u1->transmittedDataLength = (uint8_t) sprintf(str,
- "Validation ok: ID %02x Cmd %02x Bytes %d Data \r\n",
- rdss->buffer[2], rdss->buffer[3], rdss->buffer[5]);
- writeTx(u1);
- for (int i = DATA_START_INDEX; i < rdss->buffer[5]; i++) {
- if (i > 250)
- break;
- u1->transmittedDataLength = (uint8_t) sprintf(str, "%02X",
- rdss->buffer[i]);
- writeTx(u1);
- }
- writeTxReg('\n');
- break;
- case WAITING:
- u1->transmittedDataLength = (uint8_t) sprintf(str,
- "Waiting for new data\r\n");
- writeTx(u1);
- u1->transmittedDataLength = 0;
- break;
- case LORA_SEND:
- u1->transmittedDataLength = (uint8_t) sprintf(str,
- "Send uart data to loRa ID: %d\r\n", rdss->idReceived);
- writeTx(u1);
- u1->transmittedDataLength = 0;
- break;
- case LORA_RECEIVE:
- u1->transmittedDataLength = (uint8_t) sprintf(str,
- "Validation ok: ID %02x Cmd %02x Bytes %d Data \r\n",
- rdss->buffer[2], rdss->buffer[3], rdss->buffer[5]);
- writeTx(u1);
- for (i = DATA_START_INDEX; i < rdss->buffer[5]; i++) {
- if (i > 250)
- break;
- u1->transmittedDataLength = (uint8_t) sprintf(str, "%02X",
- rdss->buffer[i]);
- writeTx(u1);
- }
- if (i > DATA_START_INDEX)
- writeTxReg('\n');
- u1->transmittedDataLength = 0;
- break;
- case UART_SEND:
- u1->transmittedDataLength = (uint8_t) sprintf(str,
- "Reply vlad data: %d\r\n", rdss->idReceived);
- writeTx(u1);
- for (i = 0; i < rdss->len; i++) {
- if (i > 250)
- break;
- u1->transmittedDataLength = (uint8_t) sprintf(str, "%02X",
- rdss->buffer[i]);
- writeTx(u1);
- }
- if (i > 0)
- writeTxReg('\n');
- u1->transmittedDataLength = 0;
- break;
- case UART_VALID:
- u1->transmittedDataLength = (uint8_t) sprintf(str,
- "Validation ok: ID %02x Cmd %02x Bytes %d Data \r\n",
- rdss->buffer[2], rdss->buffer[3], rdss->buffer[5]);
- writeTx(u1);
- for (int i = DATA_START_INDEX; i < rdss->buffer[5]; i++) {
- if (i > 250)
- break;
- u1->transmittedDataLength = (uint8_t) sprintf(str, "%02X",
- rdss->buffer[i]);
- writeTx(u1);
- }
- if (i > DATA_START_INDEX)
- writeTxReg('\n');
- u1->transmittedDataLength = 0;
- break;
- default:
- break;
-
- }
- cleanTx(u1);
-
- }
-
- */
 
 void printLoRaStatus(UART1_t *u1, SX1278_t *loRa) {
 	if (!u1->isDebugModeEnabled) {
@@ -851,385 +620,52 @@ void printLoRaStatus(UART1_t *u1, SX1278_t *loRa) {
 	cleanTx(u1);
 }
 
-void dinamicFrame(SX1278_t *loRa) {
-	uint8_t crc_frame[2];
-	uint16_t crc;
-	uint8_t i;
-	uint8_t len = loRa->len;
-	uint8_t *buff = loRa->txData;
-
-	if (len > 240)
-		len = 240;
-
-	buff[0] = LTEL_START_MARK;
-	buff[1] = VLADR;
-	buff[2] = ID1;
-	buff[3] = QUERY_STATUS;
-	buff[4] = 0x00;
-	buff[5] = len;
-	for (i = 6; i < len + 6; i++) {
-		buff[i] = i - 6;
-	}
-	crc = crc_get(&(buff[1]), (len + 5));
-	memcpy(crc_frame, &crc, 2);
-	buff[len + 6] = crc_frame[0];
-	buff[len + 7] = crc_frame[1];
-	buff[len + 8] = LTEL_END_MARK;
-
-	loRa->len = len + LTEL_QUERY_LENGTH;
-	loRa->status = TX_BUFFER_READY;
-
-}
-/*
- void parseLoRaMaster(RDSS_t *rs485, SX1278_t *loRa) {
- fillValidBuffer(&*rs485, loRa->buffer, loRa->len);
- memset(loRa->buffer, 0, sizeof(loRa->buffer));
- loRa->len = 0;
- if (rs485->status == DATA_OK) {
- rs485->cmd = rs485->buffer[CMD_INDEX];
- rs485->idReceived = rs485->buffer[MODULE_ID_INDEX];
- if (rs485->idReceived == rs485->idQuery)
- rs485->status = LORA_RECEIVE;
- else
- rs485->status = WRONG_MODULE_ID;
-
- rs485->idQuery = 0;
- }
- }
-
- */
-
-/*
-
- uint8_t parseLoRaSlave(RDSS_t *remoteDiagnosticServer, SX1278_t *loRa) {
- if (loRa->len <= 0)
- return 0;
-
- fillValidBuffer(remoteDiagnosticServer, loRa->buffer, loRa->len);
- memset(loRa->buffer, 0, sizeof(loRa->buffer));
- loRa->len = 0;
-
- if (remoteDiagnosticServer->status == DATA_OK) {
- remoteDiagnosticServer->cmd = remoteDiagnosticServer->buffer[CMD_INDEX];
- remoteDiagnosticServer->idReceived =
- remoteDiagnosticServer->buffer[MODULE_ID_INDEX];
-
- if (remoteDiagnosticServer->idReceived == remoteDiagnosticServer->id) {
- remoteDiagnosticServer->status = LORA_RECEIVE;
- return 1; // Data is valid and received for the correct module
- } else {
- remoteDiagnosticServer->status = WRONG_MODULE_ID;
- return 0; // Data received for the wrong module
- }
- }
-
- return 0; // Invalid data or status not OK
- }
- */
-
-/*
- void parseUart(UART1_t *u1, RDSS_t *rdss) {
- u1->isReceivedDataReady = false;
-
- rdss->status = validateBuffer(u1->rxData, u1->rxSize);
-
- if (rdss->status != DATA_OK) {
- // Clear UART buffer and length
- memset(u1->rxData, 0, sizeof(u1->rxData));
- u1->rxSize = 0;
- return;
- }
- // Copy from UART buffer to RDSS buffer
- rdss->cmd = u1->rxData[CMD_INDEX];
- rdss->idReceived = u1->rxData[MODULE_ID_INDEX];
- rdss->len = u1->rxSize;
- memcpy(rdss->buffer, u1->rxData, u1->rxSize);
-
- // Clear UART buffer and length
- memset(u1->rxData, 0, sizeof(u1->rxData));
- u1->rxSize = 0;
-
- rdss->status = evaluateRdssStatus(rdss);
- if (isModuleCommand(rdss->cmd)) {
- rdss->status = UART_VALID;
- }
- }
- */
-/*
- void sendLoRaMasterQuery(RDSS_t *rs485, SX1278_t *loRa) {
- if (rs485->len != LTEL_QUERY_LENGTH)
- return;
- rs485->idQuery = rs485->buffer[MODULE_ID_INDEX];
- loRa->len = rs485->len;
- changeLoRaOperatingMode(&*loRa, MASTER_SENDER);
- memcpy(loRa->buffer, rs485->buffer, rs485->len);
- transmitDataUsingLoRa(&*loRa);
- }
-
- */
-
-uint8_t* executeCmd(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad) {
-	uint8_t index = 0;
-	uint8_t eepromResponse = 0;
-	uint8_t *buffer = malloc(sizeof(uint8_t) * 25);
-	uint8_t attenuationCommand[2];
-	const uint8_t i2cSlaveAddress = 0x08;
-
-	if (rdss->len < LTEL_QUERY_LENGTH || rdss->len > LTEL_SET_LENGTH)
-		return 0;
-
-	index = setRdssStartData(rdss, buffer);
-
-	switch (rdss->cmd) {
-	case QUERY_RX_FREQ:
-		buffer[index++] = 4;
-		freqEncode(buffer + index, loRa->dlFreq);
-		index += sizeof(loRa->dlFreq);
-		index++;
-		break;
-	case QUERY_TX_FREQ:
-		buffer[index++] = 4;
-		freqEncode(buffer + index, loRa->upFreq);
-		index += sizeof(loRa->upFreq);
-		index++;
-		break;
-	case QUERY_SPREAD_FACTOR:
-		buffer[index++] = 1;
-		buffer[index++] = loRa->spreadFactor - 6;
-		break;
-	case QUERY_CODING_RATE:
-		buffer[index++] = 1;
-		buffer[index++] = loRa->codingRate;
-		break;
-	case QUERY_BANDWIDTH:
-		buffer[index++] = 1;
-		buffer[index++] = loRa->bandwidth + 1;
-		break;
-	case QUERY_MODULE_ID:
-		index = 0;
-		buffer[index++] = LTEL_START_MARK;
-		buffer[index++] = VLADR;
-		buffer[index++] = rdss->id;
-		buffer[index++] = QUERY_MODULE_ID;
-		buffer[index++] = 0x00;
-		buffer[index++] = 2;
-		buffer[index++] = VLADR;
-		buffer[index++] = rdss->id;
-		break;
-	case SET_MODULE_ID:
-		vlad->function = rdss->buff[6];
-		vlad->id = rdss->buff[7];
-		rdss->id = vlad->id;
-		index = setRdssStartData(rdss, buffer);
-		buffer[index++] = VLADR;
-		buffer[index++] = rdss->id;
-		savePage(CAT24C02_PAGE0_START_ADDR, (uint8_t*) &(vlad->function), 3, 1);
-		savePage(CAT24C02_PAGE0_START_ADDR, (uint8_t*) &(vlad->id), 4, 1);
-		break;
-	case SET_TX_FREQ:
-		buffer[index++] = 4;
-		loRa->upFreq = freqDecode(rdss->buff + index);
-		index += sizeof(loRa->upFreq);
-		eepromResponse = savePage(CAT24C02_PAGE1_START_ADDR,
-				(uint8_t*) &(loRa->upFreq), 0, 4);
-		break;
-	case SET_RX_FREQ:
-		buffer[index++] = 4;
-		loRa->dlFreq = freqDecode(rdss->buff + index);
-		index += sizeof(loRa->dlFreq);
-		eepromResponse = savePage(CAT24C02_PAGE1_START_ADDR,
-				(uint8_t*) &(loRa->dlFreq), 4, 4);
-		break;
-	case SET_BANDWIDTH:
-		buffer[index++] = 1;
-		loRa->bandwidth = rdss->buff[index++] - 1;
-		eepromResponse = savePage(CAT24C02_PAGE0_START_ADDR, &(loRa->bandwidth),
-				1, 1);
-		break;
-	case SET_SPREAD_FACTOR:
-		buffer[index++] = 1;
-		loRa->spreadFactor = rdss->buff[index++] + 6;
-		eepromResponse = savePage(CAT24C02_PAGE0_START_ADDR,
-				&(loRa->spreadFactor), 0, 1);
-		break;
-	case SET_CODING_RATE:
-		buffer[index++] = 1;
-		loRa->codingRate = rdss->buff[index++];
-		eepromResponse = savePage(CAT24C02_PAGE0_START_ADDR,
-				&(loRa->codingRate), 2, 1);
-		break;
-	case SET_VLAD_ATTENUATION:
-
-		attenuationCommand[0] = SET_VLAD_ATTENUATION;
-		attenuationCommand[1] = rdss->buff[ATTENUATION_VALUE_INDEX];
-		vlad->is_attenuation_updated = i2c1MasterTransmit(i2cSlaveAddress,
-				attenuationCommand, sizeof(attenuationCommand), 10);
-		buffer[index++] = vlad->is_attenuation_updated;
-		break;
-	default:
-		break;
-	}
-
-	index += setCrc(buffer, index);
-	buffer[index++] = LTEL_END_MARK;
-	loRa->txData = buffer;
-	loRa->txSize = index;
-	rdss->status = UART_SEND;
-	if (eepromResponse > 0)
-		changeLoRaOperatingMode(loRa, MASTER_RECEIVER);
-
-	return buffer;
-}
-/*
- uint8_t processReceivedLoraCommand(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad,
- UART1_t *u1) {
- uint8_t index = 0;
-
- // Update LoRa buffer with LTel command
- loRa->len = executeCmd(loRa->buffer, rdss, loRa, vlad);
-
- if (rdss->cmd == SET_VLAD_ATTENUATION) { // If the received command is to set attenuation
- uint8_t attenuationCommand[2];
- uint8_t i2cSlaveAddress = 0x08;
-
- // Set RDSS start data
- uint8_t index = setRdssStartData(&*rdss, loRa->buffer);
-
- attenuationCommand[0] = SET_VLAD_ATTENUATION;
- attenuationCommand[1] = rdss->buffer[ATTENUATION_VALUE_INDEX];
-
- // Transmit attenuation command via I2C
- vlad->is_attenuation_updated = i2c1MasterTransmit(i2cSlaveAddress,
- attenuationCommand, sizeof(attenuationCommand), 10);
-
- loRa->buffer[index++] = vlad->is_attenuation_updated;
- index += setCrc(loRa->buffer, index); // Set CRC in the LoRa buffer
- loRa->buffer[index++] = LTEL_END_MARK;
- loRa->len = index;
- loRa->status = TX_BUFFER_READY;
- }
- changeLoRaOperatingMode(loRa, SLAVE_SENDER); // Change LoRa operating mode to SLAVE_SENDER
- transmitDataUsingLoRa(loRa); // Transmit data using LoRa
- loRa->lastTxTime = HAL_GetTick() - loRa->lastRxTime;
- changeLoRaOperatingMode(loRa, SLAVE_RECEIVER); // Change LoRa operating mode to SLAVE_RECEIVER
- return index; // Return the index value indicating the progress of the function execution
- }
- */
-/*
- void processReceivedUartCommand(Vlad_t *vlad, UART1_t *u1, RDSS_t *rdss,
- SX1278_t *loRa) {
- u1->transmittedDataLength = executeCmd(u1->transmitBuffer, rdss, loRa,
- vlad);
- if (rdss->cmd == SET_VLAD_ATTENUATION) {
- uint8_t attenuationCommand[2];
- uint8_t i2cSlaveAddress = 0x08;
- uint8_t index = setRdssStartData(rdss, u1->transmitBuffer);
- attenuationCommand[0] = SET_VLAD_ATTENUATION;
- attenuationCommand[1] = rdss->buffer[5];
- vlad->is_attenuation_updated = i2c1MasterTransmit(i2cSlaveAddress,
- attenuationCommand, sizeof(attenuationCommand), 10);
-
- u1->transmitBuffer[index++] = vlad->is_attenuation_updated;
- index += setCrc(u1->transmitBuffer, index);
- u1->transmitBuffer[index++] = LTEL_END_MARK;
- u1->transmittedDataLength = index;
- }
- writeTx(u1);
- printStatus(u1, rdss);
- reinit(rdss);
- cleanTx(u1);
- u1->transmittedDataLength = 0;
- }*/
-
-uint8_t processLoRaSlaveReceiver(SX1278_t *loRa, UART1_t *u1) {
-	uint8_t receivedLength = 0;
-
-	if (loRa->operatingMode != RX_CONTINUOUS) {
-		changeLoRaOperatingMode(loRa, SLAVE_RECEIVER);
-		setRxFifoAddr(loRa);
-		setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS);
-	}
-
-	clearRxMemory(loRa);
-
-	// Check BUSY pin status
-	GPIO_PinState busy = HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port, LORA_BUSSY_Pin);
-	if (busy == GPIO_PIN_SET) {
-		if (crcErrorActivation(loRa) != 1) {
-			receivedLength = getRxFifoData(loRa);
-			loRa->lastRxTime = HAL_GetTick();
-		}
-	}
-
-//	if (loRa->status == RX_DONE) {
-//		setRxFifoAddr(loRa);
-//		setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS);
-//		readOperatingMode(loRa);
-//		loRa->status = RX_MODE;
-//	}
-
-	return receivedLength;
-}
-
 uint8_t i2cGetVladMeasurements(uint8_t *buffer, uint8_t querySize) {
 	const uint8_t slaveAddress = 0x08;
 	uint8_t vladMeasurementsCmd[2] = { 0x10, 0x00 };
 
 	if (!i2c1MasterTransmit(slaveAddress, vladMeasurementsCmd,
-			sizeof(vladMeasurementsCmd), 10))
-		return 0;
+			sizeof(vladMeasurementsCmd), 10)) {
+		memset(buffer, 0, querySize);
+		return querySize;
+	}
 	HAL_Delay(6);
-	if (!i2c1MasterReceive(slaveAddress, buffer, querySize, 10))
-		return 0;
+	if (!i2c1MasterReceive(slaveAddress, buffer, querySize, 10)) {
+		memset(buffer, 0, querySize);
+		return querySize;
+	}
 
 	return querySize;
 }
 
-void handleCommunication(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad,
-		UART1_t *u1) {
-	switch (rdss->status) {
-	case LORA_RECEIVE:
-		// Process received LoRa command
-		processReceivedLoraCommand(rdss, loRa, vlad, u1);
-		break;
-	case LORA_SEND:
-		// Print status and send LoRa query if the command is QUERY_STATUS
-		printStatus(u1, rdss);
-		if (rdss->cmd == QUERY_STATUS) {
-			sendLoRaMasterQuery(rdss, loRa);
-		}
-		printLoRaStatus(u1, loRa);
-		reinit(rdss); // Reinitialize the RDSS structure
-		break;
-	case UART_VALID:
-		// Process received UART command
-		processReceivedUartCommand(vlad, u1, rdss, loRa);
-		break;
-	default:
-		// Handle default case
-		handleDefaultCase(rdss, loRa, u1);
-		break;
+void processUart1Rx(UART1_t *u1, RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad) {
+	if (u1->isReceivedDataReady == false)
+		return;
+	u1->isReceivedDataReady = false;
+	if (validate(u1->rxData, u1->rxSize) != DATA_OK) {
+		// Clear UART buffer and length
+		memset(u1->rxData, 0, sizeof(u1->rxData));
+		u1->rxSize = 0;
+		return;
 	}
+	updateRdss(rdss, u1->rxData, u1->rxSize);
+	u1->txData = malloc(sizeof(uint8_t) * 25);
+	u1->txSize = executeCommand(u1->txData, rdss, loRa, vlad);
+	for (uint8_t i = 0; i < u1->txSize; i++)
+		writeTxReg(u1->txData[i]);
+	free(u1->txData);
+	memset(u1->rxData, 0, sizeof(u1->rxData));
+	u1->rxSize = 0;
+	reinit(rdss);
 }
 
-void handleDefaultCase(RDSS_t *rdss, SX1278_t *loRa, UART1_t *u1) {
-	if (u1->isReceivedDataReady) {
-		parseUart(u1, rdss);
-		processReceivedUartCommand(vlad, u1, rdss, loRa);
-		printStatus(u1, rdss);
-	} else if (loRa->len > 0) {
-		parseLoRaSlave(rdss, loRa);
-		printStatus(u1, rdss);
-		printLoRaStatus(u1, loRa);
-	} else if (loRa->mode == SLAVE_RECEIVER) {
-		processLoRaSlaveReceiver(loRa, u1);
-		if (loRa->len > 0) {
-			parseLoRaSlave(rdss, loRa);
-			printStatus(u1, rdss);
-			printLoRaStatus(u1, loRa);
-			processReceivedLoraCommand(rdss, loRa, vlad, u1);
-		}
-	}
+void processCommand(SX1278_t *loRa, RDSS_t *rdss, Vlad_t *vlad) {
+	loRa->txData = malloc(sizeof(uint8_t) * 25);
+	loRa->txSize = executeCommand(loRa->txData, rdss, loRa, vlad);
+	changeMode(loRa, SLAVE_SENDER); // Change LoRa operating mode to SLAVE_SENDER
+	transmit(loRa); // Transmit data using LoRa
+	changeMode(loRa, SLAVE_RECEIVER); // Change LoRa operating mode to SLAVE_RECEIVER
+	free(loRa->txData);
 }
 
 void setQueryStatusBuffer(RDSS_t *rdss, Vlad_t *vlad) {
@@ -1259,6 +695,7 @@ void setQueryRdssBuffer(RDSS_t *rdss, Vlad_t *vlad) {
 void i2cSetQueryRdssBuffer(RDSS_t *rdss) {
 	uint8_t index = 0;
 	const uint8_t querySize = 25;
+	memset(rdss->queryBuffer, 0, QUERY_STATUS_BUFFER_SIZE);
 	rdss->queryBuffer[index++] = LTEL_START_MARK;
 	rdss->queryBuffer[index++] = VLADR;
 	rdss->queryBuffer[index++] = rdss->id;
@@ -1270,6 +707,52 @@ void i2cSetQueryRdssBuffer(RDSS_t *rdss) {
 	rdss->queryBuffer[index++] = LTEL_END_MARK;
 }
 
+void transmitStatus(SX1278_t *loRa, RDSS_t *rdss) {
+	loRa->txData = rdss->queryBuffer;
+	loRa->txSize = QUERY_STATUS_BUFFER_SIZE;
+	changeMode(loRa, SLAVE_SENDER); // Change LoRa operating mode to SLAVE_SENDER
+	transmit(loRa); // Transmit data using LoRa
+	changeMode(loRa, SLAVE_RECEIVER); // Change LoRa operating mode to SLAVE_RECEIVER
+}
+
+void slaveProcessRdss(RDSS_t *rdss, SX1278_t *loRa, Vlad_t *vlad) {
+	if (rdss->idReceived != rdss->id) {
+		rdss->status = WRONG_MODULE_ID;
+		return;
+	}
+	if (rdss->cmd == QUERY_STATUS)
+		transmitStatus(loRa, rdss);
+	else
+		processCommand(loRa, rdss, vlad);
+}
+
+void slaveProcessLoRaRx(SX1278_t *loRa, RDSS_t *rdss, Vlad_t *vlad) {
+	if (HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port,
+	LORA_BUSSY_Pin) == GPIO_PIN_RESET)
+		return; // if (crcErrorActivation(loRa) != 1)
+
+	clearIrqFlagsReg(loRa);
+	loRa->rxData = getRxFifoData(loRa);
+	if (loRa->rxSize <= 0){
+		changeMode(loRa, loRa->mode);
+//		setRxFifoAddr(loRa);
+//		setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS);
+		return;
+
+	}
+	if (validate(loRa->rxData, loRa->rxSize) != DATA_OK){
+		changeMode(loRa, loRa->mode);
+//		setRxFifoAddr(loRa);
+//		setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS);
+		return;
+}
+	updateRdss(rdss, loRa->rxData, loRa->rxSize);
+	slaveProcessRdss(rdss, loRa, vlad);
+
+	rdssReinit(rdss);
+	free(loRa->rxData);
+	loRa->rxSize = 0;
+}
 /* USER CODE END 4 */
 
 /**
