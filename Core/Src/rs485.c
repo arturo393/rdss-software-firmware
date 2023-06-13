@@ -73,9 +73,15 @@ RDSS_status_t checkFrameValidity(uint8_t *frame, uint8_t lenght) {
 
 RDSS_status_t checkCRCValidity(uint8_t *frame, uint8_t len) {
 	uint16_t calculatedCrc, savedCrc;
+	uint8_t *crcTemp;
 	savedCrc = ((uint16_t) frame[len - 2] << 8);
 	savedCrc |= (uint16_t) frame[len - 3];
 	calculatedCrc = crc_get(&frame[1], len - 4);
+	crcTemp =(uint8_t*) &calculatedCrc;
+	if(crcTemp[0] == 0x7f)
+		crcTemp[0] = 0x7d;
+	if(crcTemp[1] == 0x7f)
+		crcTemp[1] = 0x7d;
 
 	return (calculatedCrc == savedCrc) ? DATA_OK : CRC_ERROR;
 }
@@ -170,7 +176,7 @@ uint8_t setRdssStartData(RDSS_t *rdss, uint8_t *buffer, Function_t function) {
 
 
 
-uint32_t freqDecode(uint8_t *buffer) {
+int freqDecode(uint8_t *buffer) {
 	union floatConverter freq;
 	freq.i = 0;
 	freq.i |= (buffer[0]);
@@ -179,7 +185,7 @@ uint32_t freqDecode(uint8_t *buffer) {
 	freq.i |= (buffer[3] << 24);
 	freq.f = freq.f * 1000000.0f;
 
-	return (uint32_t) freq.f;
+	return (int) freq.f;
 }
 
 void freqEncode(uint8_t *buffer, uint32_t freqIn) {

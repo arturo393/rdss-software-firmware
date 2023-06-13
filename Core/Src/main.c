@@ -165,7 +165,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_ADC1_Init();
   MX_CRC_Init();
-//  MX_IWDG_Init();
+  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
 	vlad = vladInit(SERVER);
 	server = serverInit(SERVER);
@@ -178,7 +178,6 @@ int main(void)
 #ifdef IWDG_DEBUG
 	HAL_IWDG_Refresh(&hiwdg);
 #endif
-	//adc_init();
 	HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
 	HAL_NVIC_EnableIRQ(USART1_IRQn);
 	HAL_UART_Receive_IT(&huart1, &rxData, 1);
@@ -186,7 +185,6 @@ int main(void)
 	configureGPIO();
 	configureADC();
 	calibrateADC();
-//HAL_TIM_Base_Start_IT(&htim2);
 	uint32_t keepAliveStartTicks = HAL_GetTick();
 	rdss->lastUpdateTicks = HAL_GetTick();
 //	HAL_IWDG_Refresh(&hiwdg);
@@ -967,7 +965,6 @@ void processUart1Rx(UART1_t *u1, RDSS_t *rdss, Server_t *server, SX1278_t *loRa)
 	}
 	updateRdss(rdss, u1->rxData, u1->rxSize);
 	if (rdss->idReceived == rdss->id) {
-
 		processServerCmd(u1, rdss, loRa, server);
 	} else if (rdss->cmd != 0) {
 		transmitRdssQuery(rdss, loRa);
@@ -985,15 +982,6 @@ void masterProcessRdss(RDSS_t *rdss) {
 
 void masterProcessLoRaRx(SX1278_t *loRa, RDSS_t *rdss, Vlad_t *vlad) {
 
-	/*
-	 if (loRa->operatingMode != RX_CONTINUOUS) {
-	 changeMode(loRa, MASTER_RECEIVER); // Set the LoRa operating mode to master receiver
-	 setRxFifoAddr(loRa); // Set the FIFO address for receive mode
-	 setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS); // Configure low-frequency mode for continuous receive
-	 loRa->rxSize = 0;
-	 }
-	 */
-
 	if (HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port,
 	LORA_BUSSY_Pin) == GPIO_PIN_RESET)
 		return; // if (crcErrorActivation(loRa) != 1)
@@ -1008,7 +996,7 @@ void masterProcessLoRaRx(SX1278_t *loRa, RDSS_t *rdss, Vlad_t *vlad) {
 		free(loRa->rxData);
 		return;
 	}
-	HAL_GPIO_WritePin(LORA_RX_OK_GPIO_Port, LORA_RX_OK_Pin, GPIO_PIN_SET);
+
 	updateRdss(rdss, loRa->rxData, loRa->rxSize);
 
 	if (rdss->idReceived != rdss->idQuery) {
@@ -1016,6 +1004,7 @@ void masterProcessLoRaRx(SX1278_t *loRa, RDSS_t *rdss, Vlad_t *vlad) {
 		free(loRa->rxData);
 		return;
 	}
+	HAL_GPIO_WritePin(LORA_RX_OK_GPIO_Port, LORA_RX_OK_Pin, GPIO_PIN_SET);
 	masterProcessRdss(rdss);
 	rdssReinit(rdss);
 	free(loRa->rxData);
