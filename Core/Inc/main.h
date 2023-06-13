@@ -59,6 +59,10 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define KA_LED_Pin GPIO_PIN_4
 #define KA_LED_GPIO_Port GPIOA
+#define LORA_TX_OK_Pin GPIO_PIN_5
+#define LORA_TX_OK_GPIO_Port GPIOA
+#define LORA_RX_OK_Pin GPIO_PIN_6
+#define LORA_RX_OK_GPIO_Port GPIOA
 #define LORA_NSS_Pin GPIO_PIN_0
 #define LORA_NSS_GPIO_Port GPIOB
 #define LORA_RST_Pin GPIO_PIN_1

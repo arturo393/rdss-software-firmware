@@ -117,7 +117,7 @@ void reinit(RDSS_t *rs485);
 void encodeVlad(uint8_t* buff);
 uint8_t setCrc(uint8_t* buff,uint8_t size);
 uint8_t setRdssStartData(RDSS_t *rdss, uint8_t *buffer);
-uint32_t freqDecode(uint8_t *buffer);
+int freqDecode(uint8_t *buffer);
 void freqEncode(uint8_t *buffer, uint32_t freqIn);
 RDSS_status_t evaluateRdssStatus(RDSS_t *rdss);
 bool isModuleCommand(uint8_t cmd);

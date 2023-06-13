@@ -73,10 +73,15 @@ RDSS_status_t checkFrameValidity(uint8_t *frame, uint8_t lenght) {
 
 RDSS_status_t checkCRCValidity(uint8_t *frame, uint8_t len) {
 	uint16_t calculatedCrc, savedCrc;
+	uint8_t *crcTemp;
 	savedCrc = ((uint16_t) frame[len - 2] << 8);
 	savedCrc |= (uint16_t) frame[len - 3];
 	calculatedCrc = crc_get(&frame[1], len - 4);
-
+	crcTemp =(uint8_t*) &calculatedCrc;
+	if(crcTemp[0] == 0x7f)
+		crcTemp[0] = 0x7d;
+	if(crcTemp[1] == 0x7f)
+		crcTemp[1] = 0x7d;
 	return (calculatedCrc == savedCrc) ? DATA_OK : CRC_ERROR;
 }
 
@@ -85,6 +90,7 @@ uint16_t crc_get(uint8_t *buffer, uint8_t buff_len) {
 	uint8_t bit_idx;
 	uint16_t generator = 0x1021; // 16-bit divisor
 	uint16_t crc = 0;            // 16-bit CRC value
+
 
 	for (byte_idx = 0; byte_idx < buff_len; byte_idx++) {
 		crc ^= ((uint16_t) (buffer[byte_idx] << 8)); // Move byte into MSB of 16-bit CRC
@@ -231,7 +237,7 @@ uint8_t setRdssStartData(RDSS_t *rdss, uint8_t *buffer) {
 	return i;
 }
 
-uint32_t freqDecode(uint8_t *buffer) {
+int freqDecode(uint8_t *buffer) {
 	union floatConverter freq;
 	freq.i = 0;
 	freq.i |= (buffer[0]);
@@ -240,7 +246,7 @@ uint32_t freqDecode(uint8_t *buffer) {
 	freq.i |= (buffer[3] << 24);
 	freq.f = freq.f * 1000000.0f;
 
-	return freq.f;
+	return (int) freq.f;
 }
 
 void freqEncode(uint8_t *buffer, uint32_t freqIn) {
