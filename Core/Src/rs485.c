@@ -19,12 +19,6 @@ RDSS_t* rdssInit(uint8_t id) {
 	return r;
 }
 
-/**
- * Reinitializes the RDSS_t structure.
- * This function resets all the fields of the RDSS_t structure to their initial values.
- *
- * @param rdss Pointer to the RDSS_t structure to be reinitialized.
- */
 void rdssReinit(RDSS_t *rdss) {
     rdss->cmd = NONE;           // Reset the command field
     rdss->crcReceived = 0;      // Reset the received CRC value
@@ -33,7 +27,6 @@ void rdssReinit(RDSS_t *rdss) {
     rdss->status = WAITING;     // Set the status to waiting
     rdss->idReceived = 0;       // Reset the received ID
 }
-
 
 RDSS_status_t rs485_check_CRC_module(UART1_t *uart1) {
 	unsigned long crc_cal;
@@ -72,20 +65,13 @@ RDSS_status_t checkFrameValidity(uint8_t *frame, uint8_t lenght) {
 }
 
 RDSS_status_t checkCRCValidity(uint8_t *frame, uint8_t len) {
-	uint16_t calculatedCrc, savedCrc;
-	uint8_t *crcTemp;
-	savedCrc = ((uint16_t) frame[len - 2] << 8);
-	savedCrc |= (uint16_t) frame[len - 3];
-	calculatedCrc = crc_get(&frame[1], len - 4);
-	crcTemp =(uint8_t*) &calculatedCrc;
-	if(crcTemp[0] == 0x7f)
-		crcTemp[0] = 0x7d;
-	if(crcTemp[1] == 0x7f)
-		crcTemp[1] = 0x7d;
-
-	return (calculatedCrc == savedCrc) ? DATA_OK : CRC_ERROR;
+    uint16_t calculatedCrc;
+    uint16_t savedCrc;
+    savedCrc = ((uint16_t) frame[len - CRC_HIGH_BYTE_OFFSET] << 8);
+    savedCrc |= (uint16_t) frame[len - CRC_LOW_BYTE_OFFSET];
+    calculatedCrc = crc_get(&frame[1], len - FRAME_HEADER_SIZE);
+    return ((calculatedCrc == savedCrc) ? DATA_OK : CRC_ERROR);
 }
-
 uint16_t crc_get(uint8_t *buffer, uint8_t buff_len) {
 	uint8_t byte_idx;
 	uint8_t bit_idx;
@@ -110,21 +96,15 @@ uint16_t crc_get(uint8_t *buffer, uint8_t buff_len) {
 RDSS_status_t validate(uint8_t *buffer, uint8_t length) {
 	RDSS_status_t frameStatus = checkFrameValidity(buffer, length);
 	if (frameStatus != VALID_FRAME)
-		return frameStatus;
+		return (frameStatus);
 	RDSS_status_t moduleStatus = checkModuleValidity(buffer, length);
 	if (moduleStatus != VALID_MODULE)
-		return moduleStatus;
+		return (moduleStatus);
 	RDSS_status_t crcStatus = checkCRCValidity(buffer, length);
 	if (crcStatus != DATA_OK)
-		return crcStatus;
-	return DATA_OK;
+		return (crcStatus);
+	return (DATA_OK);
 }
-
-
-bool isModuleCommand(uint8_t cmd) {
-    return cmd == QUERY_MODULE_ID || cmd == SET_MODULE_ID;
-}
-
 
 void encodeVlad(uint8_t *buff) {
 	uint16_t lineVoltage = (uint16_t) rand() % 610;
@@ -173,8 +153,6 @@ uint8_t setRdssStartData(RDSS_t *rdss, uint8_t *buffer, Function_t function) {
 	buffer[i++] = 0x00;
 	return i;
 }
-
-
 
 int freqDecode(uint8_t *buffer) {
 	union floatConverter freq;

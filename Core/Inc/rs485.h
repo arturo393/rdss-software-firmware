@@ -24,6 +24,9 @@
 #define LTEL_SET_LENGTH  13
 #define LTEL_QUERY_LENGTH  9
 #define MINIMUN_FRAME_LEN 6
+#define CRC_HIGH_BYTE_OFFSET 2
+#define CRC_LOW_BYTE_OFFSET 3
+#define FRAME_HEADER_SIZE 4
 
 typedef enum RS485_CMD {
 	NONE,
@@ -97,29 +100,122 @@ typedef struct RS485 {
 	uint32_t lastUpdateTicks;
 } RDSS_t;
 
-uint16_t crc_get(uint8_t *buffer, uint8_t buff_len);
-RDSS_status_t rs485_check_frame(RDSS_t *r, UART1_t *u);
-RDSS_status_t rs485_check_valid_module(UART1_t *uart1);
-RDSS_status_t rs485_check_CRC_module(UART1_t *uart1);
-RDSS_status_t checkFrameValidity(uint8_t *frame, uint8_t lenght);
-RDSS_status_t checkModuleValidity(uint8_t *frame, uint8_t lenght);
-RDSS_status_t checkCRCValidity(uint8_t *frame, uint8_t len);
-RDSS_status_t isValidCrc2(RDSS_t *rs485);
-RDSS_status_t isValidId(RDSS_t *r);
-RDSS_status_t validate(uint8_t *buffer, uint8_t length);
-RDSS_status_t checkCRCValidity(uint8_t *frame, uint8_t len);
-RDSS_status_t checkBuffer(RDSS_t *rs485);
-void fillValidBuffer(RDSS_t *r, uint8_t *buff, uint8_t len);
+/**
+ * Initialize the RDSS structure.
+ *
+ * @param id ID of the RDSS
+ * @return Pointer to the initialized RDSS structure
+ */
 RDSS_t* rdssInit(uint8_t id);
-void rs485Uart1Decode(RDSS_t *rs485, UART1_t *uart1, SX1278_t *loraRx);
-void reinit(RDSS_t *rs485);
-void encodeVlad(uint8_t* buff);
-uint8_t setCrc(uint8_t* buff,uint8_t size);
-uint8_t setRdssStartData(RDSS_t *rdss, uint8_t *buffer,Function_t function);
-int freqDecode(uint8_t *buffer);
-void freqEncode(uint8_t *buffer, uint32_t freqIn);
-RDSS_status_t evaluateRdssStatus(RDSS_t *rdss);
-bool isModuleCommand(uint8_t cmd);
+
+/**
+ * Reinitialize the RDSS structure by resetting its fields.
+ *
+ * @param rdss Pointer to the RDSS structure to be reinitialized
+ */
 void rdssReinit(RDSS_t *rdss);
+
+/**
+ * Check the CRC validity of the received data in the UART1 buffer.
+ *
+ * @param uart1 Pointer to the UART1 structure containing the received data
+ * @return RDSS_status_t indicating the status of the CRC check
+ */
+RDSS_status_t rs485_check_CRC_module(UART1_t *uart1);
+
+/**
+ * Check the validity of the module specified in the frame.
+ *
+ * @param frame Pointer to the frame
+ * @param length Length of the frame
+ * @return RDSS_status_t indicating the status of the module validity check
+ */
+RDSS_status_t checkModuleValidity(uint8_t *frame, uint8_t length);
+
+/**
+ * Check the validity of the frame.
+ *
+ * @param frame Pointer to the frame
+ * @param length Length of the frame
+ * @return RDSS_status_t indicating the status of the frame validity check
+ */
+RDSS_status_t checkFrameValidity(uint8_t *frame, uint8_t length);
+
+/**
+ * Check the validity of the CRC in the frame.
+ *
+ * @param frame Pointer to the frame
+ * @param len Length of the frame
+ * @return RDSS_status_t indicating the status of the CRC validity check
+ */
+RDSS_status_t checkCRCValidity(uint8_t *frame, uint8_t len);
+
+/**
+ * Calculate the CRC value of the given buffer.
+ *
+ * @param buffer Pointer to the buffer
+ * @param buff_len Length of the buffer
+ * @return Calculated CRC value
+ */
+uint16_t crc_get(uint8_t *buffer, uint8_t buff_len);
+
+/**
+ * Validate the received data by checking the frame validity, module validity, and CRC validity.
+ *
+ * @param buffer Pointer to the received data buffer
+ * @param length Length of the received data
+ * @return RDSS_status_t indicating the overall data validity
+ */
+RDSS_status_t validate(uint8_t *buffer, uint8_t length);
+
+/**
+ * Encode the VLAD (Voltage, Current, AGC, Power) data into the buffer.
+ *
+ * @param buff Pointer to the buffer to store the encoded data
+ */
+void encodeVlad(uint8_t *buff);
+
+/**
+ * Set the CRC in the buffer and return the number of bytes added for the CRC.
+ *
+ * @param buff Pointer to the buffer
+ * @param size Size of the buffer
+ * @return Number of bytes added for the CRC
+ */
+uint8_t setCrc(uint8_t *buff, uint8_t size);
+
+/**
+ * Set the start data in the buffer for the RDSS communication.
+ *
+ * @param rdss Pointer to the RDSS structure
+ * @param buffer Pointer to the buffer to store the start data
+ * @param function Function to be performed by the RDSS
+ * @return Number of bytes added for the start data
+ */
+uint8_t setRdssStartData(RDSS_t *rdss, uint8_t *buffer, Function_t function);
+
+/**
+ * Decode the frequency value from the buffer.
+ *
+ * @param buffer Pointer to the buffer containing the frequency value
+ * @return Decoded frequency value
+ */
+int freqDecode(uint8_t *buffer);
+
+/**
+ * Encode the frequency value and store it in the buffer.
+ *
+ * @param buffer Pointer to the buffer to store the encoded frequency value
+ * @param freqIn Frequency value to be encoded
+ */
+void freqEncode(uint8_t *buffer, uint32_t freqIn);
+
+/**
+ * Update the RDSS structure with the received buffer and its size.
+ *
+ * @param rdss Pointer to the RDSS structure
+ * @param buffer Pointer to the received buffer
+ * @param bufferSize Size of the received buffer
+ */
 void updateRdss(RDSS_t *rdss, uint8_t *buffer, uint8_t bufferSize);
 #endif /* INC_RS485_H_ */
