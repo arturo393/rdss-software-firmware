@@ -44,6 +44,12 @@ class VladModule:
         self.isReverse = False
         self.attenuation = 0
 
+class MasterModule:
+    def __init__(self):
+        self.deviceTemperature = 0
+        self.inputVoltage = 0.0
+        self.current = 0
+
 app = Flask(__name__)
 
 # socket = SocketIO(app, cors_allowed_origins='*',
@@ -313,7 +319,7 @@ def setAttenuation(ser,device,attenuation):
             ser.write(bytes.fromhex(hex_byte))
 
         # ---- Read from serial
-        hexResponse = ser.read(21)
+        hexResponse = ser.read(100)
 
         logging.debug("GET: "+hexResponse.hex('-'))
 
@@ -534,9 +540,9 @@ def sendCmd(ser, cmd, createdevice):
 
     return finalData
 
-def decodeVladMeasurements(vlad, buffer):
+def decodeVlad(buffer):
+    vlad = VladModule()
     bufferIndex = 0
-    
     Measurements = (
         'vin',
         'v5v',
@@ -590,7 +596,7 @@ def decodeVladMeasurements(vlad, buffer):
     vlad.ucTemperature = int(measurement[Measurements.index('ucTemperature')])
     vlad.v_5v = round(measurement[Measurements.index('v5v')] * ADC_V5V_FACTOR,1)
     vlad.inputVoltage = round(measurement[Measurements.index('vin')] * ADC_VOLTAGE_FACTOR,2)
-    vlad.current = int(measurement[Measurements.index('current')] * ADC_CONSUMPTION_CURRENT_FACTOR)
+    vlad.current = round(measurement[Measurements.index('current')] * ADC_CONSUMPTION_CURRENT_FACTOR/1000,3)
     vlad.agc152m = int(MAX4003_AGC_SCOPE * measurement[Measurements.index('agc152m')] + MAX4003_AGC_FACTOR)
     vlad.agc172m = int(MAX4003_AGC_SCOPE * measurement[Measurements.index('agc172m')] + MAX4003_AGC_FACTOR)
     vlad.level152m = int(MAX4003_DBM_SCOPE * measurement[Measurements.index('level152m')] + MAX4003_DBM_FACTOR)
@@ -598,9 +604,35 @@ def decodeVladMeasurements(vlad, buffer):
     vlad.ref152m = int(MAX4003_DBM_SCOPE * measurement[Measurements.index('ref152m')] + MAX4003_DBM_FACTOR)
     vlad.ref172m = int(MAX4003_DBM_SCOPE * measurement[Measurements.index('ref172m')] + MAX4003_DBM_FACTOR)
     vlad.toneLevel = int(MAX4003_DBM_SCOPE * measurement[Measurements.index('toneLevel')] + MAX4003_DBM_FACTOR)
-    vlad.baseCurrent = int((measurement[Measurements.index('baseCurrent')] * 1000 * VREF) / (1 << (RESOLUTION - 0x00)))
+    vlad.baseCurrent = round((measurement[Measurements.index('baseCurrent')]  * VREF) / (1 << (RESOLUTION - 0x00)),3)
 
-    return bufferIndex
+    return vlad
+
+def decodeMaster(buffer):
+    bufferIndex = 0
+    master = MasterModule()
+    Measurements = (
+        'current',
+        'vin'
+    )
+    
+    measurement = [0] * len(Measurements)
+
+    for i in range(len(Measurements)):
+        measurement[i] = buffer[bufferIndex] | (buffer[bufferIndex + 1] << 8)
+        bufferIndex += 2
+
+    ADC_CONSUMPTION_CURRENT_FACTOR = 0.06472492
+    ADC_LINE_CURRENT_FACTOR = 0.0010989
+    ADC_VOLTAGE_FACTOR = 0.01387755
+    ADC_V5V_FACTOR = 0.00161246
+    VREF = 5 
+    RESOLUTION = 12 
+ #   temperature = float((float(measurement[Measurements.index('ucTemperature')]) - float(TEMP30_CAL_ADDR)) * (110.0 - 30.0) / (float(TEMP110_CAL_ADDR) - float(TEMP30_CAL_ADDR)))
+    master.inputVoltage = round(measurement[Measurements.index('vin')] * ADC_VOLTAGE_FACTOR,2)
+    master.current = round(measurement[Measurements.index('current')] * ADC_CONSUMPTION_CURRENT_FACTOR/1000,3)
+    master.deviceTemperature = buffer[bufferIndex]
+    return master
 
 def isCrcOk(hexResponse,size):
     dataEnd = size-3
@@ -617,6 +649,98 @@ def isCrcOk(hexResponse,size):
     else:
         logging.debug(crcMessage+"ERROR: "+calculatedChecksum + " != " +checksumString )
         return false
+def sendMasterQuery(ser,times):
+    """
+    Sends a command, waits for one minute if data is received, and returns the data.
+    Args:
+        ser: Serial object.
+        cmd: Command to send.
+    Returns:
+        Dictionary containing the received data, or False if an error occurs.
+    """
+    if times == 0:
+        return false
+    
+    finalData = {}
+    cmd = hex(0)
+    QUERY_MASTER_STATUS = '13'
+    if len(cmd) == 3:
+        cmdString = '05' + '0' + cmd[2:3] + QUERY_MASTER_STATUS+'0000'
+    else:
+        cmdString = '05' + cmd[2:4] + QUERY_MASTER_STATUS+'0000'
+
+    checksum = getChecksum(cmdString)
+    command = '7E' + cmdString + checksum + '7F'
+    logging.debug("Attempt: " + str(times))
+    logging.debug("SENT: " + command)
+
+    try:
+        cmdBytes = bytearray.fromhex(command)
+        for cmdByte in cmdBytes:
+            hexByte = "{0:02x}".format(cmdByte)
+            ser.write(bytes.fromhex(hexByte))
+
+        hexResponse = ser.read(14)
+        response = hexResponse.hex('-')
+        logging.debug("GET: " + hexResponse.hex('-'))
+        message =""
+        for byte in hexResponse:
+          decimal_value = byte
+          message+=str(byte).zfill(2)+"-"
+        logging.debug("GET: "+ message)
+
+        responseLen = len(hexResponse)
+        logging.debug("receive len: " + str(responseLen))
+        if responseLen != 14:
+            sendMasterQuery(ser,times-1)
+            return false
+        if  hexResponse[0] != 126:
+            sendMasterQuery(ser,times-1)
+            return false
+        if hexResponse[responseLen - 1 ] != 127:
+            sendMasterQuery(ser,times-1)
+            return false
+        if hexResponse[2] != int(cmd, 16):
+            sendMasterQuery(ser,times-1)
+            return false
+        if  hexResponse[3] != 19:
+            sendMasterQuery(ser,times-1)
+            return false
+        if hexResponse[4] in [2, 3, 4]:
+            sendMasterQuery(ser,times-1)
+            return false
+        if isCrcOk(hexResponse,responseLen) == false:
+            sendMasterQuery(ser,times-1)
+            return false
+        
+        data = list(hexResponse[i] for i in range(6, responseLen - 3))
+        
+
+        master = decodeMaster(data)
+    
+        logging.debug(f"Input Voltage: {master.inputVoltage:.2f}[V]")
+        logging.debug(f"Current Consumption: {master.current:.3f}[mA]")
+        logging.debug(f"Device Temperature: {master.deviceTemperature}[°C]]")   
+
+        sampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        timeNow = datetime.datetime.strptime(sampleTime, "%Y-%m-%dT%H:%M:%SZ")
+        finalData = {
+            "sampleTime": timeNow,
+            "voltage": master.inputVoltage,
+            "current": master.current,
+            "gupl": 0,
+            "gdwl": 0,
+            "power": master.deviceTemperature
+        }
+
+        ser.flushInput()
+        ser.flushOutput()
+
+    except Exception as e:
+        logging.error(e)
+        sys.exit()
+
+    return finalData
 
 def sendVladRev23Query(ser, deviceID,times):
     """
@@ -648,49 +772,55 @@ def sendVladRev23Query(ser, deviceID,times):
             hexByte = "{0:02x}".format(cmdByte)
             ser.write(bytes.fromhex(hexByte))
 
-        hexResponse = ser.read(34)
+        hexResponse = ser.read(100)
+        response = hexResponse.hex('-')
         logging.debug("GET: " + hexResponse.hex('-'))
+        message =""
+        for byte in hexResponse:
+          decimal_value = byte
+          message+=str(byte).zfill(2)+"-"
+        logging.debug("GET: "+ message)
+
         responseLen = len(hexResponse)
         logging.debug("receive len: " + str(responseLen))
         if responseLen != 34:
+            sendVladRev23Query(ser, deviceID,times-1)
             return false
         if  hexResponse[0] != 126:
+            sendVladRev23Query(ser, deviceID,times-1)
             return false
         if hexResponse[responseLen - 1 ] != 127:
+            sendVladRev23Query(ser, deviceID,times-1)
             return false
         if hexResponse[2] != int(cmd, 16):
             sendVladRev23Query(ser, deviceID,times-1)
             return false
         if  hexResponse[3] != 17:
+            sendVladRev23Query(ser, deviceID,times-1)
             return false
         if hexResponse[4] in [2, 3, 4]:
+            sendVladRev23Query(ser, deviceID,times-1)
             return false
         if isCrcOk(hexResponse,responseLen) == false:
             sendVladRev23Query(ser, deviceID,times-1)
             return false
         
         data = list(hexResponse[i] for i in range(6, responseLen - 3))
-        vlad = VladModule()
+        
 
-        decodeVladMeasurements(vlad, data)
+        vlad = decodeVlad(data)
     
         logging.debug(f"Voltage: {vlad.inputVoltage:.2f}[V]")
-        logging.debug(f"Current: {vlad.current:.0f}[mA]")
-        logging.debug(f"Base Current: {vlad.baseCurrent:}[mA]")
+        logging.debug(f"Voltage reference: {vlad.v_5v}[V]]")   
+        logging.debug(f"Current: {vlad.current:.3f}[mA]")
+        logging.debug(f"Base Current: {vlad.baseCurrent:.3f}[mA]")
         logging.debug(f"Attenuation: {vlad.attenuation:}[dB]")
         logging.debug(f"Tone Level: {vlad.toneLevel:}[dBm]")
-        logging.debug(f"AGC Uplink: {vlad.agc172m:}[dB]")
-        logging.debug(f"Downlink Output Power: {vlad.level152m}[dBm]")
-        logging.debug(f"AGC Downlink: {vlad.agc152m:}[dB]")
-        logging.debug(f"Uplink Output Power: {vlad.level172m}[dBm]")
-        logging.debug(f"Tone Level: {vlad.toneLevel}[dBm]")
-        logging.debug(f"Downlink Reference: {vlad.ref152m}[dBm]")
-        logging.debug(f"Uplink Reference: {vlad.ref172m}[dBm]")
-        logging.debug(f"Uplink Output Power: {vlad.level172m}[dBm]")
-        logging.debug(f"Is Software Attenuation: {vlad.isRemoteAttenuation}")
+        logging.debug(f"Downlink - AGC {vlad.agc152m:}[dB] Reference: {vlad.ref152m} [dBm] Output Power: {vlad.level172m} [dBm]") 
+        logging.debug(f"Uplink   - AGC {vlad.agc172m:}[dB] Reference: {vlad.ref172m} [dBm] Output Power: {vlad.level172m} [dBm]") 
+        logging.debug(f"Is Software Attenuation: {vlad.isRemoteAttenuation}") 
         logging.debug(f"Is Reverse: {vlad.isReverse}")
         logging.debug(f"Is SmartTune: {vlad.isSmartTune}")
-        logging.debug(f"Voltage reference: {vlad.v_5v}[V]]")      
         logging.debug(f"uC Temperature: {vlad.ucTemperature}[°C]")
 
         sampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -698,7 +828,7 @@ def sendVladRev23Query(ser, deviceID,times):
         finalData = {
             "sampleTime": timeNow,
             "voltage": vlad.inputVoltage,
-            "current": vlad.baseCurrent,
+            "current": vlad.current,
             "gupl": vlad.agc172m,
             "gdwl": vlad.agc152m,
             "power": vlad.level152m,
@@ -715,7 +845,6 @@ def sendVladRev23Query(ser, deviceID,times):
         sys.exit()
 
     return finalData
-
 
 def sendStatusToFrontEnd(rtData):
     """
@@ -792,6 +921,8 @@ def run_monitor():
 
             if(deviceData["type"] == "vlad-rev23"):
                 response = sendVladRev23Query(ser, device,times)
+            elif(deviceData["type"] == "master"):
+                response = sendMasterQuery(ser,times)
             else:
                 response = sendCmd(ser, device, False)
 
