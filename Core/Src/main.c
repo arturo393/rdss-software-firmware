@@ -957,6 +957,7 @@ void processUart1Rx(UART1_t *u1, RDSS_t *rdss, Server_t *server, SX1278_t *loRa)
 	if (u1->isReceivedDataReady == false)
 		return;
 	u1->isReceivedDataReady = false;
+	HAL_Delay(1);
 	if (validate(u1->rxData, u1->rxSize) != DATA_OK) {
 		// Clear UART buffer and length
 		memset(u1->rxData, 0, sizeof(u1->rxData));
