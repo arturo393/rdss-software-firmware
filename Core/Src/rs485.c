@@ -50,10 +50,10 @@ RDSS_status_t checkModuleValidity(uint8_t *frame, uint8_t lenght) {
 	if (frame[1] == VLADR) {
 		for (int i = 3; i < lenght; i++)
 			if (frame[i] == LTEL_END_MARK)
-				return VALID_MODULE;
+				return (VALID_MODULE);
 	} else
-		return WRONG_MODULE_FUNCTION;
-	return WRONG_MODULE_FUNCTION;
+		return (WRONG_MODULE_FUNCTION);
+	return (WRONG_MODULE_FUNCTION);
 }
 
 RDSS_status_t checkFrameValidity(uint8_t *frame, uint8_t lenght) {
@@ -61,28 +61,23 @@ RDSS_status_t checkFrameValidity(uint8_t *frame, uint8_t lenght) {
 	if (lenght > (MINIMUN_FRAME_LEN)) {
 		if (frame[0] == LTEL_START_MARK) {
 			if (frame[lenght - 1] == LTEL_END_MARK)
-				return VALID_FRAME;
+				return (VALID_FRAME);
 			else
-				return START_READING;
+				return (START_READING);
 		} else
-			return NOT_VALID_FRAME;
+			return (NOT_VALID_FRAME);
 	} else
 
-		return WAITING;
+		return (WAITING);
 }
 
 RDSS_status_t checkCRCValidity(uint8_t *frame, uint8_t len) {
-	uint16_t calculatedCrc, savedCrc;
-	uint8_t *crcTemp;
+	uint16_t calculatedCrc;
+	uint16_t savedCrc;
 	savedCrc = ((uint16_t) frame[len - 2] << 8);
 	savedCrc |= (uint16_t) frame[len - 3];
 	calculatedCrc = crc_get(&frame[1], len - 4);
-	crcTemp =(uint8_t*) &calculatedCrc;
-	if(crcTemp[0] == 0x7f)
-		crcTemp[0] = 0x7d;
-	if(crcTemp[1] == 0x7f)
-		crcTemp[1] = 0x7d;
-	return (calculatedCrc == savedCrc) ? DATA_OK : CRC_ERROR;
+	return ((calculatedCrc == savedCrc) ? DATA_OK : CRC_ERROR);
 }
 
 uint16_t crc_get(uint8_t *buffer, uint8_t buff_len) {
@@ -107,87 +102,23 @@ uint16_t crc_get(uint8_t *buffer, uint8_t buff_len) {
 	return crc;
 }
 
-/*
-RDSS_status_t isValidId(RDSS_t *r) {
-
-	r->idReceived = r->buffer[2];
-	if (r->idReceived == r->id)
-		return DATA_OK;
-	else if (r->idReceived == r->idQuery)
-		return DATA_OK;
-	else if (r->id == ID0)
-		return LORA_SEND;
-	return WRONG_MODULE_ID;
-}
-
-*/
-
 RDSS_status_t validate(uint8_t *buffer,uint8_t length) {
 	RDSS_status_t frameStatus = checkFrameValidity(buffer, length);
 	if (frameStatus != VALID_FRAME)
-		return frameStatus;
+		return (frameStatus);
 	RDSS_status_t moduleStatus = checkModuleValidity(buffer, length);
 	if (moduleStatus != VALID_MODULE)
-		return moduleStatus;
+		return (moduleStatus);
 	RDSS_status_t crcStatus = checkCRCValidity(buffer, length);
 	if (crcStatus != DATA_OK)
-		return crcStatus;
-	return DATA_OK;
+		return (crcStatus);
+	return (DATA_OK);
 }
-/*
-void fillValidBuffer(RDSS_t *r, uint8_t *buff, uint8_t len) {
-	r->status = validateBuffer(buff, len);
-	if (r->status == DATA_OK) {
-		r->len = len;
-		memcpy(r->buffer, buff, len);
-	}
-}
-
-RDSS_status_t evaluateRdssStatus(RDSS_t *rdss) {
-    if (rdss->buffer[MODULE_ID_INDEX] == rdss->id) {
-        return UART_VALID;
-    } else {
-        return LORA_SEND;
-    }
-}
-
-*/
-
-bool isModuleCommand(uint8_t cmd) {
-    return cmd == QUERY_MODULE_ID || cmd == SET_MODULE_ID;
-}
-/*
-RDSS_status_t checkBuffer(RDSS_t *rs485) {
-	rs485->status = checkFrameValidity(rs485->buffer, rs485->len);
-	if (!(rs485->status == VALID_FRAME))
-		return rs485->status;
-	rs485->status = checkModuleValidity(rs485->buffer, rs485->len);
-	if (!(rs485->status == VALID_MODULE))
-		return rs485->status;
-	rs485->status = checkCRCValidity(rs485->buffer,rs485->len);
-	if (!(rs485->status == DATA_OK))
-		return rs485->status;
-	rs485->status = isValidId(rs485);
-	if (!(rs485->status == WRONG_MODULE_ID))
-		return rs485->status;
-	return rs485->status;
-}
-*/
 
 void reinit(RDSS_t *rs485) {
 	rs485->cmd = NONE;
 	rs485->status = WAITING;
 }
-/*
-void reinit(RDSS_t *rs485) {
-	rs485->cmd = NONE;
-	rs485->status = WAITING;
-	if (rs485->buffer[0] == '\0')
-		return;
-	memset(rs485->buffer, 0, sizeof(rs485->buffer));
-	rs485->len = 0;
-}
-*/
 
 void encodeVlad(uint8_t* buff){
 	uint16_t lineVoltage = (uint16_t) rand() % 610;
