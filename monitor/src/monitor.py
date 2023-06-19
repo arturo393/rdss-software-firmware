@@ -148,7 +148,7 @@ def convert(x,in_min,in_max,out_min,out_max):
 def getProvisionedDevices():
     """
     Gets provisioned devices from DB
-    Provisioned devices has status.provisioned attribute setting to true
+    Provisioned devices has status.provisioned attribute setting to True
     """
     try:
         collection_name = database["devices"]
@@ -581,14 +581,18 @@ def decodeVlad(buffer):
     RESOLUTION = 12 
 
     MAX4003_DBM_MAX = 0   
-    MAX4003_DBM_MIN = -30
+    MAX4003_DBM_MIN = -45
     MAX4003_AGC_MIN = 30
     MAX4003_AGC_MAX = 0
-    MAX4003_ADC_MAX = 1888
+    #MAX4003_ADC_MAX = 1888
+    MAX4003_ADC_MAX_152M = measurement[Measurements.index('ref152m')]
+    MAX4003_ADC_MAX_172M = measurement[Measurements.index('ref172m')]
     MAX4003_ADC_MIN = 487
 
-    MAX4003_DBM_SCOPE= (MAX4003_DBM_MAX -  MAX4003_DBM_MIN) / (MAX4003_ADC_MAX - MAX4003_ADC_MIN)
-    MAX4003_DBM_FACTOR= (MAX4003_DBM_MAX - MAX4003_ADC_MAX) * MAX4003_DBM_SCOPE
+    MAX4003_DBM_SCOPE_152M= (MAX4003_DBM_MAX -  MAX4003_DBM_MIN) / (MAX4003_ADC_MAX_152M - MAX4003_ADC_MIN)
+    MAX4003_DBM_SCOPE_172M= (MAX4003_DBM_MAX -  MAX4003_DBM_MIN) / (MAX4003_ADC_MAX_172M - MAX4003_ADC_MIN)
+    MAX4003_DBM_FACTOR_152M= (MAX4003_DBM_MAX - MAX4003_ADC_MAX_152M) * MAX4003_DBM_SCOPE_152M
+    MAX4003_DBM_FACTOR_172M= (MAX4003_DBM_MAX - MAX4003_ADC_MAX_172M) * MAX4003_DBM_SCOPE_172M  
     MAX4003_AGC_SCOPE = ( MAX4003_AGC_MAX -  MAX4003_AGC_MIN) / 4095
     MAX4003_AGC_FACTOR = MAX4003_AGC_MAX - 4095 * MAX4003_AGC_SCOPE
 
@@ -599,11 +603,11 @@ def decodeVlad(buffer):
     vlad.current = round(measurement[Measurements.index('current')] * ADC_CONSUMPTION_CURRENT_FACTOR/1000,3)
     vlad.agc152m = int(MAX4003_AGC_SCOPE * measurement[Measurements.index('agc152m')] + MAX4003_AGC_FACTOR)
     vlad.agc172m = int(MAX4003_AGC_SCOPE * measurement[Measurements.index('agc172m')] + MAX4003_AGC_FACTOR)
-    vlad.level152m = int(MAX4003_DBM_SCOPE * measurement[Measurements.index('level152m')] + MAX4003_DBM_FACTOR)
-    vlad.level172m = int(MAX4003_DBM_SCOPE * measurement[Measurements.index('level172m')] + MAX4003_DBM_FACTOR)
-    vlad.ref152m = int(MAX4003_DBM_SCOPE * measurement[Measurements.index('ref152m')] + MAX4003_DBM_FACTOR)
-    vlad.ref172m = int(MAX4003_DBM_SCOPE * measurement[Measurements.index('ref172m')] + MAX4003_DBM_FACTOR)
-    vlad.toneLevel = int(MAX4003_DBM_SCOPE * measurement[Measurements.index('toneLevel')] + MAX4003_DBM_FACTOR)
+    vlad.level152m = int(MAX4003_DBM_SCOPE_152M * measurement[Measurements.index('level152m')] + MAX4003_DBM_FACTOR_152M)
+    vlad.level172m = int(MAX4003_DBM_SCOPE_172M * measurement[Measurements.index('level172m')] + MAX4003_DBM_FACTOR_172M)
+    vlad.ref152m = int(MAX4003_DBM_SCOPE_152M * measurement[Measurements.index('ref152m')] + MAX4003_DBM_FACTOR_152M)
+    vlad.ref172m = int(MAX4003_DBM_SCOPE_172M * measurement[Measurements.index('ref172m')] + MAX4003_DBM_FACTOR_172M)
+    vlad.toneLevel = int(MAX4003_DBM_SCOPE_152M * measurement[Measurements.index('toneLevel')] + MAX4003_DBM_FACTOR_152M)
     vlad.baseCurrent = round((measurement[Measurements.index('baseCurrent')]  * VREF) / (1 << (RESOLUTION - 0x00)),3)
 
     return vlad
@@ -645,10 +649,11 @@ def isCrcOk(hexResponse,size):
     crcMessage = "CRC Calculated: " + calculatedChecksum + " CRC Received: " +checksumString+ " - D"
     if(calculatedChecksum == checksumString):
         logging.debug(crcMessage+"OK: "+calculatedChecksum + " == " +checksumString )
-        return true
+        return True
     else:
         logging.debug(crcMessage+"ERROR: "+calculatedChecksum + " != " +checksumString )
-        return false
+        return False
+    
 def sendMasterQuery(ser,times):
     """
     Sends a command, waits for one minute if data is received, and returns the data.
@@ -659,7 +664,7 @@ def sendMasterQuery(ser,times):
         Dictionary containing the received data, or False if an error occurs.
     """
     if times == 0:
-        return false
+        return False
     
     finalData = {}
     cmd = hex(0)
@@ -693,25 +698,25 @@ def sendMasterQuery(ser,times):
         logging.debug("receive len: " + str(responseLen))
         if responseLen != 14:
             sendMasterQuery(ser,times-1)
-            return false
+            return False
         if  hexResponse[0] != 126:
             sendMasterQuery(ser,times-1)
-            return false
+            return False
         if hexResponse[responseLen - 1 ] != 127:
             sendMasterQuery(ser,times-1)
-            return false
+            return False
         if hexResponse[2] != int(cmd, 16):
             sendMasterQuery(ser,times-1)
-            return false
+            return False
         if  hexResponse[3] != 19:
             sendMasterQuery(ser,times-1)
-            return false
+            return False
         if hexResponse[4] in [2, 3, 4]:
             sendMasterQuery(ser,times-1)
-            return false
-        if isCrcOk(hexResponse,responseLen) == false:
+            return False
+        if isCrcOk(hexResponse,responseLen) == False:
             sendMasterQuery(ser,times-1)
-            return false
+            return False
         
         data = list(hexResponse[i] for i in range(6, responseLen - 3))
         
@@ -752,7 +757,7 @@ def sendVladRev23Query(ser, deviceID,times):
         Dictionary containing the received data, or False if an error occurs.
     """
     if times == 0:
-        return false
+        return False
     
     finalData = {}
     cmd = hex(deviceID)
@@ -785,25 +790,25 @@ def sendVladRev23Query(ser, deviceID,times):
         logging.debug("receive len: " + str(responseLen))
         if responseLen != 34:
             sendVladRev23Query(ser, deviceID,times-1)
-            return false
+            return False
         if  hexResponse[0] != 126:
             sendVladRev23Query(ser, deviceID,times-1)
-            return false
+            return False
         if hexResponse[responseLen - 1 ] != 127:
             sendVladRev23Query(ser, deviceID,times-1)
-            return false
+            return False
         if hexResponse[2] != int(cmd, 16):
             sendVladRev23Query(ser, deviceID,times-1)
-            return false
+            return False
         if  hexResponse[3] != 17:
             sendVladRev23Query(ser, deviceID,times-1)
-            return false
+            return False
         if hexResponse[4] in [2, 3, 4]:
             sendVladRev23Query(ser, deviceID,times-1)
-            return false
-        if isCrcOk(hexResponse,responseLen) == false:
+            return False
+        if isCrcOk(hexResponse,responseLen) == False:
             sendVladRev23Query(ser, deviceID,times-1)
-            return false
+            return False
         
         data = list(hexResponse[i] for i in range(6, responseLen - 3))
         
@@ -816,7 +821,7 @@ def sendVladRev23Query(ser, deviceID,times):
         logging.debug(f"Base Current: {vlad.baseCurrent:.3f}[mA]")
         logging.debug(f"Attenuation: {vlad.attenuation:}[dB]")
         logging.debug(f"Tone Level: {vlad.toneLevel:}[dBm]")
-        logging.debug(f"Downlink - AGC {vlad.agc152m:}[dB] Reference: {vlad.ref152m} [dBm] Output Power: {vlad.level172m} [dBm]") 
+        logging.debug(f"Downlink - AGC {vlad.agc152m:}[dB] Reference: {vlad.ref152m} [dBm] Output Power: {vlad.level152m} [dBm]") 
         logging.debug(f"Uplink   - AGC {vlad.agc172m:}[dB] Reference: {vlad.ref172m} [dBm] Output Power: {vlad.level172m} [dBm]") 
         logging.debug(f"Is Software Attenuation: {vlad.isRemoteAttenuation}") 
         logging.debug(f"Is Reverse: {vlad.isReverse}")
