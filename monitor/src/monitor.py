@@ -540,6 +540,9 @@ def sendCmd(ser, cmd, createdevice):
 
     return finalData
 
+def arduino_map(value, in_min, in_max, out_min, out_max):
+    return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+
 def decodeVlad(buffer):
     vlad = VladModule()
     bufferIndex = 0
@@ -580,6 +583,11 @@ def decodeVlad(buffer):
     VREF = 5 
     RESOLUTION = 12 
 
+    logging.debug(str(measurement[Measurements.index('current')]))
+    CURRENT_MIN = 170.0
+    CURRENT_MAX = 260.0
+    ADC_CURRENT_MIN = 2567.0
+    ADC_CURRENT_MAX = 3996.0
     MAX4003_DBM_MAX = 0   
     MAX4003_DBM_MIN = -45
     MAX4003_AGC_MIN = 30
@@ -589,27 +597,38 @@ def decodeVlad(buffer):
     MAX4003_ADC_MAX_172M = measurement[Measurements.index('ref172m')]
     MAX4003_ADC_MIN = 487
 
-    MAX4003_DBM_SCOPE_152M= (MAX4003_DBM_MAX -  MAX4003_DBM_MIN) / (MAX4003_ADC_MAX_152M - MAX4003_ADC_MIN)
-    MAX4003_DBM_SCOPE_172M= (MAX4003_DBM_MAX -  MAX4003_DBM_MIN) / (MAX4003_ADC_MAX_172M - MAX4003_ADC_MIN)
-    MAX4003_DBM_FACTOR_152M= (MAX4003_DBM_MAX - MAX4003_ADC_MAX_152M) * MAX4003_DBM_SCOPE_152M
-    MAX4003_DBM_FACTOR_172M= (MAX4003_DBM_MAX - MAX4003_ADC_MAX_172M) * MAX4003_DBM_SCOPE_172M  
-    MAX4003_AGC_SCOPE = ( MAX4003_AGC_MAX -  MAX4003_AGC_MIN) / 4095
-    MAX4003_AGC_FACTOR = MAX4003_AGC_MAX - 4095 * MAX4003_AGC_SCOPE
-
- #   temperature = float((float(measurement[Measurements.index('ucTemperature')]) - float(TEMP30_CAL_ADDR)) * (110.0 - 30.0) / (float(TEMP110_CAL_ADDR) - float(TEMP30_CAL_ADDR)))
     vlad.ucTemperature = int(measurement[Measurements.index('ucTemperature')])
     vlad.v_5v = round(measurement[Measurements.index('v5v')] * ADC_V5V_FACTOR,1)
     vlad.inputVoltage = round(measurement[Measurements.index('vin')] * ADC_VOLTAGE_FACTOR,2)
-    vlad.current = round(measurement[Measurements.index('current')] * ADC_CONSUMPTION_CURRENT_FACTOR/1000,3)
-    vlad.agc152m = int(MAX4003_AGC_SCOPE * measurement[Measurements.index('agc152m')] + MAX4003_AGC_FACTOR)
-    vlad.agc172m = int(MAX4003_AGC_SCOPE * measurement[Measurements.index('agc172m')] + MAX4003_AGC_FACTOR)
-    vlad.level152m = int(MAX4003_DBM_SCOPE_152M * measurement[Measurements.index('level152m')] + MAX4003_DBM_FACTOR_152M)
-    vlad.level172m = int(MAX4003_DBM_SCOPE_172M * measurement[Measurements.index('level172m')] + MAX4003_DBM_FACTOR_172M)
-    vlad.ref152m = int(MAX4003_DBM_SCOPE_152M * measurement[Measurements.index('ref152m')] + MAX4003_DBM_FACTOR_152M)
-    vlad.ref172m = int(MAX4003_DBM_SCOPE_172M * measurement[Measurements.index('ref172m')] + MAX4003_DBM_FACTOR_172M)
-    vlad.toneLevel = int(MAX4003_DBM_SCOPE_152M * measurement[Measurements.index('toneLevel')] + MAX4003_DBM_FACTOR_152M)
-    vlad.baseCurrent = round((measurement[Measurements.index('baseCurrent')]  * VREF) / (1 << (RESOLUTION - 0x00)),3)
+    
+    vlad.current = arduino_map(measurement[Measurements.index('current')],ADC_CURRENT_MIN,ADC_CURRENT_MAX,CURRENT_MIN,CURRENT_MAX)
+    vlad.current = round(vlad.current,3)/1000
 
+    vlad.agc152m = arduino_map(measurement[Measurements.index('agc152m')],0,4095,MAX4003_AGC_MIN,MAX4003_AGC_MAX)
+    vlad.agc152m = int(vlad.agc152m)
+
+    vlad.agc172m = arduino_map(measurement[Measurements.index('agc172m')],0,4095,MAX4003_AGC_MIN,MAX4003_AGC_MAX)
+    vlad.agc172m = int(vlad.agc172m)
+
+    vlad.level152m = arduino_map(measurement[Measurements.index('level152m')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_152M,MAX4003_DBM_MIN,MAX4003_DBM_MAX)
+    vlad.level152m = int(vlad.level152m)
+
+    vlad.level172m = arduino_map(measurement[Measurements.index('level172m')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_172M,MAX4003_DBM_MIN,MAX4003_DBM_MAX) 
+    vlad.level172m = int(vlad.level172m)
+
+    vlad.ref152m = arduino_map(measurement[Measurements.index('ref152m')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_152M,MAX4003_DBM_MIN,MAX4003_DBM_MAX)
+    vlad.ref152m = int(vlad.ref152m)
+
+    vlad.ref172m = arduino_map(measurement[Measurements.index('ref172m')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_172M,MAX4003_DBM_MIN,MAX4003_DBM_MAX) 
+    vlad.ref172m = int(vlad.ref172m)
+    
+
+    vlad.toneLevel = arduino_map(measurement[Measurements.index('toneLevel')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_152M,MAX4003_DBM_MIN,MAX4003_DBM_MAX)
+    vlad.toneLevel = int(vlad.toneLevel)
+    
+    vlad.baseCurrent = (measurement[Measurements.index('baseCurrent')]  * VREF) / (1 << (RESOLUTION - 0x00))
+    vlad.baseCurrent = round(vlad.baseCurrent,3)          
+                        
     return vlad
 
 def decodeMaster(buffer):
