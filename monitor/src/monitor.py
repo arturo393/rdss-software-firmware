@@ -568,8 +568,13 @@ def decodeVlad(buffer):
         bufferIndex += 2
 
     state = buffer[bufferIndex]
-    vlad.isReverse = bool(state & 0x01)
-    vlad.isSmartTune = bool((state >> 1) & 0x01)
+
+    state = buffer[bufferIndex]
+    vlad.isReverse = "ON" if (bool(state & 0x01)) else "OFF"
+    vlad.isSmartTune = "ON" if(bool((state >> 1) & 0x01)) else "OFF"
+    vlad.isRemoteAttenuation = bool((state >> 2) & 0x01)
+    vlad.attenuation = (state >> 3) & 0xFF
+    bufferIndex += 1
     vlad.isRemoteAttenuation = bool((state >> 2) & 0x01)
     vlad.attenuation = (state >> 3) & 0xFF
     bufferIndex += 1
