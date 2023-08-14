@@ -325,7 +325,7 @@ void setLORAWAN(SX1278_t *module);
 void setOvercurrentProtect(SX1278_t *module);
 void setLNAGain(SX1278_t *module);
 void setPreambleParameters(SX1278_t *module);
-void setReModemConfig(SX1278_t *module);
+void setRegModemConfig(SX1278_t *module);
 void setDetectionParametersReg(SX1278_t *module);
 void standbyMode(SX1278_t *module);
 void sleepMode(SX1278_t *module);
@@ -347,7 +347,7 @@ void clearRxMemory(SX1278_t *module);
 uint8_t setTxFifoData(SX1278_t *module);
 void receive(SX1278_t *loRa);
 void transmit(SX1278_t *loRa);
-void readLoRaSettings(SX1278_t* loRa);
+void validateSettings(SX1278_t* loRa);
 SX1278_t* loRaInit(SPI_HandleTypeDef *hspi1 ,Lora_Mode_t loRaMode
 );
 void configureLoRaRx(SX1278_t *loRa, Lora_Mode_t mode);

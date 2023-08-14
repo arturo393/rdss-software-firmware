@@ -124,7 +124,7 @@ void setPreambleParameters(SX1278_t *module) {
 			1);
 }
 
-void setReModemConfig(SX1278_t *module) {
+void setRegModemConfig(SX1278_t *module) {
 	uint8_t cmd = 0;
 	cmd = module->bandwidth << 4;
 	cmd += module->codingRate << 1;
@@ -181,7 +181,7 @@ void writeLoRaParametersReg(SX1278_t *module) {
 		module->symbTimeoutMsb = 0x00;
 	}
 
-	setReModemConfig(module);
+	setRegModemConfig(module);
 	setPreambleParameters(module);
 	writeRegister(module->spi, LR_RegHopPeriod, &(module->fhssValue), 1);
 	writeRegister(module->spi, LR_RegDioMapping1, &(module->dioConfig), 1);
@@ -424,7 +424,7 @@ SX1278_t* loRaInit(SPI_HandleTypeDef *hspi1, Lora_Mode_t loRaMode) {
 	readLoRaSettings(loRa);
 	changeMode(loRa, loRaMode);
 	writeLoRaParametersReg(loRa);
-	return loRa;
+	return (loRa);
 }
 
 void configureLoRaRx(SX1278_t *loRa, Lora_Mode_t mode) {

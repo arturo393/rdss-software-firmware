@@ -44,38 +44,41 @@ void uart1_gpio_init() {
 
 UART1_t* uart1Init(uint32_t pclk, uint32_t baud_rate) {
 	uint32_t br_value = 0;
-	UART1_t * u1;
-	u1 = malloc(sizeof(UART1_t));
+	UART1_t *u1;
+	u1 = malloc(sizeof(UART1_t*));
+	if (u1 != NULL) {
 
-	memset(u1->rxData,0,sizeof(u1->rxData));
-	u1->isReceivedDataReady = false;
+		memset(u1->rxData, 0, sizeof(u1->rxData));
+		u1->isReceivedDataReady = false;
 
-	uart1_gpio_init();
+		uart1_gpio_init();
 
-	/*enable clock access to USART1 */
-	SET_BIT(RCC->APBENR2, RCC_APBENR2_USART1EN);
-	if (pclk == 16000000) {
-		/*set HSI 16 CLK */
-		CLEAR_BIT(RCC->CCIPR, RCC_CCIPR_USART1SEL_0);
-		SET_BIT(RCC->CCIPR, RCC_CCIPR_USART1SEL_1);
+		/*enable clock access to USART1 */
+		SET_BIT(RCC->APBENR2, RCC_APBENR2_USART1EN);
+		if (pclk == 16000000) {
+			/*set HSI 16 CLK */
+			CLEAR_BIT(RCC->CCIPR, RCC_CCIPR_USART1SEL_0);
+			SET_BIT(RCC->CCIPR, RCC_CCIPR_USART1SEL_1);
+		}
+		//MODIFY_REG(USART1->PRESC,USART_PRESC_PRESCALER,0x0010);
+		/* set baud rate */
+		br_value = (pclk) / baud_rate;
+		USART1->BRR = (uint16_t) br_value;
+		/* transmitter enable*/
+		USART1->CR1 = USART_CR1_TE | USART_CR1_RE;
+		u1->txSize = 0;
+
+		//uart1_clean_buffer(u);
+
+		/* enable FIFO */
+		//SET_BIT(USART1->CR2, USART_CR1_FIFOEN);
+		/* Enable interrupt */
+		SET_BIT(USART1->CR1, USART_CR1_RXNEIE_RXFNEIE);
+		NVIC_EnableIRQ(USART1_IRQn);
+		SET_BIT(USART1->CR1, USART_CR1_UE);
+
 	}
-	//MODIFY_REG(USART1->PRESC,USART_PRESC_PRESCALER,0x0010);
-	/* set baud rate */
-	br_value = (pclk) / baud_rate;
-	USART1->BRR = (uint16_t) br_value;
-	/* transmitter enable*/
-	USART1->CR1 = USART_CR1_TE | USART_CR1_RE;
-	u1->txSize = 0;
-
-	//uart1_clean_buffer(u);
-
-	/* enable FIFO */
-	//SET_BIT(USART1->CR2, USART_CR1_FIFOEN);
-	/* Enable interrupt */
-	SET_BIT(USART1->CR1, USART_CR1_RXNEIE_RXFNEIE);
-	NVIC_EnableIRQ(USART1_IRQn);
-	SET_BIT(USART1->CR1, USART_CR1_UE);
-	return u1;
+	return (u1);
 }
 
 void uart1_dma_init() {
@@ -140,6 +143,7 @@ uint8_t readRxReg(void) {
 	} else
 		return '\0';
 }
+
 void readRx(UART1_t *u) {
 	if (u->rxSize >= RX_BUFFLEN) {
 		cleanRx(u);
@@ -162,7 +166,6 @@ void writeTxBuffer(uint8_t *str, uint8_t len) {
 
 void writeTx(UART1_t *uart1) {
 	writeTxBuffer(uart1->txData, uart1->txSize);
-
 
 }
 

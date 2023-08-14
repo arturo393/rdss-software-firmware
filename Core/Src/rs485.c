@@ -203,3 +203,4 @@ void updateStatus(RDSS_t *rdss, uint32_t timeout) {
 		rdss->lastUpdateTicks = HAL_GetTick();
 	}
 }
+

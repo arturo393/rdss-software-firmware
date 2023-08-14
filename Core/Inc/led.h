@@ -10,6 +10,7 @@
 #define INC_LED_H_
 
 #include "main.h"
+#include "stdlib.h"
 
 #define LED_KA_STATE_TIMEOUT  1000
 #define LED_KA_ON_TIMEOUT  50
@@ -40,7 +41,7 @@ void led_off(void);
 void blinkKALed(LED_t *l);
 void led_reset(LED_t *l);
 void led_current_update(int16_t current);
-uint8_t led_temperature_update(uint8_t tempearture);
+uint8_t temperatureupdate(uint8_t tempearture);
 void led_i2c_toggle();
 
 #endif /* INC_LED_H_ */
