@@ -12,6 +12,8 @@ export default async function (req, res, next) {
         $set: {
           name: req.body.name,
           type: req.body.type,
+          attenuation: req.body.attenuation,
+          changed: true
         },
       }
     )
