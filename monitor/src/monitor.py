@@ -61,7 +61,6 @@ client = None
 ser = None
 f_agc_convert = None
 
-
 class CircularBuffer:
     def __init__(self, size):
         self.size = size
@@ -121,10 +120,12 @@ x,y = getCsvData(cfg.CURRENT_DATA)
 coeffs = np.polyfit(x, y, 8)
 f_current_convert = np.poly1d(coeffs)
 
+
 def moving_average(new_sample, buffer):
     buffer.add(new_sample)
     samples = buffer.get()
     return sum(samples) / len(samples)
+
 
 def dbConnect():
     """
@@ -144,6 +145,7 @@ def dbConnect():
 
 def convert(x,in_min,in_max,out_min,out_max):
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+
 
 def getProvisionedDevices():
     """
@@ -362,6 +364,81 @@ def setAttenuation(ser,device,attenuation):
     logging.debug("changing attenuation")
     return True
 
+def setSnifferData(ser,device,data):
+    """Sets device downlink attenuation
+
+    Args:
+        ser: serial port
+        device: device ID
+        attenuation: integer between 0 and 32
+
+    Returns:
+        boolean: if changed was applied or error
+    """
+    # 7e 05 05 12 01 17 f6e3 7f#
+    data_len = "0006"
+    id = f"{device:02X}"
+    set_out = "B6"
+    device = "05"
+    cmd_string = f"{device}{id}{set_out}{data_len}{data}"
+    checksum = getChecksum(cmd_string)
+    command = '7E' + cmd_string + checksum + '7F'
+
+    logging.debug("data:"+str(data))
+    logging.debug("SENT: "+command)
+
+    cmd_bytes = bytearray.fromhex(command)
+    hex_byte = ''
+
+    try:
+        for cmd_byte in cmd_bytes:
+            hex_byte = ("{0:02x}".format(cmd_byte))
+            ser.write(bytes.fromhex(hex_byte))
+
+        # ---- Read from serial
+        hexResponse = ser.read(100)
+
+        logging.debug("GET: "+hexResponse.hex('-'))
+
+        # ---- Validations
+        if ((
+            (len(hexResponse) > 21)
+            or (len(hexResponse) < 21)
+            or hexResponse == None
+            or hexResponse == ""
+            or hexResponse == " "
+        ) or (
+            hexResponse[0] != 126
+            and hexResponse[20] != 127
+        ) or (
+            (hexResponse[3] != 17)
+        ) or (
+            (hexResponse[4] == 2 or hexResponse[4]
+                == 3 or hexResponse[4] == 4)
+        )):
+            return False
+        # ------------------------
+
+        data = list()
+
+        for i in range(0, 21):
+            if(6 <= i < 18):
+                data.append(hexResponse[i])
+
+        vladRev23Id = 0xff
+        if(data[0] == vladRev23Id):
+            data0 = data[0]
+
+        ser.flushInput()
+        ser.flushOutput()
+
+    except Exception as e:
+        logging.error(e)
+        sys.exit()
+
+    logging.debug("changing attenuation")
+    return True
+
 def sendCmd(ser, cmd, createdevice):
     """
     -Description: This functionsend a cmd, wait one minute if we have data write to the databse, if not write time out
@@ -473,6 +550,26 @@ def sendCmd(ser, cmd, createdevice):
                 "reverse": isReverse,
                 "attenuation":attenuation
             }
+        elif data[0] == 0xAA:
+            unsigned_byte = data[0]
+            ain1 = ( data[1] | (data[2] << 8) )
+            dout_sw= "ON" if (bool(data[3] )) else "OFF"
+            ain2 = ( data[4] | (data[5] << 8) )
+            din_sw = "ON" if(bool (data[6])== 0x01) else "OFF"
+            din_2 = "ON" if(bool (data[7]) == 0x01) else "OFF"
+            din_1 = "ON" if(bool (data[8]) == 0x01) else "OFF"
+            # print the decoded values
+
+            logging.debug(f"ain1: {ain1}")
+            logging.debug(f"dout_sw: {dout_sw}")
+            logging.debug(f"ain2: {ain2}")
+            logging.debug(f"din_sw: {din_sw}")
+            logging.debug(f"din_2: {din_2}")
+            logging.debug(f"din_1: {din_1}")
+
+            SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
+
         else:
         
             deviceData = list()
@@ -568,13 +665,8 @@ def decodeVlad(buffer):
         bufferIndex += 2
 
     state = buffer[bufferIndex]
-
-    state = buffer[bufferIndex]
-    vlad.isReverse = "ON" if (bool(state & 0x01)) else "OFF"
-    vlad.isSmartTune = "ON" if(bool((state >> 1) & 0x01)) else "OFF"
-    vlad.isRemoteAttenuation = bool((state >> 2) & 0x01)
-    vlad.attenuation = (state >> 3) & 0xFF
-    bufferIndex += 1
+    vlad.isReverse = bool(state & 0x01)
+    vlad.isSmartTune = bool((state >> 1) & 0x01)
     vlad.isRemoteAttenuation = bool((state >> 2) & 0x01)
     vlad.attenuation = (state >> 3) & 0xFF
     bufferIndex += 1
@@ -605,7 +697,7 @@ def decodeVlad(buffer):
     vlad.ucTemperature = int(measurement[Measurements.index('ucTemperature')])
     vlad.v_5v = round(measurement[Measurements.index('v5v')] * ADC_V5V_FACTOR,1)
     vlad.inputVoltage = round(measurement[Measurements.index('vin')] * ADC_VOLTAGE_FACTOR,2)
-    
+
     vlad.current = arduino_map(measurement[Measurements.index('current')],ADC_CURRENT_MIN,ADC_CURRENT_MAX,CURRENT_MIN,CURRENT_MAX)
     vlad.current = round(vlad.current,3)/1000
 
@@ -618,22 +710,22 @@ def decodeVlad(buffer):
     vlad.level152m = arduino_map(measurement[Measurements.index('level152m')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_152M,MAX4003_DBM_MIN,MAX4003_DBM_MAX)
     vlad.level152m = int(vlad.level152m)
 
-    vlad.level172m = arduino_map(measurement[Measurements.index('level172m')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_172M,MAX4003_DBM_MIN,MAX4003_DBM_MAX) 
+    vlad.level172m = arduino_map(measurement[Measurements.index('level172m')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_172M,MAX4003_DBM_MIN,MAX4003_DBM_MAX)
     vlad.level172m = int(vlad.level172m)
 
     vlad.ref152m = arduino_map(measurement[Measurements.index('ref152m')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_152M,MAX4003_DBM_MIN,MAX4003_DBM_MAX)
     vlad.ref152m = int(vlad.ref152m)
 
-    vlad.ref172m = arduino_map(measurement[Measurements.index('ref172m')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_172M,MAX4003_DBM_MIN,MAX4003_DBM_MAX) 
+    vlad.ref172m = arduino_map(measurement[Measurements.index('ref172m')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_172M,MAX4003_DBM_MIN,MAX4003_DBM_MAX)
     vlad.ref172m = int(vlad.ref172m)
-    
+
 
     vlad.toneLevel = arduino_map(measurement[Measurements.index('toneLevel')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_152M,MAX4003_DBM_MIN,MAX4003_DBM_MAX)
     vlad.toneLevel = int(vlad.toneLevel)
-    
+
     vlad.baseCurrent = (measurement[Measurements.index('baseCurrent')]  * VREF) / (1 << (RESOLUTION - 0x00))
-    vlad.baseCurrent = round(vlad.baseCurrent,3)          
-                        
+    vlad.baseCurrent = round(vlad.baseCurrent,3)
+
     return vlad
 
 def decodeMaster(buffer):
@@ -977,7 +1069,22 @@ def run_monitor():
                     setAttenuation(ser,device,attenuation)
                     # TODO: actualizar registro en DB para que no vuelva a setear la atenuación a menos que el usuario vuelva a cambiarla  manualmente
                     updateDeviceChangedFlag(device, False)
-     
+                logging.debug(deviceData["type"])
+
+            if (deviceData["type"] == "sniffer"):
+                aout1 = 2048
+                aout2 = 1024
+                dout1 = 0
+                dout2 = 0
+
+                # Invertir los bytes de aout1
+                aout1 = ((aout1 >> 8) & 0xFF) | ((aout1 << 8) & 0xFF00)
+
+                # Invertir los bytes de aout2
+                aout2 = ((aout2 >> 8) & 0xFF) | ((aout2 << 8) & 0xFF00)
+
+                data = f"{aout1:04X}{aout2:04X}{dout1:02X}{dout2:02X}"
+                setSnifferData(ser, device, data)
             else:
                 logging.debug("No response from device")
                 deviceData["connected"] = False
