@@ -7,7 +7,7 @@ services:
     image: rdss/frontend
     volumes:
       - ./frontend/src:/opt/rdss/frontend
-      - ./frontend/src/node_modules:/opt/rdss/frontend/node_modules
+      # - ./frontend/src/node_modules:/opt/rdss/frontend/node_modules
     ports:
       - 3000:3000
       - 5555:5000
