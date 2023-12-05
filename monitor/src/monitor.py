@@ -235,11 +235,11 @@ def openSerialPort(port=""):
     except serial.SerialException as msg:
         logging.exception("Error opening serial port %s" % msg)
         logging.exception("Trying to open " + port)
-        openSerialPort("/dev/ttyUSB1")
+        openSerialPort("/dev/ttyUSB0")
     except:
         exctype, errorMsg = sys.exc_info()[:2]
         logging.exception("%s  %s" % (errorMsg, exctype))
-        openSerialPort("/dev/ttyUSB0")
+        openSerialPort("/dev/ttyUSB1")
 
 
 def getChecksum(cmd):
@@ -431,100 +431,53 @@ def sendCmd(ser, cmd, createdevice):
             if(6 <= i < 18):
                 data.append(hexResponse[i])
 
-        vladRev23Id = 0xff
-        if(data[0] == vladRev23Id):
-            # decode the frame according to the specified format
-            unsigned_byte = data[0] 
-            isReverse = "ON" if(bool(data[1] & 0x01)) else "OFF"
-            isSmartTune = "ON" if (bool(data[1] & (0x1<<1))) else "OFF" 
-            isRemoteAttenuation = bool(data[1] & (0x1<<2))
-            attenuation = (data[1]>>3) & 0x1F
-            lineVoltage = ( data[2] | (data[3] << 8) ) /10.0
-            lineCurrent = ( data[4] | (data[5] << 8) ) /1000.0
-            toneLevel = ((data[6] | (data[7] << 8)) - 400) * (0 - -35) / (4095 - 400) + -35
-            downlinkAgcValue = data[8] / 10.0
-            downlinkOutputPower =  data[9] if  data[9] < 128 else data[9] - 256
-            uplinkAgcValue = data[10] / 10.0
-            uplinkOutputPower = data[11]if  data[11] < 128 else data[11] - 256
-            # print the decoded values
-
-            logging.debug(f"Voltage: {lineVoltage:.2f}[V]")
-            logging.debug(f"Line Current: {lineCurrent:.3f}[A]")
-            logging.debug(f"Attenuation: {attenuation:.1f}[dB]")
-            logging.debug(f"Tone Level: {toneLevel:.1f}[dBm]")
-            logging.debug(f"AGC Uplink: {uplinkAgcValue:.1f}[dB]")
-            logging.debug(f"Downlink Output Power: {downlinkOutputPower}[dBm]")
-            logging.debug(f"AGC Downlink: {downlinkAgcValue:.1f}[dB]")
-            logging.debug(f"Uplink Output Power:    {uplinkOutputPower}[dBm]")
-            logging.debug(f"Is Software Attenuation : {isRemoteAttenuation}")
-            logging.debug(f"Is Reverse : {isReverse}")
-            logging.debug(f"Is SmartTune : {isSmartTune}")
+        #Decodificaion con datos ordenados con aout2+swin+swout segun codificacion nueva
+        aIn1_1_10V = ( data[0] | data[1] << 8) # byte 1-2
+        aOut1_1_10V = ( data[2] | data[3] << 8 ) # byte 3-4 
+        aIn2_x_20mA = ( data[4] | data [5] << 8) # byte 5-6
+        aOut2_x_20mA = ( data[6] | data[7] << 8) # byte 7-8
+        swIn_x_20mA = "ON" if (bool (data[8]) == 0x01) else "OFF" # byte 9
+        swOut_x_20mA = "ON" if (bool (data[9]) == 0x01) else "OFF" # byte 10
+        dIn1 = "ON" if (bool (data[10]) == 0x01) else "OFF" # byte 11
+        dIn2 = "ON" if (bool (data[11]) == 0x01) else "OFF" # byte 12
             
-            SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-            timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
-            finalData = {
-                "sampleTime": timeNow,
-                "voltage": lineVoltage,
-                "current": lineCurrent,
-                "gupl": uplinkAgcValue,
-                "gdwl": downlinkAgcValue,
-                "power": downlinkOutputPower,
-                "smartTune": isSmartTune,
-                "reverse": isReverse,
-                "attenuation":attenuation
-            }
-        else:
+        logging.debug(f"ain1: {aIn1_1_10V}")
+        logging.debug(f"aout1: {aOut1_1_10V}")
+        logging.debug(f"ain2: {aIn2_x_20mA}")
+        logging.debug(f"aout2: {aOut2_x_20mA}")
+        logging.debug(f"din_sw: {swIn_x_20mA}") #digital
+        logging.debug(f"dout_sw: {swOut_x_20mA}") #digital
+        logging.debug(f"din_1: {dIn1}")
+        logging.debug(f"din_2: {dIn2}")
         
-            deviceData = list()
-            for i in range(0, len(data)):
+        #deviceData = [aIn1_1_10V, aOut1_1_10V, aIn2_x_20mA, aOut2_x_20mA, swIn_x_20mA, swOut_x_20mA, dIn1, dIn2]
+        vIn1_linear = round(arduino_map(aIn1_1_10V, 0, 4095, 0, 10), 2)
+        vOut1_linear = round(arduino_map(aOut1_1_10V, 0, 4095, 0, 10),2)
+        if(swIn_x_20mA == swOut_x_20mA == "ON"):
+            #4-20mA
+            iIn2_linear = round(arduino_map(aIn2_x_20mA, 0, 4095, 0, 20),2)
+            iOut2_linear = round(arduino_map(aOut2_x_20mA, 0, 4095, 0, 20),2)
+        else: 
+            #0-20mA
+            iIn2_linear = round(arduino_map(aIn2_x_20mA, 0, 4095, 4, 20),2)
+            iOut2_linear = round(arduino_map(aOut2_x_20mA, 0, 4095, 4, 20),2)
 
-                if (i == 0 or i == 2 or i == 4 or i == 6):
-                    if(data[i+1] == 255):
-                        deviceData.append(data[i] * -1)
-                    else:
-                        deviceData.append(int.from_bytes(
-                            ((data[i+1]).to_bytes(1, "little")) + ((data[i]).to_bytes(1, "little")), "big"))
-
-                elif(i == 8 or i == 9 or i == 10 or i == 11):
-                    deviceData.append(data[i])
-                else:
-                    pass
-
-            logging.debug("Data read from Serial: {}".format(deviceData))
-            lineVoltage = deviceData[0] / 10.0
-            baseCurrent = deviceData[1] /10000.
-            tunnelCurrent = deviceData[2] /1000.0
-            unitCurrent = deviceData[3] / 1000.0
-            uplinkAgcValue = deviceData[4] / 10.0
-            downlinkInputPower = deviceData[5]  if  deviceData[5] < 128 else deviceData[5] - 256
-            downlinkAgcValue = deviceData[6] / 10.0
-            downlinkOutputPower = deviceData[7] if  deviceData[7] < 128 else deviceData[7] - 256
-
-            downlinkOutputPowerConverted = moving_average(downlinkOutputPower,downlinkPowerOutputSamples)
-            downlinkOutputPowerAvg = round(f_power_convert(downlinkOutputPowerConverted),2)
-            downlinkInputPowerConverted = round(f_power_convert(downlinkInputPower),2)
-            uplinkAgcValueConverted =  round(f_agc_convert(uplinkAgcValue),1)
-            downlinkAgcValueConverted = round(f_agc_convert(downlinkAgcValue),1)
-            lineVoltageConverted = round(f_voltage_convert(lineVoltage),2)
-            unitCurrentConverted = round(f_current_convert(unitCurrent),3)
-
-            logging.debug(f"Voltage: {lineVoltage} {lineVoltageConverted:.2f}[V]")
-            logging.debug(f"Unit Current: {unitCurrent} {unitCurrentConverted:.3f}[A]")
-            logging.debug(f"AGC Uplink: {uplinkAgcValue} {uplinkAgcValueConverted:.1f}[dB]")
-            logging.debug(f"AGC Downlink: {downlinkAgcValue} {downlinkAgcValueConverted:.1f}[dB]")
-            logging.debug(f"Downlink Output Power: {downlinkOutputPower} {downlinkOutputPowerAvg:.2f}[dBm] {downlinkPowerOutputSamples}")
-            logging.debug(f"Downlink Input Power: {downlinkInputPower} {downlinkInputPowerConverted:.2f}[dBm]")
+        logging.debug("Datos escalados: ")
+        logging.debug(f"Analog1 Input Voltage: {vIn1_linear} V")
+        logging.debug(f"Analog1 Output Voltage: {vOut1_linear} V")
+        logging.debug(f"Analog2 Input Current: {iIn2_linear} mA")
+        logging.debug(f"Analog2 Output Current: {iOut2_linear} mA")
             
-            SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-            timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
-            finalData = {
-                "sampleTime": timeNow,
-                "voltage": lineVoltageConverted,
-                "current": unitCurrentConverted,
-                "gupl": uplinkAgcValueConverted,
-                "gdwl": downlinkAgcValueConverted,
-                "power": downlinkOutputPowerAvg
-            }
+        SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
+        #finalData = {
+        #    "sampleTime": timeNow,
+        #    "voltage": lineVoltageConverted,
+        #    "current": unitCurrentConverted,
+        #    "gupl": uplinkAgcValueConverted,
+        #    "gdwl": downlinkAgcValueConverted,
+        #    "power": downlinkOutputPowerAvg
+        #}
         # -----------------------------------------------------
         # if(createdevice == True):
         #     pass
@@ -538,7 +491,7 @@ def sendCmd(ser, cmd, createdevice):
         logging.error(e)
         sys.exit()
 
-    return finalData
+    return {}
 
 def arduino_map(value, in_min, in_max, out_min, out_max):
     return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
@@ -941,12 +894,12 @@ def run_monitor():
             else:
                 deviceData["name"] = ''
 
-            if(deviceData["type"] == "vlad-rev23"):
-                response = sendVladRev23Query(ser, device,times)
-            elif(deviceData["type"] == "master"):
-                response = sendMasterQuery(ser,times)
-            else:
-                response = sendCmd(ser, device, False)
+            #if(deviceData["type"] == "vlad-rev23"):
+                #response = sendVladRev23Query(ser, device,times)
+            #elif(deviceData["type"] == "master"):
+                #response = sendMasterQuery(ser,times)
+            #else:
+            response = sendCmd(ser, device, False)
 
             if (response):
                 connectedDevices += 1
@@ -970,7 +923,22 @@ def run_monitor():
                     setAttenuation(ser,device,attenuation)
                     # TODO: actualizar registro en DB para que no vuelva a setear la atenuación a menos que el usuario vuelva a cambiarla  manualmente
                     updateDeviceChangedFlag(device, False)
-     
+                    
+            if (deviceData["type"] == "sniffer"):
+                aout1 = 2048
+                aout2 = 1024
+                dout1 = 0
+                dout2 = 0
+
+                # Invertir los bytes de aout1
+                aout1 = ((aout1 >> 8) & 0xFF) | ((aout1 << 8) & 0xFF00)
+
+                # Invertir los bytes de aout2
+                aout2 = ((aout2 >> 8) & 0xFF) | ((aout2 << 8) & 0xFF00)
+
+                data = f"{aout1:04X}{aout2:04X}{dout1:02X}{dout2:02X}"
+                setSnifferData(ser, device, data)
+                
             else:
                 logging.debug("No response from device")
                 deviceData["connected"] = False
@@ -987,6 +955,81 @@ def run_monitor():
     else:
         sendStatusToFrontEnd([])
         logging.debug("No provisioned devices found in the DB")
+        
+def setSnifferData(ser,device,data):
+    """Sets device downlink attenuation
+
+    Args:
+        ser: serial port
+        device: device ID
+        attenuation: integer between 0 and 32
+
+    Returns:
+        boolean: if changed was applied or error
+    """
+    # 7e 05 05 12 01 17 f6e3 7f#
+    data_len = "0006"
+    id = f"{device:02X}"
+    set_out = "B6"
+    device = "05"
+    cmd_string = f"{device}{id}{set_out}{data_len}{data}"
+    checksum = getChecksum(cmd_string)
+    command = '7E' + cmd_string + checksum + '7F'
+
+    logging.debug("data:"+str(data))
+    logging.debug("SENT: "+command)
+
+    cmd_bytes = bytearray.fromhex(command)
+    hex_byte = ''
+
+    try:
+        for cmd_byte in cmd_bytes:
+            hex_byte = ("{0:02x}".format(cmd_byte))
+            ser.write(bytes.fromhex(hex_byte))
+
+        # ---- Read from serial
+        hexResponse = ser.read(100)
+
+        logging.debug("GET: "+hexResponse.hex('-'))
+
+        # ---- Validations
+        if ((
+            (len(hexResponse) > 21)
+            or (len(hexResponse) < 21)
+            or hexResponse == None
+            or hexResponse == ""
+            or hexResponse == " "
+        ) or (
+            hexResponse[0] != 126
+            and hexResponse[20] != 127
+        ) or (
+            (hexResponse[3] != 17)
+        ) or (
+            (hexResponse[4] == 2 or hexResponse[4]
+                == 3 or hexResponse[4] == 4)
+        )):
+            return False
+        # ------------------------
+
+        data = list()
+
+        for i in range(0, 21):
+            if(6 <= i < 18):
+                data.append(hexResponse[i])
+
+        vladRev23Id = 0xff
+        if(data[0] == vladRev23Id):
+            data0 = data[0]
+
+        ser.flushInput()
+        ser.flushOutput()
+
+    except Exception as e:
+        logging.error(e)
+        sys.exit()
+
+    logging.debug("changing attenuation")
+    return True
 
 def listen():
     """

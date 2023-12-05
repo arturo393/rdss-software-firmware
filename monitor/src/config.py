@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-BASE_PATH = "/opt/rdss/monitor/"
+BASE_PATH = "C:\\Users\\sigmadev\\Desktop\\sniffer\\sniffer-software\\monitor\\src\\"
 FORMAT = 'utf-8'
 POLLING_SLEEP = 2
 LOGGING_FILE = "monitor.log"
@@ -21,7 +21,7 @@ log = {
 }
 
 db = {
-    "host": "database",
+    "host": "192.168.60.236",
     "user": "admin",
     "passwd": "Admin123",
     "dbname": "rdss",
