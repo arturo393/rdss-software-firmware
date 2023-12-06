@@ -22,6 +22,8 @@ from flask_socketio import SocketIO
 from flask import Flask
 import eventlet
 
+USBPORT0 = "COM3"
+USBPORT1 = "COM4"
 
 logging.basicConfig(filename=cfg.LOGGING_FILE, level=logging.DEBUG)
 
@@ -235,11 +237,11 @@ def openSerialPort(port=""):
     except serial.SerialException as msg:
         logging.exception("Error opening serial port %s" % msg)
         logging.exception("Trying to open " + port)
-        openSerialPort("/dev/ttyUSB0")
+        openSerialPort(USBPORT0)
     except:
         exctype, errorMsg = sys.exc_info()[:2]
         logging.exception("%s  %s" % (errorMsg, exctype))
-        openSerialPort("/dev/ttyUSB1")
+        openSerialPort(USBPORT1)
 
 
 def getChecksum(cmd):
@@ -724,102 +726,6 @@ def sendMasterQuery(ser,times):
 
     return finalData
 
-def sendVladRev23Query(ser, deviceID,times):
-    """
-    Sends a command, waits for one minute if data is received, and returns the data.
-    Args:
-        ser: Serial object.
-        cmd: Command to send.
-    Returns:
-        Dictionary containing the received data, or False if an error occurs.
-    """
-    if times == 0:
-        return False
-    
-    finalData = {}
-    cmd = hex(deviceID)
-    if len(cmd) == 3:
-        cmdString = '05' + '0' + cmd[2:3] + '110000'
-    else:
-        cmdString = '05' + cmd[2:4] + '110000'
-
-    checksum = getChecksum(cmdString)
-    command = '7E' + cmdString + checksum + '7F'
-    logging.debug("Attempt: " + str(times))
-    logging.debug("SENT: " + command)
-
-    try:
-        cmdBytes = bytearray.fromhex(command)
-        for cmdByte in cmdBytes:
-            hexByte = "{0:02x}".format(cmdByte)
-            ser.write(bytes.fromhex(hexByte))
-
-        hexResponse = ser.read(100)
-        response = hexResponse.hex('-')
-        logging.debug("GET: " + hexResponse.hex('-'))
-        message =""
-        for byte in hexResponse:
-          decimal_value = byte
-          message+=str(byte).zfill(2)+"-"
-        logging.debug("GET: "+ message)
-
-        responseLen = len(hexResponse)
-        logging.debug("receive len: " + str(responseLen))
-        if responseLen != 34:
-            return sendVladRev23Query(ser, deviceID,times-1)
-        if  hexResponse[0] != 126:
-            return sendVladRev23Query(ser, deviceID,times-1)
-        if hexResponse[responseLen - 1 ] != 127:
-            return sendVladRev23Query(ser, deviceID,times-1)
-        if hexResponse[2] != int(cmd, 16):
-            return sendVladRev23Query(ser, deviceID,times-1)
-        if  hexResponse[3] != 17:
-            return sendVladRev23Query(ser, deviceID,times-1)
-        if hexResponse[4] in [2, 3, 4]:
-            return sendVladRev23Query(ser, deviceID,times-1)
-        if isCrcOk(hexResponse,responseLen) == False:
-            return sendVladRev23Query(ser, deviceID,times-1)
-        
-        data = list(hexResponse[i] for i in range(6, responseLen - 3))
-        
-
-        vlad = decodeVlad(data)
-    
-        logging.debug(f"Voltage: {vlad.inputVoltage:.2f}[V]")
-        logging.debug(f"Voltage reference: {vlad.v_5v}[V]]")   
-        logging.debug(f"Current: {vlad.current:.3f}[mA]")
-        logging.debug(f"Base Current: {vlad.baseCurrent:.3f}[mA]")
-        logging.debug(f"Attenuation: {vlad.attenuation:}[dB]")
-        logging.debug(f"Tone Level: {vlad.toneLevel:}[dBm]")
-        logging.debug(f"Downlink - AGC {vlad.agc152m:}[dB] Reference: {vlad.ref152m} [dBm] Output Power: {vlad.level152m} [dBm]") 
-        logging.debug(f"Uplink   - AGC {vlad.agc172m:}[dB] Reference: {vlad.ref172m} [dBm] Output Power: {vlad.level172m} [dBm]") 
-        logging.debug(f"Is Software Attenuation: {vlad.isRemoteAttenuation}") 
-        logging.debug(f"Is Reverse: {vlad.isReverse}")
-        logging.debug(f"Is SmartTune: {vlad.isSmartTune}")
-        logging.debug(f"uC Temperature: {vlad.ucTemperature}[°C]")
-
-        sampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-        timeNow = datetime.datetime.strptime(sampleTime, "%Y-%m-%dT%H:%M:%SZ")
-        finalData = {
-            "sampleTime": timeNow,
-            "voltage": vlad.inputVoltage,
-            "current": vlad.current,
-            "gupl": vlad.agc172m,
-            "gdwl": vlad.agc152m,
-            "power": vlad.level152m,
-            "smartTune": vlad.isSmartTune,
-            "reverse": vlad.isReverse,
-            "attenuation": vlad.attenuation
-        }
-
-        ser.flushInput()
-        ser.flushOutput()
-
-    except Exception as e:
-        logging.error(e)
-        sys.exit()
-
-    return finalData
 
 def sendStatusToFrontEnd(rtData):
     """
@@ -901,32 +807,10 @@ def run_monitor():
             #else:
             response = sendCmd(ser, device, False)
 
-            if (response):
-                connectedDevices += 1
-                deviceData["connected"] = True
-                deviceData["rtData"] = response
-                alerts = evaluateAlerts(response)
-                deviceData["rtData"]["alerts"] = alerts
-                deviceData["alerts"] = alerts
-                updateDeviceConnectionStatus(device, True)
-                #-------------------------------------------------
-                # Leyendo atenuación y estado de cambio
-                #-------------------------------------------------
-                attenuation = 0
-                if "attenuation" in x:
-                    value = x["attenuation"]
-                    if value is not None:
-                         attenuation = int(value)
-                attenuationChanged = bool(x["changed"]) if ('changed' in x) else False
-                # TODO: Setear atenuación
-                if (attenuationChanged):
-                    setAttenuation(ser,device,attenuation)
-                    # TODO: actualizar registro en DB para que no vuelva a setear la atenuación a menos que el usuario vuelva a cambiarla  manualmente
-                    updateDeviceChangedFlag(device, False)
-                    
+            
             if (deviceData["type"] == "sniffer"):
-                aout1 = 2048
-                aout2 = 1024
+                aout1 = 1000
+                aout2 = 500
                 dout1 = 0
                 dout2 = 0
 
@@ -937,6 +821,7 @@ def run_monitor():
                 aout2 = ((aout2 >> 8) & 0xFF) | ((aout2 << 8) & 0xFF00)
 
                 data = f"{aout1:04X}{aout2:04X}{dout1:02X}{dout2:02X}"
+                #data = f"{dout2:02X}"
                 setSnifferData(ser, device, data)
                 
             else:
@@ -956,7 +841,7 @@ def run_monitor():
         sendStatusToFrontEnd([])
         logging.debug("No provisioned devices found in the DB")
         
-def setSnifferData(ser,device,data):
+def setSnifferData(ser,id,data):
     """Sets device downlink attenuation
 
     Args:
@@ -967,17 +852,16 @@ def setSnifferData(ser,device,data):
     Returns:
         boolean: if changed was applied or error
     """
-    # 7e 05 05 12 01 17 f6e3 7f#
-    data_len = "0006"
-    id = f"{device:02X}"
-    set_out = "B6"
-    device = "05"
+    data_len = "0600"
+    id = f"{id:02X}"
+    set_out = "B6" #nombre del comando
+    device = f"{10:02X}"  #10 para sniffer
     cmd_string = f"{device}{id}{set_out}{data_len}{data}"
     checksum = getChecksum(cmd_string)
     command = '7E' + cmd_string + checksum + '7F'
 
-    logging.debug("data:"+str(data))
-    logging.debug("SENT: "+command)
+    logging.debug("data: " + str(data))
+    logging.debug("SENT: " + command)
 
     cmd_bytes = bytearray.fromhex(command)
     hex_byte = ''
@@ -988,38 +872,22 @@ def setSnifferData(ser,device,data):
             ser.write(bytes.fromhex(hex_byte))
 
         # ---- Read from serial
-        hexResponse = ser.read(100)
+        hexResponse = ser.read(100) #la resupesta es el mismo query
 
         logging.debug("GET: "+hexResponse.hex('-'))
 
         # ---- Validations
         if ((
-            (len(hexResponse) > 21)
-            or (len(hexResponse) < 21)
+            (len(hexResponse) > 15)
+            or (len(hexResponse) < 15)
             or hexResponse == None
             or hexResponse == ""
             or hexResponse == " "
         ) or (
-            hexResponse[0] != 126
-            and hexResponse[20] != 127
-        ) or (
-            (hexResponse[3] != 17)
-        ) or (
-            (hexResponse[4] == 2 or hexResponse[4]
-                == 3 or hexResponse[4] == 4)
+            hexResponse != cmd_bytes
         )):
             return False
         # ------------------------
-
-        data = list()
-
-        for i in range(0, 21):
-            if(6 <= i < 18):
-                data.append(hexResponse[i])
-
-        vladRev23Id = 0xff
-        if(data[0] == vladRev23Id):
-            data0 = data[0]
 
         ser.flushInput()
         ser.flushOutput()
@@ -1040,9 +908,9 @@ def listen():
             dbConnect()
         if ser is None:
             try:
-                openSerialPort("/dev/ttyUSB0")
+                openSerialPort(USBPORT0)
             except:
-                openSerialPort("/dev/ttyUSB1")
+                openSerialPort(USBPORT1)
 
         run_monitor()
         eventlet.sleep(cfg.POLLING_SLEEP)
