@@ -11,6 +11,7 @@ void m24c64_page_read(uint8_t address, uint8_t page, uint8_t *data) {
 	i2c1MasterFrameRx(CHIP_ADDR, data, 32);
 }
 
+/*
 bool readPage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
 	uint8_t buff[1] = { 0 };
 	uint16_t MemAddress = page << PADDRPOSITION | offset;
@@ -23,7 +24,7 @@ bool readPage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
 		return false;
 	return true;
 }
-
+*/
 
 void savePage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
 	uint8_t buff[16 + 1];
@@ -49,7 +50,7 @@ void savePage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
 	HAL_Delay(6);
 }
 
-HAL_StatusTypeDef HAL_readPage(uint16_t page, uint8_t *data, uint16_t offset, uint16_t size) {
+HAL_StatusTypeDef readPage(uint16_t page, uint8_t *data, uint16_t offset, uint16_t size) {
     uint16_t MemAddress = (page << 8) | offset;
     HAL_StatusTypeDef res;
     res = HAL_I2C_Mem_Read(&hi2c1, M24C64_CHIP_ADDR, MemAddress, I2C_MEMADD_SIZE_16BIT, data, size, 1000);
@@ -66,7 +67,7 @@ HAL_StatusTypeDef HAL_savePage(uint16_t page, uint8_t *data, uint16_t offset, ui
     bool notEqual = false;
     HAL_StatusTypeDef res;
 
-    res = HAL_readPage(page, read, offset, size);
+    res = readPage(page, read, offset, size);
 
     for (uint16_t i = 0; i < size; i++)
         if (data[i] != read[i]) {

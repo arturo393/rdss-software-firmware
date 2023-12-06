@@ -14,12 +14,11 @@
 #include "uart1.h"
 #include "stdio.h"
 #include "string.h"
-#include "SX1278.h"
 
-#define LTEL_FRAME_SIZE 14
+#define RDSS_FRAME_SIZE 14
 #define SIGMA_FRAME_SIZE 14
-#define LTEL_START_MARK 0x7e
-#define LTEL_END_MARK  0x7f
+#define RDSS_START_MARK 0x7e
+#define RDSS_END_MARK  0x7f
 #define RDSS_BUFFER_SIZE 50
 #define LTEL_SET_LENGTH  13
 #define LTEL_QUERY_LENGTH  9
@@ -49,6 +48,11 @@ typedef enum RS485_CMD {
 	SET_BANDWIDTH,
 	SET_SPREAD_FACTOR,
 	SET_CODING_RATE,
+	SET_OUT,
+	SET_AOUT_0_10V,
+	SET_AOUT_4_20mA,
+	SET_AOUT_0_20mA,
+	SET_DOUT1,
 
 	SET_VLAD_MODE,
 	SET_PARAMETER_FREQOUT = 0x31,

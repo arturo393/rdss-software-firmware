@@ -40,9 +40,9 @@ RDSS_status_t rs485_check_CRC_module(UART1_t *uart1) {
 }
 
 RDSS_status_t checkModuleValidity(uint8_t *frame, uint8_t lenght) {
-	if (frame[1] >= SERVER || frame[1] <= UHF_TONE) {
+	if (frame[1] >= SERVER || frame[1] <= SNIFFER) {
 		for (int i = 3; i < lenght; i++)
-			if (frame[i] == LTEL_END_MARK)
+			if (frame[i] == RDSS_END_MARK)
 				return VALID_MODULE;
 	} else
 		return WRONG_MODULE_FUNCTION;
@@ -52,8 +52,8 @@ RDSS_status_t checkModuleValidity(uint8_t *frame, uint8_t lenght) {
 RDSS_status_t checkFrameValidity(uint8_t *frame, uint8_t lenght) {
 
 	if (lenght > (MINIMUN_FRAME_LEN)) {
-		if (frame[0] == LTEL_START_MARK) {
-			if (frame[lenght - 1] == LTEL_END_MARK)
+		if (frame[0] == RDSS_START_MARK) {
+			if (frame[lenght - 1] == RDSS_END_MARK)
 				return VALID_FRAME;
 			else
 				return START_READING;
@@ -146,7 +146,7 @@ uint8_t setRdssStartData(RDSS_t *rdss, uint8_t *buffer, Function_t function) {
 		return i;
 	if (rdss->id == 0 && function != SERVER)
 		return i;
-	buffer[i++] = LTEL_START_MARK;
+	buffer[i++] = RDSS_START_MARK;
 	buffer[i++] = function;
 	buffer[i++] = rdss->id;
 	buffer[i++] = rdss->cmd;

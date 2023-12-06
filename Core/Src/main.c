@@ -24,6 +24,7 @@
 #include "led.h"
 #include "rs485.h"
 #include "lm75.h"
+#include "SX1278.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,7 +44,7 @@
 #define MCP3421_CONT_CONV (0x00 << 4)
 #define ADC_CHANNELS_NUM 2
 #define ADC_EXTRA_DATA 1
-#define IWDG_DEBUG
+//#define IWDG_DEBUG
 
 volatile uint16_t adcValues[ADC_CHANNELS_NUM + ADC_EXTRA_DATA];
 //#define IWDG_DEBUG
@@ -125,7 +126,8 @@ void calibrateADC();
 void configureGPIO();
 void startADCConversion(uint8_t channel);
 uint16_t readADCChannel(uint8_t channel);
-void updateMasterStatus(RDSS_t *rdss, volatile uint16_t *adcValues, uint32_t timeout);
+void updateMasterStatus(RDSS_t *rdss, volatile uint16_t *adcValues,
+		uint32_t timeout);
 
 /* USER CODE END 0 */
 
@@ -163,21 +165,22 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
-  MX_ADC1_Init();
-  MX_CRC_Init();
-  MX_IWDG_Init();
+//  MX_ADC1_Init();
+//  MX_CRC_Init();
+//  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
+	HAL_GPIO_WritePin(KEEP_ALIVE_GPIO_Port, KEEP_ALIVE_Pin, GPIO_PIN_SET);
+	HAL_Delay(1000);
+	HAL_GPIO_WritePin(KEEP_ALIVE_GPIO_Port, LORA_TX_OK_Pin, GPIO_PIN_SET);
+	HAL_Delay(1000);
+	HAL_GPIO_WritePin(KEEP_ALIVE_GPIO_Port, LORA_RX_OK_Pin, GPIO_PIN_SET);
+	HAL_Delay(1000);
 	vlad = vladInit(SERVER);
 	server = serverInit(SERVER);
 	ledInit(&led);
 	rdss = rdssInit(0);
 	loRa = loRaInit(&hspi1, MASTER_RECEIVER);
-	printStatus(&u1, rdss);
-	printLoRaStatus(&u1, loRa);
 	lm75_init();
-#ifdef IWDG_DEBUG
-	HAL_IWDG_Refresh(&hiwdg);
-#endif
 	HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
 	HAL_NVIC_EnableIRQ(USART1_IRQn);
 	HAL_UART_Receive_IT(&huart1, &rxData, 1);
@@ -187,20 +190,21 @@ int main(void)
 	calibrateADC();
 	uint32_t keepAliveStartTicks = HAL_GetTick();
 	rdss->lastUpdateTicks = HAL_GetTick();
-//	HAL_IWDG_Refresh(&hiwdg);
+#ifdef IWDG_DEBUG
+	HAL_IWDG_Refresh(&hiwdg);
+#endif
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1) {
-
-		processUart1Rx(&u1, rdss, server, loRa);
-		configureLoRaRx(loRa, MASTER_RECEIVER);
-		masterProcessLoRaRx(loRa, rdss, vlad);
 		adcValues[0] = readADCChannel(0);
 		adcValues[1] = readADCChannel(1);
 		adcValues[2] = lm75_read();
-		updateMasterStatus(rdss, adcValues, 1000);
+		updateMasterStatus(rdss, adcValues, 5000);
+		processUart1Rx(&u1, rdss, server, loRa);
+		configureLoRaRx(loRa, MASTER_RECEIVER);
+		masterProcessLoRaRx(loRa, rdss, vlad);
 
 #ifdef IWDG_DEBUG
 		HAL_IWDG_Refresh(&hiwdg);
@@ -600,13 +604,13 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	/* Read received data from UART1 */
-	if (uart1_ptr->rxSize >= RX_BUFFLEN) {
+	if (uart1_ptr->rxSize >= UART2_RX_BUFFLEN) {
 		cleanRx(uart1_ptr);
 		uart1_ptr->rxSize = 0;
 	}
 	HAL_UART_Receive_IT(&huart1, &rxData, 1);
 	uart1_ptr->rxData[uart1_ptr->rxSize++] = rxData;
-	if (rxData == LTEL_END_MARK)
+	if (rxData == RDSS_END_MARK)
 		uart1_ptr->isReceivedDataReady = true;
 }
 
@@ -617,7 +621,6 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 	printf("SPI RX Done .. Do Something ...");
 }
-
 
 uint8_t executeServerCmd(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa,
 		Server_t *server) {
@@ -660,7 +663,7 @@ uint8_t executeServerCmd(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa,
 		break;
 	case QUERY_MODULE_ID:
 		index = 0;
-		buffer[index++] = LTEL_START_MARK;
+		buffer[index++] = RDSS_START_MARK;
 		buffer[index++] = server->function;
 		buffer[index++] = rdss->id;
 		buffer[index++] = QUERY_MODULE_ID;
@@ -722,7 +725,7 @@ uint8_t executeServerCmd(uint8_t *buffer, RDSS_t *rdss, SX1278_t *loRa,
 	}
 
 	index += setCrc(buffer, index);
-	buffer[index++] = LTEL_END_MARK;
+	buffer[index++] = RDSS_END_MARK;
 	rdss->status = UART_SEND;
 	return index;
 }
@@ -926,15 +929,19 @@ void clearRx(UART1_t *u1) {
 }
 
 void transmitRdssQuery(RDSS_t *rdss, SX1278_t *loRa) {
+
 	rdss->idQuery = rdss->idReceived;
 	loRa->txData = rdss->buff;
 	loRa->txSize = rdss->buffSize;
+
 	changeMode(loRa, MASTER_SENDER);
 	transmit(loRa); // TODO: se puede mejorar usando enviando la trama a transmitir
-	if(loRa->status == TX_DONE)
-		HAL_GPIO_WritePin(LORA_TX_OK_GPIO_Port,LORA_TX_OK_Pin,GPIO_PIN_SET);
+	if (loRa->status == TX_DONE)
+		HAL_GPIO_WritePin(LORA_TX_OK_GPIO_Port, LORA_TX_OK_Pin, GPIO_PIN_SET);
+	uint32_t timeStart = HAL_GetTick();
 	changeMode(loRa, MASTER_RECEIVER);
-	HAL_GPIO_WritePin(LORA_TX_OK_GPIO_Port,LORA_TX_OK_Pin,GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LORA_TX_OK_GPIO_Port, LORA_TX_OK_Pin, GPIO_PIN_RESET);
+	loRa->lastChangeMode = HAL_GetTick() - timeStart;
 }
 
 void processServerCmd(UART1_t *u1, RDSS_t *rdss, SX1278_t *loRa,
@@ -974,11 +981,83 @@ void processUart1Rx(UART1_t *u1, RDSS_t *rdss, Server_t *server, SX1278_t *loRa)
 	clearRx(u1);
 	rdssReinit(rdss);
 }
-
+int isEnumValue(Rs485_cmd_t value) {
+	switch (value) {
+	case NONE:
+	case QUERY_MODULE_ID:
+	case QUERY_STATUS:
+	case SET_VLAD_ATTENUATION:
+	case QUERY_MASTER_STATUS:
+	case QUERY_TX_FREQ:
+	case QUERY_RX_FREQ:
+	case QUERY_UART_BAUDRATE:
+	case QUERY_BANDWIDTH:
+	case QUERY_SPREAD_FACTOR:
+	case QUERY_CODING_RATE:
+	case SET_MODULE_ID:
+	case SET_TX_FREQ:
+	case SET_RX_FREQ:
+	case SET_UART_BAUDRATE:
+	case SET_BANDWIDTH:
+	case SET_SPREAD_FACTOR:
+	case SET_CODING_RATE:
+	case SET_OUT:
+	case SET_AOUT_0_10V:
+	case SET_AOUT_4_20mA:
+	case SET_AOUT_0_20mA:
+	case SET_DOUT1:
+	case SET_VLAD_MODE:
+	case SET_PARAMETER_FREQOUT:
+	case SET_PARAMETERS:
+	case SET_PARAMETER_FREQBASE:
+	case QUERY_PARAMETER_PdBm:
+		return 1;
+	default:
+		return 0;
+	}
+}
 void masterProcessRdss(RDSS_t *rdss) {
-	if (rdss->cmd == QUERY_STATUS)
+	uint8_t error[] = { 0xff, 0xff, 0xff, 0xff };
+	switch (rdss->cmd) {
+	case NONE:
+	case QUERY_MODULE_ID:
+	case QUERY_STATUS:
+	case SET_VLAD_ATTENUATION:
+	case QUERY_MASTER_STATUS:
+	case QUERY_TX_FREQ:
+	case QUERY_RX_FREQ:
+	case QUERY_UART_BAUDRATE:
+	case QUERY_BANDWIDTH:
+	case QUERY_SPREAD_FACTOR:
+	case QUERY_CODING_RATE:
+	case SET_MODULE_ID:
+	case SET_TX_FREQ:
+	case SET_RX_FREQ:
+	case SET_UART_BAUDRATE:
+	case SET_BANDWIDTH:
+	case SET_SPREAD_FACTOR:
+	case SET_CODING_RATE:
+	case SET_AOUT_0_10V:
+	case SET_AOUT_4_20mA:
+	case SET_AOUT_0_20mA:
+	case SET_DOUT1:
+	case SET_VLAD_MODE:
+	case SET_PARAMETER_FREQOUT:
+	case SET_PARAMETERS:
+	case SET_PARAMETER_FREQBASE:
+	case QUERY_PARAMETER_PdBm:
 		for (uint8_t i = 0; i < rdss->buffSize; i++)
 			writeTxReg(rdss->buff[i]);
+		break;
+	case SET_OUT:
+		for (uint8_t i = 0; i < rdss->buffSize; i++)
+			writeTxReg(rdss->buff[i]);
+		break;
+	default:
+		for (uint8_t i = 0; i < sizeof(error); i++)
+			writeTxReg(error[i]);
+		break;
+	}
 }
 
 void masterProcessLoRaRx(SX1278_t *loRa, RDSS_t *rdss, Vlad_t *vlad) {
@@ -1093,7 +1172,7 @@ void updateMasterStatus(RDSS_t *rdss, volatile uint16_t *adcValues,
 		uint8_t index = 0;
 		const uint8_t querySize = 5;
 		memset(rdss->queryBuffer, 0, 14);
-		rdss->queryBuffer[index++] = LTEL_START_MARK;
+		rdss->queryBuffer[index++] = RDSS_START_MARK;
 		rdss->queryBuffer[index++] = SERVER;
 		rdss->queryBuffer[index++] = rdss->id;
 		rdss->queryBuffer[index++] = QUERY_MASTER_STATUS;
@@ -1105,7 +1184,7 @@ void updateMasterStatus(RDSS_t *rdss, volatile uint16_t *adcValues,
 		rdss->queryBuffer[index++] = adcValues[1] >> 8;
 		rdss->queryBuffer[index++] = adcValues[2];
 		index += setCrc(rdss->queryBuffer, index);
-		rdss->queryBuffer[index++] = LTEL_END_MARK;
+		rdss->queryBuffer[index++] = RDSS_END_MARK;
 		rdss->lastUpdateTicks = HAL_GetTick();
 	}
 }

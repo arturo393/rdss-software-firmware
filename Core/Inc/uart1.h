@@ -13,12 +13,12 @@
 #include "stdlib.h"
 #include "string.h"
 
-#define RX_BUFFLEN 30
+#define UART2_RX_BUFFLEN 30
 #define TX_BUFFLEN  35
 #define SECONDS(x) x*1000
 
 typedef struct UART1 {
-	uint8_t rxData[RX_BUFFLEN];
+	uint8_t rxData[UART2_RX_BUFFLEN];
 	uint8_t *txData;
 	uint8_t txSize;
 	uint8_t rxSize;

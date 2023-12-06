@@ -68,10 +68,10 @@ extern I2C_HandleTypeDef hi2c1;
 
 
 void m24c64_page_read(uint8_t address,uint8_t page, uint8_t *data);
-bool readPage(uint8_t page, uint8_t *data, uint8_t offset,uint8_t size);
+//bool readPage(uint8_t page, uint8_t *data, uint8_t offset,uint8_t size);
 void savePage(uint8_t page, uint8_t *data, uint8_t offset,uint8_t size);
 HAL_StatusTypeDef HAL_savePage(uint16_t page, uint8_t *data, uint16_t offset,uint16_t size);
-HAL_StatusTypeDef HAL_readPage(uint16_t page, uint8_t *data, uint16_t offset, uint16_t size);
+HAL_StatusTypeDef readPage(uint16_t page, uint8_t *data, uint16_t offset, uint16_t size);
 unsigned long getULFromEeprom(uint8_t page);
 
 

@@ -53,7 +53,8 @@ typedef enum MODULE_FUNCTION {
 	BDA,
 	LOW_NOISE_AMPLIFIER,
 	POWER_AMPLIFIER,
-	UHF_TONE
+	UHF_TONE,
+	SNIFFER
 } Function_t;
 
 typedef enum MODULE_ID {

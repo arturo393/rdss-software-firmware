@@ -305,6 +305,7 @@ typedef struct {
 	bool saveParameters;
 	uint32_t lastTxTime;
 	uint32_t lastRxTime;
+	uint32_t lastChangeMode;
 	OPERATING_MODE_t operatingMode;
 	Lora_Mode_t mode;
 	SX1278_Status_t status;
@@ -346,7 +347,7 @@ void clearRxMemory(SX1278_t *module);
 uint8_t setTxFifoData(SX1278_t *module);
 void receive(SX1278_t *loRa);
 void transmit(SX1278_t *loRa);
-void readLoRaSettings(SX1278_t* loRa);
+void validateSettings(SX1278_t* loRa);
 void HAL_readLoRaSettings(SX1278_t* loRa);
 SX1278_t* loRaInit(SPI_HandleTypeDef *hspi1 ,Lora_Mode_t loRaMode
 );

@@ -156,6 +156,12 @@ void readOperatingMode(SX1278_t *module) {
 void setLoRaLowFreqModeReg(SX1278_t *module, OPERATING_MODE_t mode) {
 	uint8_t cmd = LORA_MODE_ACTIVATION | LOW_FREQUENCY_MODE | mode;
 	writeRegister(module->spi, LR_RegOpMode, &cmd, 1);
+
+	uint8_t read_test = 255;
+
+	read_test = readRegister(module->spi, LR_RegOpMode);
+
+
 	module->operatingMode = mode;
 }
 
@@ -346,17 +352,32 @@ void setRxFifoAddr(SX1278_t *module) {
 
 uint8_t setTxFifoData(SX1278_t *loRa) {
 	uint8_t cmd = loRa->txSize;
+	uint8_t base_addr = 0x80;
 	if (loRa->txSize > 0) {
 		writeRegister(loRa->spi, LR_RegPayloadLength, &(cmd), 1);
+		writeRegister(loRa->spi, LR_RegFifoAddrPtr, &base_addr, 1);
+		for (int i = 0; i < loRa->txSize; i++)
+			writeRegister(loRa->spi, 0x00, loRa->txData + i, 1);
+	}
+	return (loRa->txSize);
+}
+
+uint8_t setTxFifoDataOld(SX1278_t *loRa) {
+	uint8_t cmd = loRa->txSize;
+	uint8_t base_addr = 0x00;
+	if (loRa->txSize > 0) {
+		writeRegister(loRa->spi, LR_RegPayloadLength, &(cmd), 1);
+		writeRegister(loRa->spi, LR_RegFifoTxBaseAddr, &base_addr, 1);
 		uint8_t addr = readRegister(loRa->spi, LR_RegFifoTxBaseAddr);
-		addr = 0x80;
+		addr = 0x00;
 		writeRegister(loRa->spi, LR_RegFifoAddrPtr, &addr, 1);
 		loRa->txSize = readRegister(loRa->spi, LR_RegPayloadLength);
 		for (int i = 0; i < loRa->txSize; i++)
 			writeRegister(loRa->spi, 0x00, loRa->txData + i, 1);
 	}
-	return loRa->txSize;
+	return (loRa->txSize);
 }
+
 
 void receive(SX1278_t *loRa) {
 	setRxFifoAddr(loRa);
@@ -373,7 +394,7 @@ void transmit(SX1278_t *loRa) {
 
 }
 
-void readLoRaSettings(SX1278_t *loRa) {
+void validateSettings(SX1278_t *loRa) {
 
 	readPage(M24C64_PAGE0, &(loRa->spreadFactor), 0, 1);
 	readPage(M24C64_PAGE0, &(loRa->bandwidth), 1, 1);
@@ -398,11 +419,11 @@ void readLoRaSettings(SX1278_t *loRa) {
 
 void HAL_readLoRaSettings(SX1278_t *loRa) {
 
-	HAL_readPage(M24C64_PAGE0, &(loRa->spreadFactor), 0, 1);
-	HAL_readPage(M24C64_PAGE0, &(loRa->bandwidth), 1, 1);
-	HAL_readPage(M24C64_PAGE0, &(loRa->codingRate), 2, 1);
-	HAL_readPage(M24C64_PAGE1, (uint8_t*) &(loRa->dlFreq), 0, 4);
-	HAL_readPage(M24C64_PAGE1, (uint8_t*) &(loRa->upFreq), 4, 4);
+	readPage(M24C64_PAGE0, &(loRa->spreadFactor), 0, 1);
+	readPage(M24C64_PAGE0, &(loRa->bandwidth), 1, 1);
+	readPage(M24C64_PAGE0, &(loRa->codingRate), 2, 1);
+	readPage(M24C64_PAGE1, (uint8_t*) &(loRa->dlFreq), 0, 4);
+	readPage(M24C64_PAGE1, (uint8_t*) &(loRa->upFreq), 4, 4);
 	if (loRa->spreadFactor < SF_6 || loRa->spreadFactor > SF_12)
 		loRa->spreadFactor = SF_10;
 

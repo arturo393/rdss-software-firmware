@@ -137,7 +137,7 @@ uint8_t readRxReg(void) {
 }
 
 void readRx(UART1_t *u) {
-	if (u->rxSize >= RX_BUFFLEN) {
+	if (u->rxSize >= UART2_RX_BUFFLEN) {
 		cleanRx(u);
 		u->rxSize = 0;
 	}
