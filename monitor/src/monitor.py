@@ -371,6 +371,18 @@ def sendCmd(ser, cmd, createdevice):
     -return:
     """
 
+    SEGMENT_START = 126
+    SEGMENT_END = 127
+    SEGMENT_LEN = 21
+    DATA_START_INDEX = 6
+    DATA_END_INDEX = 18
+    MAX_2BYTE = 4095
+    I_MAX = 20
+    V_MAX = 10
+    STATUS_QUERY = 17
+    ID_INDEX = 2
+    COMMAND_INDEX = 3
+
     haveData = False
     finalData = {}
 
@@ -382,16 +394,16 @@ def sendCmd(ser, cmd, createdevice):
     #     "power": 100
     # })
 
-    cmd = hex(cmd)
+    cmd = hex(cmd)  #extrae el id
     if(len(cmd) == 3):
-        cmd_string = '05' + '0' + cmd[2:3] + '110000'
+        cmd_string = f'{10:02x}' + '0' + cmd[2:3] + '110000'
     else:
-        cmd_string = '05' + cmd[2:4] + '110000'
+        cmd_string = f"{10:02x}" + cmd[2:4] + '110000'
 
     checksum = getChecksum(cmd_string)
-    command = '7E' + cmd_string + checksum + '7F'
+    command = f"{SEGMENT_START:02x}" + cmd_string + checksum + f"{SEGMENT_END:02x}"
 
-    logging.debug("SENT: "+command)
+    logging.debug("SENT: " + command)
 
     cmd_bytes = bytearray.fromhex(command)
     hex_byte = ''
@@ -402,35 +414,32 @@ def sendCmd(ser, cmd, createdevice):
             ser.write(bytes.fromhex(hex_byte))
 
         # ---- Read from serial
-        hexResponse = ser.read(21)
+        hexResponse = ser.read(100)
 
-        logging.debug("GET: "+hexResponse.hex('-'))
+        logging.debug("GET: " + hexResponse.hex('-'))
 
         # ---- Validations
         if ((
-            (len(hexResponse) > 21)
-            or (len(hexResponse) < 21)
+            (len(hexResponse) > SEGMENT_LEN)
+            or (len(hexResponse) < SEGMENT_LEN)
             or hexResponse == None
             or hexResponse == ""
             or hexResponse == " "
         ) or (
-            hexResponse[0] != 126
-            and hexResponse[20] != 127
+            hexResponse[0] != SEGMENT_START
+            and hexResponse[SEGMENT_LEN - 1] != SEGMENT_END
         ) or ( 
-            hexResponse[2] != int(cmd,16)
+            hexResponse[ID_INDEX] != int(cmd,16)
         ) or (
-            (hexResponse[3] != 17)
-        ) or (
-            (hexResponse[4] == 2 or hexResponse[4]
-                == 3 or hexResponse[4] == 4)
+            (hexResponse[COMMAND_INDEX] != STATUS_QUERY)
         )):
             return False
         # ------------------------
 
         data = list()
 
-        for i in range(0, 21):
-            if(6 <= i < 18):
+        for i in range(0, SEGMENT_LEN):  #DATALEN
+            if(DATA_START_INDEX <= i < DATA_END_INDEX):
                 data.append(hexResponse[i])
 
         #Decodificaion con datos ordenados con aout2+swin+swout segun codificacion nueva
@@ -452,17 +461,16 @@ def sendCmd(ser, cmd, createdevice):
         logging.debug(f"din_1: {dIn1}")
         logging.debug(f"din_2: {dIn2}")
         
-        #deviceData = [aIn1_1_10V, aOut1_1_10V, aIn2_x_20mA, aOut2_x_20mA, swIn_x_20mA, swOut_x_20mA, dIn1, dIn2]
-        vIn1_linear = round(arduino_map(aIn1_1_10V, 0, 4095, 0, 10), 2)
-        vOut1_linear = round(arduino_map(aOut1_1_10V, 0, 4095, 0, 10),2)
+        vIn1_linear = round(arduino_map(aIn1_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
+        vOut1_linear = round(arduino_map(aOut1_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
         if(swIn_x_20mA == swOut_x_20mA == "ON"):
             #4-20mA
-            iIn2_linear = round(arduino_map(aIn2_x_20mA, 0, 4095, 0, 20),2)
-            iOut2_linear = round(arduino_map(aOut2_x_20mA, 0, 4095, 0, 20),2)
+            iIn2_linear = round(arduino_map(aIn2_x_20mA, 0, MAX_2BYTE, 0, I_MAX), 2)
+            iOut2_linear = round(arduino_map(aOut2_x_20mA, 0, MAX_2BYTE, 0, I_MAX), 2)
         else: 
             #0-20mA
-            iIn2_linear = round(arduino_map(aIn2_x_20mA, 0, 4095, 4, 20),2)
-            iOut2_linear = round(arduino_map(aOut2_x_20mA, 0, 4095, 4, 20),2)
+            iIn2_linear = round(arduino_map(aIn2_x_20mA, 0, MAX_2BYTE, 4, I_MAX), 2)
+            iOut2_linear = round(arduino_map(aOut2_x_20mA, 0, MAX_2BYTE, 4, I_MAX), 2)
 
         logging.debug("Datos escalados: ")
         logging.debug(f"Analog1 Input Voltage: {vIn1_linear} V")
@@ -481,11 +489,6 @@ def sendCmd(ser, cmd, createdevice):
         #    "power": downlinkOutputPowerAvg
         #}
         # -----------------------------------------------------
-        # if(createdevice == True):
-        #     pass
-        # else:
-        #     SampleTime = datetime.datetime.now()
-
         ser.flushInput()
         ser.flushOutput()
 
@@ -498,98 +501,7 @@ def sendCmd(ser, cmd, createdevice):
 def arduino_map(value, in_min, in_max, out_min, out_max):
     return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
-def decodeVlad(buffer):
-    vlad = VladModule()
-    bufferIndex = 0
-    Measurements = (
-        'vin',
-        'v5v',
-        'current',
-        'agc152m',
-        'ref152m',
-        'level152m',
-        'agc172m',
-        'ref172m',
-        'level172m',
-        'toneLevel',
-        'ucTemperature',
-        'baseCurrent'
-    )
-    
-    measurement = [0] * len(Measurements)
 
-    for i in range(len(Measurements)):
-        measurement[i] = buffer[bufferIndex] | (buffer[bufferIndex + 1] << 8)
-        bufferIndex += 2
-
-    state = buffer[bufferIndex]
-
-    state = buffer[bufferIndex]
-    vlad.isReverse = "ON" if (bool(state & 0x01)) else "OFF"
-    vlad.isSmartTune = "ON" if(bool((state >> 1) & 0x01)) else "OFF"
-    vlad.isRemoteAttenuation = bool((state >> 2) & 0x01)
-    vlad.attenuation = (state >> 3) & 0xFF
-    bufferIndex += 1
-    vlad.isRemoteAttenuation = bool((state >> 2) & 0x01)
-    vlad.attenuation = (state >> 3) & 0xFF
-    bufferIndex += 1
-
-    TEMP30_CAL_ADDR = 1781  # Adjust the address accordingly
-    TEMP110_CAL_ADDR = 1327  # Adjust the address accordingly
-    ADC_CONSUMPTION_CURRENT_FACTOR = 0.06472492
-    ADC_LINE_CURRENT_FACTOR = 0.0010989
-    ADC_VOLTAGE_FACTOR = 0.01387755
-    ADC_V5V_FACTOR = 0.00161246
-    VREF = 5 
-    RESOLUTION = 12 
-
-    logging.debug(str(measurement[Measurements.index('current')]))
-    CURRENT_MIN = 170.0
-    CURRENT_MAX = 260.0
-    ADC_CURRENT_MIN = 2567.0
-    ADC_CURRENT_MAX = 3996.0
-    MAX4003_DBM_MAX = 0   
-    MAX4003_DBM_MIN = -45
-    MAX4003_AGC_MIN = 30
-    MAX4003_AGC_MAX = 0
-    #MAX4003_ADC_MAX = 1888
-    MAX4003_ADC_MAX_152M = measurement[Measurements.index('ref152m')]
-    MAX4003_ADC_MAX_172M = measurement[Measurements.index('ref172m')]
-    MAX4003_ADC_MIN = 487
-
-    vlad.ucTemperature = int(measurement[Measurements.index('ucTemperature')])
-    vlad.v_5v = round(measurement[Measurements.index('v5v')] * ADC_V5V_FACTOR,1)
-    vlad.inputVoltage = round(measurement[Measurements.index('vin')] * ADC_VOLTAGE_FACTOR,2)
-    
-    vlad.current = arduino_map(measurement[Measurements.index('current')],ADC_CURRENT_MIN,ADC_CURRENT_MAX,CURRENT_MIN,CURRENT_MAX)
-    vlad.current = round(vlad.current,3)/1000
-
-    vlad.agc152m = arduino_map(measurement[Measurements.index('agc152m')],0,4095,MAX4003_AGC_MIN,MAX4003_AGC_MAX)
-    vlad.agc152m = int(vlad.agc152m)
-
-    vlad.agc172m = arduino_map(measurement[Measurements.index('agc172m')],0,4095,MAX4003_AGC_MIN,MAX4003_AGC_MAX)
-    vlad.agc172m = int(vlad.agc172m)
-
-    vlad.level152m = arduino_map(measurement[Measurements.index('level152m')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_152M,MAX4003_DBM_MIN,MAX4003_DBM_MAX)
-    vlad.level152m = int(vlad.level152m)
-
-    vlad.level172m = arduino_map(measurement[Measurements.index('level172m')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_172M,MAX4003_DBM_MIN,MAX4003_DBM_MAX) 
-    vlad.level172m = int(vlad.level172m)
-
-    vlad.ref152m = arduino_map(measurement[Measurements.index('ref152m')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_152M,MAX4003_DBM_MIN,MAX4003_DBM_MAX)
-    vlad.ref152m = int(vlad.ref152m)
-
-    vlad.ref172m = arduino_map(measurement[Measurements.index('ref172m')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_172M,MAX4003_DBM_MIN,MAX4003_DBM_MAX) 
-    vlad.ref172m = int(vlad.ref172m)
-    
-
-    vlad.toneLevel = arduino_map(measurement[Measurements.index('toneLevel')],MAX4003_ADC_MIN,MAX4003_ADC_MAX_152M,MAX4003_DBM_MIN,MAX4003_DBM_MAX)
-    vlad.toneLevel = int(vlad.toneLevel)
-    
-    vlad.baseCurrent = (measurement[Measurements.index('baseCurrent')]  * VREF) / (1 << (RESOLUTION - 0x00))
-    vlad.baseCurrent = round(vlad.baseCurrent,3)          
-                        
-    return vlad
 
 def decodeMaster(buffer):
     bufferIndex = 0
@@ -809,19 +721,18 @@ def run_monitor():
 
             
             if (deviceData["type"] == "sniffer"):
-                aout1 = 1000
-                aout2 = 500
-                dout1 = 0
-                dout2 = 0
+                aOut1_0_10V = 1000
+                aOut2_x_20mA = 500
+                dOut1 = 0
+                dOut2 = 0
 
                 # Invertir los bytes de aout1
-                aout1 = ((aout1 >> 8) & 0xFF) | ((aout1 << 8) & 0xFF00)
+                aout1 = ((aOut1_0_10V >> 8) & 0xFF) | ((aOut1_0_10V << 8) & 0xFF00)
 
                 # Invertir los bytes de aout2
-                aout2 = ((aout2 >> 8) & 0xFF) | ((aout2 << 8) & 0xFF00)
+                aout2 = ((aOut2_x_20mA >> 8) & 0xFF) | ((aOut2_x_20mA << 8) & 0xFF00)
 
-                data = f"{aout1:04X}{aout2:04X}{dout1:02X}{dout2:02X}"
-                #data = f"{dout2:02X}"
+                data = f"{aOut1_0_10V:04X}{aOut2_x_20mA:04X}{dOut1:02X}{dOut2:02X}"
                 setSnifferData(ser, device, data)
                 
             else:
@@ -846,19 +757,25 @@ def setSnifferData(ser,id,data):
 
     Args:
         ser: serial port
-        device: device ID
+        id: device ID
         attenuation: integer between 0 and 32
 
     Returns:
         boolean: if changed was applied or error
     """
-    data_len = "0600"
+    DATALEN = 6
+    SNIFFER = 10
+    SEGMENT_START = '7E'
+    SEGMENT_END = '7F'
+    RESPONSE_LEN = 15
+
+    data_len = f"{DATALEN:02X}{0:02X}"
     id = f"{id:02X}"
     set_out = "B6" #nombre del comando
-    device = f"{10:02X}"  #10 para sniffer
+    device = f"{SNIFFER:02X}"  #10 para sniffer
     cmd_string = f"{device}{id}{set_out}{data_len}{data}"
     checksum = getChecksum(cmd_string)
-    command = '7E' + cmd_string + checksum + '7F'
+    command = SEGMENT_START + cmd_string + checksum + SEGMENT_END
 
     logging.debug("data: " + str(data))
     logging.debug("SENT: " + command)
@@ -878,8 +795,8 @@ def setSnifferData(ser,id,data):
 
         # ---- Validations
         if ((
-            (len(hexResponse) > 15)
-            or (len(hexResponse) < 15)
+            (len(hexResponse) > RESPONSE_LEN)
+            or (len(hexResponse) < RESPONSE_LEN)
             or hexResponse == None
             or hexResponse == ""
             or hexResponse == " "
