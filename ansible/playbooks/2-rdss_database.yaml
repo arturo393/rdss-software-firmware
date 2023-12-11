@@ -9,9 +9,9 @@
   - name: Apply Config Template
     template:
       src: database_config.j2
-      dest: /tmp/rdss2/database/config/init-mongo.js
+      dest: {{ temp_dir }}/database/config/init-mongo.js
   - name: "Loading database init script"
-    shell: mongo localhost:27017/rdss --eval "load('/tmp/rdss2/database/config/init-mongo.js')"
+    shell: mongo localhost:27017/rdss --eval "load('{{ temp_dir }}/database/config/init-mongo.js')"
   - name: Start mongod service
     service:
       name: mongod

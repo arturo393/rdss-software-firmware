@@ -22,8 +22,8 @@ from flask_socketio import SocketIO
 from flask import Flask
 import eventlet
 
-USBPORT0 = "COM3"
-USBPORT1 = "COM4"
+USBPORT0 = "/dev/ttyUSB0"
+USBPORT1 = "/dev/ttyUSB1"
 
 logging.basicConfig(filename=cfg.LOGGING_FILE, level=logging.DEBUG)
 
@@ -382,6 +382,7 @@ def sendCmd(ser, cmd, createdevice):
     STATUS_QUERY = 17
     ID_INDEX = 2
     COMMAND_INDEX = 3
+    SNIFFER = 10
 
     haveData = False
     finalData = {}
@@ -394,12 +395,11 @@ def sendCmd(ser, cmd, createdevice):
     #     "power": 100
     # })
 
-    cmd = hex(cmd)  #extrae el id
+    cmd = hex(cmd)
     if(len(cmd) == 3):
-        cmd_string = f'{10:02x}' + '0' + cmd[2:3] + '110000'
+        cmd_string = f'{SNIFFER:02x}' + '0' + cmd[2:3] + f'{STATUS_QUERY:02x}'+'0000'
     else:
-        cmd_string = f"{10:02x}" + cmd[2:4] + '110000'
-
+        cmd_string = f'{SNIFFER:02x}' + '0' + cmd[2:3] + f'{STATUS_QUERY:02x}'+'0000'
     checksum = getChecksum(cmd_string)
     command = f"{SEGMENT_START:02x}" + cmd_string + checksum + f"{SEGMENT_END:02x}"
 
@@ -732,7 +732,7 @@ def run_monitor():
                 # Invertir los bytes de aout2
                 aout2 = ((aOut2_x_20mA >> 8) & 0xFF) | ((aOut2_x_20mA << 8) & 0xFF00)
 
-                data = f"{aOut1_0_10V:04X}{aOut2_x_20mA:04X}{dOut1:02X}{dOut2:02X}"
+                data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}"
                 setSnifferData(ser, device, data)
                 
             else:
@@ -772,7 +772,7 @@ def setSnifferData(ser,id,data):
     data_len = f"{DATALEN:02X}{0:02X}"
     id = f"{id:02X}"
     set_out = "B6" #nombre del comando
-    device = f"{SNIFFER:02X}"  #10 para sniffer
+    device = f"{SNIFFER:02X}"
     cmd_string = f"{device}{id}{set_out}{data_len}{data}"
     checksum = getChecksum(cmd_string)
     command = SEGMENT_START + cmd_string + checksum + SEGMENT_END
