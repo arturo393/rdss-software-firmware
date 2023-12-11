@@ -9,31 +9,31 @@
   - name: "Installing frontend files"
     copy:
       remote_src: true
-      src: {{ temp_dir }}/frontend/src/
-      dest: {{ base_dir }}/frontend
+      src: "{{ temp_dir }}/frontend/src/"
+      dest: "{{ base_dir }}/frontend"
   - name: "Installing dependencies"
     shell: npm install --save --legacy-peer-deps && npm install @material-ui/core --save --legacy-peer-deps
     args:
-      chdir: {{ base_dir }}/frontend
+      chdir: "{{ base_dir }}/frontend"
   - name: "Patching hammerJS"
     copy:
       remote_src: true
-      src: {{ temp_dir }}/frontend/src/lib/hammer.js
-      dest: {{ base_dir }}/frontend/node_modules/hammerjs/hammer.js
+      src: "{{ temp_dir }}/frontend/src/lib/hammer.js"
+      dest: "{{ base_dir }}/frontend/node_modules/hammerjs/hammer.js"
       owner: root
       group: root
   - name: Apply Config Template
     template:
       src: frontend_config.j2
-      dest: {{ base_dir }}/frontend/.env.local
+      dest: "{{ base_dir }}/frontend/.env.local"
   - name: "Build frontend dist"
     shell: npm run build
     args:
-      chdir: {{ base_dir }}/frontend
+      chdir: "{{ base_dir }}/frontend"
   - name: "Installing frontend system service"
     copy:
       remote_src: true
-      src: {{ temp_dir }}/frontend/frontendRDSS.service
+      src: "{{ temp_dir }}/frontend/frontendRDSS.service"
       dest: /etc/systemd/system
       owner: root
       group: root

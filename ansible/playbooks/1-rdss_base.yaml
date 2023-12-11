@@ -9,16 +9,16 @@
   - name: Clean artifact path
     file:
       state: absent
-      path: {{ temp_dir }}
+      path: "{{ temp_dir }}"
   - name: "Cloning RDSSv2 repo"
     git:
       repo: https://{{gitlabuser | urlencode}}:{{gitlabpassword | urlencode}}@gitlab.com/sigma-telecom/sniffer-software.git
-      dest: {{ temp_dir }}
+      dest: "{{ temp_dir }}"
       # single_branch: yes
       version: fmejias
       accept_hostkey: yes
   - name: "Create installation directory"
     file:
-      path: {{ base_dir }}
+      path: "{{ base_dir }}"
       state: directory
       mode: '0755'

@@ -9,20 +9,20 @@
   - name: "Installing Monitor files"
     copy:
       remote_src: true
-      src: {{ temp_dir }}/monitor/src/
-      dest: {{ base_dir }}/monitor
+      src: "{{ temp_dir }}/monitor/src/"
+      dest: "{{ base_dir }}/monitor"
   - name: "Remove unused monitor entrypoint file"
     file:
-      path: {{ base_dir }}/monitor/entrypoint.sh
+      path: "{{ base_dir }}/monitor/entrypoint.sh"
       state: absent
   - name: Apply Config Template
     template:
       src: monitor_config.j2
-      dest: {{ base_dir }}/monitor/config.py
+      dest: "{{ base_dir }}/monitor/config.py"
   - name: "Installing monitor system service"
     copy:
       remote_src: true
-      src: {{ temp_dir }}/monitor/monitorRDSS.service
+      src: "{{ temp_dir }}/monitor/monitorRDSS.service"
       dest: /etc/systemd/system
       owner: root
       group: root
