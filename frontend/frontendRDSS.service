@@ -8,7 +8,7 @@ Type=simple
 Restart=always
 RestartSec=1
 User=root
-WorkingDirectory=/opt/rdss/frontend
+WorkingDirectory=/opt/sniffer/frontend
 ExecStart=/usr/bin/env npx next start -p 80
 
 [Install]
