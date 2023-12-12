@@ -8,8 +8,8 @@ services:
     volumes:
       - ./frontend/src:/opt/rdss/frontend
       # - ./frontend/src/node_modules:/opt/rdss/frontend/node_modules
-    environment:
-      - NODE_OPTIONS=--openssl-legacy-provider
+    # environment:
+    #   - NODE_OPTIONS=--openssl-legacy-provider
     ports:
       - 3000:3000
       - 5555:5000
