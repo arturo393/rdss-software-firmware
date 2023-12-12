@@ -796,21 +796,9 @@ def sendMasterQuery(ser,times):
     logging.debug("SENT: " + command)
 
     try:
-        cmdBytes = bytearray.fromhex(command)
-        for cmdByte in cmdBytes:
-            hexByte = "{0:02x}".format(cmdByte)
-            ser.write(bytes.fromhex(hexByte))
+        hexResponse = sendSerialCommand(command, ser)
 
-        hexResponse = ser.read(14)
-        response = hexResponse.hex('-')
-        logging.debug("GET: " + hexResponse.hex('-'))
-        message =""
-        for byte in hexResponse:
-          decimal_value = byte
-          message+=str(byte).zfill(2)+"-"
-        logging.debug("GET: "+ message)
-
-        responseLen = len(hexResponse)
+        responseLen = len(hexResponse)-1
         logging.debug("receive len: " + str(responseLen))
         if responseLen != 14:
             sendMasterQuery(ser,times-1)
@@ -819,15 +807,6 @@ def sendMasterQuery(ser,times):
             sendMasterQuery(ser,times-1)
             return False
         if hexResponse[responseLen - 1 ] != 127:
-            sendMasterQuery(ser,times-1)
-            return False
-        if hexResponse[2] != int(cmd, 16):
-            sendMasterQuery(ser,times-1)
-            return False
-        if  hexResponse[3] != 19:
-            sendMasterQuery(ser,times-1)
-            return False
-        if hexResponse[4] in [2, 3, 4]:
             sendMasterQuery(ser,times-1)
             return False
         if isCrcOk(hexResponse,responseLen) == False:
@@ -854,6 +833,21 @@ def sendMasterQuery(ser,times):
             "power": master.deviceTemperature
         }
 
+        command = "7E0000200000C6867F"
+        logging.debug("SENT: " + command)
+        hexResponse = sendSerialCommand(command, ser)
+        responseLen = len(hexResponse)
+        data = hexResponse[6:responseLen - 4]
+        logging.debug(f"data: {data}")
+        downlink_frequency = struct.unpack("<f", bytes(data))[0]
+        command = "7E0000210000F6B17F"
+        logging.debug("SENT: " + command)
+        hexResponse = sendSerialCommand(command, ser)
+        responseLen = len(hexResponse)
+        data = hexResponse[6:responseLen - 4]
+        uplink_frequency = struct.unpack("<f", bytes(data))[0]
+        logging.debug(f"Uplink frequency: {uplink_frequency}[Mhz]")
+        logging.debug(f"Downlink frequency: {downlink_frequency}[Mhz]")
         ser.flushInput()
         ser.flushOutput()
 
@@ -862,6 +856,23 @@ def sendMasterQuery(ser,times):
         sys.exit()
 
     return finalData
+
+
+def sendSerialCommand(command, ser):
+    cmdBytes = bytearray.fromhex(command)
+    for cmdByte in cmdBytes:
+        hexByte = "{0:02x}".format(cmdByte)
+        ser.write(bytes.fromhex(hexByte))
+    hexResponse = ser.read(100)
+    response = hexResponse.hex('-')
+    logging.debug("GET hex: " + hexResponse.hex('-'))
+    message = ""
+    for byte in hexResponse:
+        decimal_value = byte
+        message += str(byte).zfill(2) + "-"
+    logging.debug("GET dec: " + message)
+    return hexResponse
+
 
 def sendVladRev23Query(ser, deviceID,times):
     """
