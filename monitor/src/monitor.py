@@ -152,6 +152,7 @@ def getProvisionedDevices():
     Gets provisioned devices from DB
     Provisioned devices has status.provisioned attribute setting to True
     """
+    devices = list()
     try:
         collection_name = database["devices"]
         devices = list(collection_name.find(
