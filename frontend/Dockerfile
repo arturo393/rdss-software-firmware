@@ -13,6 +13,6 @@ RUN npx browserslist@latest --update-db
 
 # RUN npm run build
 
-CMD NODE_OPTIONS=--openssl-legacy-provider npm run start
+CMD npm run start
 # CMD node server.js
 # CMD serve -n out
