@@ -916,26 +916,19 @@ def sendVladRev23Query(ser, deviceID,times):
         responseLen = len(hexResponse)
         logging.debug("receive len: " + str(responseLen))
         if responseLen != 34:
-            sendVladRev23Query(ser, deviceID,times-1)
-            return False
+            return sendVladRev23Query(ser, deviceID,times-1)
         if  hexResponse[0] != 126:
-            sendVladRev23Query(ser, deviceID,times-1)
-            return False
+            return sendVladRev23Query(ser, deviceID,times-1)
         if hexResponse[responseLen - 1 ] != 127:
-            sendVladRev23Query(ser, deviceID,times-1)
-            return False
+            return sendVladRev23Query(ser, deviceID,times-1)
         if hexResponse[2] != int(cmd, 16):
-            sendVladRev23Query(ser, deviceID,times-1)
-            return False
+            return sendVladRev23Query(ser, deviceID,times-1)
         if  hexResponse[3] != 17:
-            sendVladRev23Query(ser, deviceID,times-1)
-            return False
+            return sendVladRev23Query(ser, deviceID,times-1)
         if hexResponse[4] in [2, 3, 4]:
-            sendVladRev23Query(ser, deviceID,times-1)
-            return False
+            return sendVladRev23Query(ser, deviceID,times-1)
         if isCrcOk(hexResponse,responseLen) == False:
-            sendVladRev23Query(ser, deviceID,times-1)
-            return False
+            return sendVladRev23Query(ser, deviceID,times-1)
         
         data = list(hexResponse[i] for i in range(6, responseLen - 3))
         
