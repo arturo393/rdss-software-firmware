@@ -21,7 +21,7 @@ log = {
 }
 
 db = {
-    "host": "192.168.60.236",
+    "host": "192.168.60.76",
     "user": "admin",
     "passwd": "Admin123",
     "dbname": "rdss",

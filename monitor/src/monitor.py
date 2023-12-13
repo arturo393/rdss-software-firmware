@@ -22,8 +22,8 @@ from flask_socketio import SocketIO
 from flask import Flask
 import eventlet
 
-USBPORT0 = "/dev/ttyUSB0"
-USBPORT1 = "/dev/ttyUSB1"
+USBPORT0 = "COM3"
+USBPORT1 = "COM4"
 
 logging.basicConfig(filename=cfg.LOGGING_FILE, level=logging.DEBUG)
 
@@ -675,6 +675,45 @@ def showBanner(provisionedDevicesArr, timeNow):
     logging.debug("Devices Count:"+str(len(provisionedDevicesArr)))
 
 
+
+
+def sendModbus(uart_cmd, sniffer_address, data, ser):
+    """
+
+    """
+    SNIFFER = 10
+    SEGMENT_START = '7E'
+    SEGMENT_END = '7F'
+
+    datalen = format(int(len(data)/2), '04x')
+    aux_len = datalen[2:] + datalen[0:2]
+    cmd_string = f"{SNIFFER}{sniffer_address}{uart_cmd}{aux_len}{data}"
+    checksum = getChecksum(cmd_string)
+    command = SEGMENT_START + cmd_string + checksum + SEGMENT_END
+
+    cmd_bytes = bytearray.fromhex(command)
+    hex_byte = ''
+
+    try:
+        for cmd_byte in cmd_bytes:
+            hex_byte = ('{0:02x}'.format(cmd_byte))
+            ser.write(bytes.fromhex(hex_byte))
+        
+        hexResponse = ser.read(100)
+        logging.debug("GET: "+hexResponse.hex('-'))
+
+        #aca eventualmente podria validar alguna trama de respuesta
+
+        ser.flushInput()
+        ser.flushOutput()
+    except Exception as e:
+        logging.error(e)
+        sys.exit()
+    
+    logging.debug("Modbus sent")
+    return True
+
+
 def run_monitor():
     """
     run_monitor(): Main process
@@ -717,10 +756,10 @@ def run_monitor():
             #elif(deviceData["type"] == "master"):
                 #response = sendMasterQuery(ser,times)
             #else:
-            response = sendCmd(ser, device, False)
+            #response = sendCmd(ser, device, False)
 
             
-            if (deviceData["type"] == "sniffer"):
+            if (deviceData["type"] == "vlad"):
                 aOut1_0_10V = 1000
                 aOut2_x_20mA = 500
                 dOut1 = 0
@@ -733,25 +772,38 @@ def run_monitor():
                 aout2 = ((aOut2_x_20mA >> 8) & 0xFF) | ((aOut2_x_20mA << 8) & 0xFF00)
 
                 data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}"
-                setSnifferData(ser, device, data)
+                #setSnifferData(ser, device, data)
+
+                ### MODBUS TEST ###
+                uart_cmd = "13"
+                sniffer_add = "05"
+                data = ""
+                MAXDATA = 85
+                i = 0
+                while i <= MAXDATA-10:
+                    aux_hex = format(i, '02x')
+                    data = data + aux_hex
+                    i+=1
+                sendModbus(uart_cmd, sniffer_add, data, ser)
+                ### END TEST ###
                 
             else:
                 logging.debug("No response from device")
                 deviceData["connected"] = False
                 deviceData["rtData"]["sampleTime"] = {"$date": SampleTime}
                 deviceData["rtData"]["alerts"] = {"connection": True}
-                updateDeviceConnectionStatus(device, False)
+                #updateDeviceConnectionStatus(device, False)
 
-            rtData.append(json.dumps(deviceData, default=defaultJSONconverter))
+            #rtData.append(json.dumps(deviceData, default=defaultJSONconverter))
             # rtData.append(json.dumps(deviceData))
             # END FOR X
         logging.debug("Connected devices: %s", connectedDevices)
-        insertDevicesDataIntoDB(rtData)
-        sendStatusToFrontEnd(rtData)
+        #insertDevicesDataIntoDB(rtData)
+        #sendStatusToFrontEnd(rtData)
     else:
-        sendStatusToFrontEnd([])
+        #sendStatusToFrontEnd([])
         logging.debug("No provisioned devices found in the DB")
-        
+
 def setSnifferData(ser,id,data):
     """Sets device downlink attenuation
 
@@ -769,10 +821,10 @@ def setSnifferData(ser,id,data):
     SEGMENT_END = '7F'
     RESPONSE_LEN = 15
 
-    data_len = f"{DATALEN:02X}{0:02X}"
-    id = f"{id:02X}"
+    data_len = f"{DATALEN:02x}{0:02x}"
+    id = f"{id:02x}"
     set_out = "B6" #nombre del comando
-    device = f"{SNIFFER:02X}"
+    device = f"{SNIFFER:02x}"
     cmd_string = f"{device}{id}{set_out}{data_len}{data}"
     checksum = getChecksum(cmd_string)
     command = SEGMENT_START + cmd_string + checksum + SEGMENT_END
