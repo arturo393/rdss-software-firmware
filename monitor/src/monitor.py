@@ -22,8 +22,8 @@ from flask_socketio import SocketIO
 from flask import Flask
 import eventlet
 
-USBPORT0 = "COM3"
-USBPORT1 = "COM4"
+USBPORT0 = "/dev/ttyUSB0"
+USBPORT1 = "/dev/ttyUSB1"
 
 logging.basicConfig(filename=cfg.LOGGING_FILE, level=logging.DEBUG)
 
@@ -373,9 +373,9 @@ def sendCmd(ser, cmd, createdevice):
 
     SEGMENT_START = 126
     SEGMENT_END = 127
-    SEGMENT_LEN = 21
+    SEGMENT_LEN = 22
     DATA_START_INDEX = 6
-    DATA_END_INDEX = 18
+    DATA_END_INDEX = 19
     MAX_2BYTE = 4095
     I_MAX = 20
     V_MAX = 10
@@ -451,6 +451,7 @@ def sendCmd(ser, cmd, createdevice):
         swOut_x_20mA = "ON" if (bool (data[9]) == 0x01) else "OFF" # byte 10
         dIn1 = "ON" if (bool (data[10]) == 0x01) else "OFF" # byte 11
         dIn2 = "ON" if (bool (data[11]) == 0x01) else "OFF" # byte 12
+        swSerial = "R485" if (bool (data[12]) == 0x01) else "RS232" # byte 13 (default: 0/rs232)
             
         logging.debug(f"ain1: {aIn1_1_10V}")
         logging.debug(f"aout1: {aOut1_1_10V}")
@@ -460,6 +461,7 @@ def sendCmd(ser, cmd, createdevice):
         logging.debug(f"dout_sw: {swOut_x_20mA}") #digital
         logging.debug(f"din_1: {dIn1}")
         logging.debug(f"din_2: {dIn2}")
+        logging.debug(f"swSerial: {swSerial}")
         
         vIn1_linear = round(arduino_map(aIn1_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
         vOut1_linear = round(arduino_map(aOut1_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
@@ -681,7 +683,7 @@ def sendModbus(uart_cmd, sniffer_address, data, ser):
     """
 
     """
-    SNIFFER = 10
+    SNIFFER = "0A"
     SEGMENT_START = '7E'
     SEGMENT_END = '7F'
 
@@ -690,6 +692,7 @@ def sendModbus(uart_cmd, sniffer_address, data, ser):
     cmd_string = f"{SNIFFER}{sniffer_address}{uart_cmd}{aux_len}{data}"
     checksum = getChecksum(cmd_string)
     command = SEGMENT_START + cmd_string + checksum + SEGMENT_END
+    logging.debug("SENT: " + command)
 
     cmd_bytes = bytearray.fromhex(command)
     hex_byte = ''
@@ -756,7 +759,7 @@ def run_monitor():
             #elif(deviceData["type"] == "master"):
                 #response = sendMasterQuery(ser,times)
             #else:
-            #response = sendCmd(ser, device, False)
+            response = sendCmd(ser, device, False)
 
             
             if (deviceData["type"] == "vlad"):
@@ -764,6 +767,8 @@ def run_monitor():
                 aOut2_x_20mA = 500
                 dOut1 = 0
                 dOut2 = 0
+                serialSW = 0 #seteaer a rs232
+                #serialSW = 1 #setear a rs485
 
                 # Invertir los bytes de aout1
                 aout1 = ((aOut1_0_10V >> 8) & 0xFF) | ((aOut1_0_10V << 8) & 0xFF00)
@@ -771,14 +776,14 @@ def run_monitor():
                 # Invertir los bytes de aout2
                 aout2 = ((aOut2_x_20mA >> 8) & 0xFF) | ((aOut2_x_20mA << 8) & 0xFF00)
 
-                data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}"
-                #setSnifferData(ser, device, data)
+                data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}{serialSW:02X}"
+                setSnifferData(ser, device, data)
 
                 ### MODBUS TEST ###
                 uart_cmd = "13"
-                sniffer_add = "05"
+                sniffer_add = "08"
                 data = ""
-                MAXDATA = 85
+                MAXDATA = 21
                 i = 0
                 while i <= MAXDATA-10:
                     aux_hex = format(i, '02x')
@@ -815,11 +820,11 @@ def setSnifferData(ser,id,data):
     Returns:
         boolean: if changed was applied or error
     """
-    DATALEN = 6
+    DATALEN = 7
     SNIFFER = 10
     SEGMENT_START = '7E'
     SEGMENT_END = '7F'
-    RESPONSE_LEN = 15
+    RESPONSE_LEN = 16
 
     data_len = f"{DATALEN:02x}{0:02x}"
     id = f"{id:02x}"
