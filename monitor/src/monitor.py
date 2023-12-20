@@ -22,8 +22,8 @@ from flask_socketio import SocketIO
 from flask import Flask
 import eventlet
 
-USBPORT0 = "/dev/ttyUSB0"
-USBPORT1 = "/dev/ttyUSB1"
+USBPORT0 = "COM4"
+USBPORT1 = "COM5"
 
 logging.basicConfig(filename=cfg.LOGGING_FILE, level=logging.DEBUG)
 
@@ -364,7 +364,7 @@ def setAttenuation(ser,device,attenuation):
     logging.debug("changing attenuation")
     return True
 
-def sendCmd(ser, cmd, createdevice):
+def getSnifferStatus(ser, cmd):
     """
     -Description: This functionsend a cmd, wait one minute if we have data write to the databse, if not write time out
     -param text: ser serial oject, devicecount actuals device in the network, cmd command to send, cursor is the database object
@@ -415,7 +415,6 @@ def sendCmd(ser, cmd, createdevice):
 
         # ---- Read from serial
         hexResponse = ser.read(100)
-
         logging.debug("GET: " + hexResponse.hex('-'))
 
         # ---- Validations
@@ -679,19 +678,31 @@ def showBanner(provisionedDevicesArr, timeNow):
 
 
 
-def sendModbus(uart_cmd, sniffer_address, data, ser):
+def sendModbus(uartCmd, snifferAddress, data, ser):
     """
-
+    Sends variable length segment.
+    Args:
+        uartcmd: Command to send.
+        sniffer_address: Address of target sniffer.
+        data: Data to be added to modBus segment.
+        ser: Serial port.
+    Returns true if answer segment from sniffer is valid.
     """
     SNIFFER = "0A"
     SEGMENT_START = '7E'
     SEGMENT_END = '7F'
+    ID_INDEX = 2
+    COMMAND_INDEX = 3
+    SERIAL_RESPONSE_CMD = 204 #CC
 
-    datalen = format(int(len(data)/2), '04x')
-    aux_len = datalen[2:] + datalen[0:2]
-    cmd_string = f"{SNIFFER}{sniffer_address}{uart_cmd}{aux_len}{data}"
-    checksum = getChecksum(cmd_string)
-    command = SEGMENT_START + cmd_string + checksum + SEGMENT_END
+
+    intLen = int(len(data)/2)
+    dataLen = format(intLen, '04x')
+    formatLen = dataLen[2:] + dataLen[0:2]
+    cmdString = f"{SNIFFER}{snifferAddress}{uartCmd}{formatLen}{data}"
+    checksum = getChecksum(cmdString)
+    command = SEGMENT_START + cmdString + checksum + SEGMENT_END
+    cmdLen = int(len(command)/2)
     logging.debug("SENT: " + command)
 
     cmd_bytes = bytearray.fromhex(command)
@@ -701,11 +712,26 @@ def sendModbus(uart_cmd, sniffer_address, data, ser):
         for cmd_byte in cmd_bytes:
             hex_byte = ('{0:02x}'.format(cmd_byte))
             ser.write(bytes.fromhex(hex_byte))
-        
+
+        #hexResponse = ser.read(cmdLen+10)
         hexResponse = ser.read(100)
         logging.debug("GET: "+hexResponse.hex('-'))
 
-        #aca eventualmente podria validar alguna trama de respuesta
+        # ---- Validations
+        if ((hexResponse == None
+            or hexResponse == ""
+            or hexResponse == " "
+        ) or (
+            hexResponse[0] != int(SEGMENT_START, 16)
+            and hexResponse[int(len(command)/2) + 9 - 1] != int(SEGMENT_END, 16) #+9 pq la trama modbus suma 9 y resta 1 por el indice
+        ) or ( 
+            hexResponse[ID_INDEX] != int(snifferAddress,16)
+        ) or (
+            (hexResponse[COMMAND_INDEX] != SERIAL_RESPONSE_CMD
+             and hexResponse[COMMAND_INDEX] != int(uartCmd, 16))
+        )):
+            return False
+        # ------------------------
 
         ser.flushInput()
         ser.flushOutput()
@@ -759,7 +785,7 @@ def run_monitor():
             #elif(deviceData["type"] == "master"):
                 #response = sendMasterQuery(ser,times)
             #else:
-            response = sendCmd(ser, device, False)
+            response = getSnifferStatus(ser, device)
 
             
             if (deviceData["type"] == "vlad"):
@@ -780,10 +806,10 @@ def run_monitor():
                 setSnifferData(ser, device, data)
 
                 ### MODBUS TEST ###
-                uart_cmd = "13"
+                uart_cmd = "14" #comando para que el sniffer envie el paquete via serial
                 sniffer_add = "08"
                 data = ""
-                MAXDATA = 21
+                MAXDATA = 12
                 i = 0
                 while i <= MAXDATA-10:
                     aux_hex = format(i, '02x')
