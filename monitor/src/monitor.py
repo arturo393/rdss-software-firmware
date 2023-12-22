@@ -232,7 +232,8 @@ def openSerialPort(port=""):
             stopbits=cfg.serial["stopbits"],
             bytesize=cfg.serial["bytesize"],
             timeout=cfg.serial["timeout"],
-            write_timeout=cfg.serial["write_timeout"]
+            write_timeout=cfg.serial["write_timeout"],
+            inter_byte_timeout=cfg.serial["inter_byte_timeout"]
         )
     except serial.SerialException as msg:
         logging.exception("Error opening serial port %s" % msg)
@@ -403,7 +404,7 @@ def getSnifferStatus(ser, cmd):
     checksum = getChecksum(cmd_string)
     command = f"{SEGMENT_START:02x}" + cmd_string + checksum + f"{SEGMENT_END:02x}"
 
-    logging.debug("SENT: " + command)
+    print("SENT: " + command)
 
     cmd_bytes = bytearray.fromhex(command)
     hex_byte = ''
@@ -415,7 +416,7 @@ def getSnifferStatus(ser, cmd):
 
         # ---- Read from serial
         hexResponse = ser.read(100)
-        logging.debug("GET: " + hexResponse.hex('-'))
+        print("GET: " + hexResponse.hex('-'))
 
         # ---- Validations
         if ((
@@ -452,15 +453,15 @@ def getSnifferStatus(ser, cmd):
         dIn2 = "ON" if (bool (data[11]) == 0x01) else "OFF" # byte 12
         swSerial = "R485" if (bool (data[12]) == 0x01) else "RS232" # byte 13 (default: 0/rs232)
             
-        logging.debug(f"ain1: {aIn1_1_10V}")
-        logging.debug(f"aout1: {aOut1_1_10V}")
-        logging.debug(f"ain2: {aIn2_x_20mA}")
-        logging.debug(f"aout2: {aOut2_x_20mA}")
-        logging.debug(f"din_sw: {swIn_x_20mA}") #digital
-        logging.debug(f"dout_sw: {swOut_x_20mA}") #digital
-        logging.debug(f"din_1: {dIn1}")
-        logging.debug(f"din_2: {dIn2}")
-        logging.debug(f"swSerial: {swSerial}")
+        print(f"ain1: {aIn1_1_10V}")
+        print(f"aout1: {aOut1_1_10V}")
+        print(f"ain2: {aIn2_x_20mA}")
+        print(f"aout2: {aOut2_x_20mA}")
+        print(f"din_sw: {swIn_x_20mA}") #digital
+        print(f"dout_sw: {swOut_x_20mA}") #digital
+        print(f"din_1: {dIn1}")
+        print(f"din_2: {dIn2}")
+        print(f"swSerial: {swSerial}")
         
         vIn1_linear = round(arduino_map(aIn1_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
         vOut1_linear = round(arduino_map(aOut1_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
@@ -473,11 +474,11 @@ def getSnifferStatus(ser, cmd):
             iIn2_linear = round(arduino_map(aIn2_x_20mA, 0, MAX_2BYTE, 4, I_MAX), 2)
             iOut2_linear = round(arduino_map(aOut2_x_20mA, 0, MAX_2BYTE, 4, I_MAX), 2)
 
-        logging.debug("Datos escalados: ")
-        logging.debug(f"Analog1 Input Voltage: {vIn1_linear} V")
-        logging.debug(f"Analog1 Output Voltage: {vOut1_linear} V")
-        logging.debug(f"Analog2 Input Current: {iIn2_linear} mA")
-        logging.debug(f"Analog2 Output Current: {iOut2_linear} mA")
+        print("Datos escalados: ")
+        print(f"Analog1 Input Voltage: {vIn1_linear} V")
+        print(f"Analog1 Output Voltage: {vOut1_linear} V")
+        print(f"Analog2 Input Current: {iIn2_linear} mA")
+        print(f"Analog2 Output Current: {iOut2_linear} mA")
             
         SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
@@ -540,10 +541,10 @@ def isCrcOk(hexResponse,size):
     calculatedChecksum = getChecksum(dataString)
     crcMessage = "CRC Calculated: " + calculatedChecksum + " CRC Received: " +checksumString+ " - D"
     if(calculatedChecksum == checksumString):
-        logging.debug(crcMessage+"OK: "+calculatedChecksum + " == " +checksumString )
+        print(crcMessage+"OK: "+calculatedChecksum + " == " +checksumString )
         return True
     else:
-        logging.debug(crcMessage+"ERROR: "+calculatedChecksum + " != " +checksumString )
+        print(crcMessage+"ERROR: "+calculatedChecksum + " != " +checksumString )
         return False
     
 def sendMasterQuery(ser,times):
@@ -568,8 +569,8 @@ def sendMasterQuery(ser,times):
 
     checksum = getChecksum(cmdString)
     command = '7E' + cmdString + checksum + '7F'
-    logging.debug("Attempt: " + str(times))
-    logging.debug("SENT: " + command)
+    print("Attempt: " + str(times))
+    print("SENT: " + command)
 
     try:
         cmdBytes = bytearray.fromhex(command)
@@ -579,15 +580,15 @@ def sendMasterQuery(ser,times):
 
         hexResponse = ser.read(14)
         response = hexResponse.hex('-')
-        logging.debug("GET: " + hexResponse.hex('-'))
+        print("GET: " + hexResponse.hex('-'))
         message =""
         for byte in hexResponse:
           decimal_value = byte
           message+=str(byte).zfill(2)+"-"
-        logging.debug("GET: "+ message)
+        print("GET: "+ message)
 
         responseLen = len(hexResponse)
-        logging.debug("receive len: " + str(responseLen))
+        print("receive len: " + str(responseLen))
         if responseLen != 14:
             sendMasterQuery(ser,times-1)
             return False
@@ -615,9 +616,9 @@ def sendMasterQuery(ser,times):
 
         master = decodeMaster(data)
     
-        logging.debug(f"Input Voltage: {master.inputVoltage:.2f}[V]")
-        logging.debug(f"Current Consumption: {master.current:.3f}[mA]")
-        logging.debug(f"Device Temperature: {master.deviceTemperature}[°C]]")   
+        print(f"Input Voltage: {master.inputVoltage:.2f}[V]")
+        print(f"Current Consumption: {master.current:.3f}[mA]")
+        print(f"Device Temperature: {master.deviceTemperature}[°C]]")   
 
         sampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         timeNow = datetime.datetime.strptime(sampleTime, "%Y-%m-%dT%H:%M:%SZ")
@@ -694,6 +695,7 @@ def sendModbus(uartCmd, snifferAddress, data, ser):
     ID_INDEX = 2
     COMMAND_INDEX = 3
     SERIAL_RESPONSE_CMD = 204 #CC
+    DATA_START_INDEX = 6
 
 
     intLen = int(len(data)/2)
@@ -703,7 +705,8 @@ def sendModbus(uartCmd, snifferAddress, data, ser):
     checksum = getChecksum(cmdString)
     command = SEGMENT_START + cmdString + checksum + SEGMENT_END
     cmdLen = int(len(command)/2)
-    logging.debug("SENT: " + command)
+    #logging.debug("SENT: " + command)
+    print("SENT: " + command)
 
     cmd_bytes = bytearray.fromhex(command)
     hex_byte = ''
@@ -713,17 +716,21 @@ def sendModbus(uartCmd, snifferAddress, data, ser):
             hex_byte = ('{0:02x}'.format(cmd_byte))
             ser.write(bytes.fromhex(hex_byte))
 
-        #hexResponse = ser.read(cmdLen+10)
-        hexResponse = ser.read(100)
-        logging.debug("GET: "+hexResponse.hex('-'))
+        hexResponse = ser.read(cmdLen + 10)
+        #hexResponse = ser.read(100)
+        
+        print("GET: "+hexResponse.hex('-'))
 
         # ---- Validations
+        responseLen = len(hexResponse)
+
         if ((hexResponse == None
             or hexResponse == ""
             or hexResponse == " "
+            or hexResponse == b''
         ) or (
             hexResponse[0] != int(SEGMENT_START, 16)
-            and hexResponse[int(len(command)/2) + 9 - 1] != int(SEGMENT_END, 16) #+9 pq la trama modbus suma 9 y resta 1 por el indice
+            and hexResponse[responseLen - 1] != int(SEGMENT_END, 16)
         ) or ( 
             hexResponse[ID_INDEX] != int(snifferAddress,16)
         ) or (
@@ -731,7 +738,14 @@ def sendModbus(uartCmd, snifferAddress, data, ser):
              and hexResponse[COMMAND_INDEX] != int(uartCmd, 16))
         )):
             return False
-        # ------------------------
+        
+        # ----Extract data
+        # Los datos recibidos no tienen formato conocido, solo se quitan los bytes de formato/validacion que agrega el sniffer
+        dataReceived = []
+
+        for i in range(0, responseLen):
+            if(DATA_START_INDEX <= i < DATA_START_INDEX + intLen):
+                dataReceived.append(hexResponse[i])
 
         ser.flushInput()
         ser.flushOutput()
@@ -739,7 +753,7 @@ def sendModbus(uartCmd, snifferAddress, data, ser):
         logging.error(e)
         sys.exit()
     
-    logging.debug("Modbus sent")
+    print("Modbus sent")
     return True
 
 
@@ -809,12 +823,13 @@ def run_monitor():
                 uart_cmd = "14" #comando para que el sniffer envie el paquete via serial
                 sniffer_add = "08"
                 data = ""
-                MAXDATA = 12
+                MAXDATA = 45
                 i = 0
-                while i <= MAXDATA-10:
+                while i <= MAXDATA-10-1:
                     aux_hex = format(i, '02x')
                     data = data + aux_hex
                     i+=1
+                data = data + 'FF' #para indicar el fin de la data en el dispositivo que recibe y reenvia serial
                 sendModbus(uart_cmd, sniffer_add, data, ser)
                 ### END TEST ###
                 
@@ -860,8 +875,8 @@ def setSnifferData(ser,id,data):
     checksum = getChecksum(cmd_string)
     command = SEGMENT_START + cmd_string + checksum + SEGMENT_END
 
-    logging.debug("data: " + str(data))
-    logging.debug("SENT: " + command)
+    print("data: " + str(data))
+    print("SENT: " + command)
 
     cmd_bytes = bytearray.fromhex(command)
     hex_byte = ''
@@ -874,7 +889,7 @@ def setSnifferData(ser,id,data):
         # ---- Read from serial
         hexResponse = ser.read(100) #la resupesta es el mismo query
 
-        logging.debug("GET: "+hexResponse.hex('-'))
+        print("GET: "+hexResponse.hex('-'))
 
         # ---- Validations
         if ((
@@ -896,7 +911,7 @@ def setSnifferData(ser,id,data):
         logging.error(e)
         sys.exit()
 
-    logging.debug("changing attenuation")
+    print("changing attenuation")
     return True
 
 def listen():
