@@ -14,6 +14,7 @@ from struct import *
 from sympy import *
 import random
 import binascii
+import time
 
 import json
 import base64
@@ -711,15 +712,18 @@ def sendModbus(uartCmd, snifferAddress, data, ser):
     cmd_bytes = bytearray.fromhex(command)
     hex_byte = ''
 
+    startTime = time.time()
+
     try:
         for cmd_byte in cmd_bytes:
             hex_byte = ('{0:02x}'.format(cmd_byte))
             ser.write(bytes.fromhex(hex_byte))
 
         hexResponse = ser.read(cmdLen + 10)
-        #hexResponse = ser.read(100)
         
         print("GET: "+hexResponse.hex('-'))
+
+        print(time.time() - startTime, "seconds")
 
         # ---- Validations
         responseLen = len(hexResponse)
@@ -729,6 +733,8 @@ def sendModbus(uartCmd, snifferAddress, data, ser):
             or hexResponse == " "
             or hexResponse == b''
         ) or (
+            hexResponse != cmd_bytes
+        ) or (
             hexResponse[0] != int(SEGMENT_START, 16)
             and hexResponse[responseLen - 1] != int(SEGMENT_END, 16)
         ) or ( 
@@ -737,6 +743,7 @@ def sendModbus(uartCmd, snifferAddress, data, ser):
             (hexResponse[COMMAND_INDEX] != SERIAL_RESPONSE_CMD
              and hexResponse[COMMAND_INDEX] != int(uartCmd, 16))
         )):
+            print("Modbus reception failed")
             return False
         
         # ----Extract data
@@ -753,7 +760,7 @@ def sendModbus(uartCmd, snifferAddress, data, ser):
         logging.error(e)
         sys.exit()
     
-    print("Modbus sent")
+    print("Modbus reception succesful")
     return True
 
 
@@ -799,7 +806,8 @@ def run_monitor():
             #elif(deviceData["type"] == "master"):
                 #response = sendMasterQuery(ser,times)
             #else:
-            response = getSnifferStatus(ser, device)
+                ### QUERY ###
+            #response = getSnifferStatus(ser, device)
 
             
             if (deviceData["type"] == "vlad"):
@@ -817,17 +825,21 @@ def run_monitor():
                 aout2 = ((aOut2_x_20mA >> 8) & 0xFF) | ((aOut2_x_20mA << 8) & 0xFF00)
 
                 data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}{serialSW:02X}"
-                setSnifferData(ser, device, data)
+                ### SET DATA ###
+                #setSnifferData(ser, device, data)
 
                 ### MODBUS TEST ###
                 uart_cmd = "14" #comando para que el sniffer envie el paquete via serial
                 sniffer_add = "08"
                 data = ""
-                MAXDATA = 45
+                MAXDATA = 255
                 i = 0
                 while i <= MAXDATA-10-1:
-                    aux_hex = format(i, '02x')
-                    data = data + aux_hex
+                    if i != 127:
+                        aux_hex = format(i, '02x')
+                        data = data + aux_hex
+                    else: 
+                        data = data + '00'
                     i+=1
                 data = data + 'FF' #para indicar el fin de la data en el dispositivo que recibe y reenvia serial
                 sendModbus(uart_cmd, sniffer_add, data, ser)
