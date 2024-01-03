@@ -232,9 +232,9 @@ def openSerialPort(port=""):
             parity=cfg.serial["parity"],
             stopbits=cfg.serial["stopbits"],
             bytesize=cfg.serial["bytesize"],
-            timeout=cfg.serial["timeout"],
-            write_timeout=cfg.serial["write_timeout"],
-            inter_byte_timeout=cfg.serial["inter_byte_timeout"]
+            #timeout=cfg.serial["timeout"],
+            write_timeout=cfg.serial["write_timeout"]
+            #inter_byte_timeout=cfg.serial["inter_byte_timeout"]
         )
     except serial.SerialException as msg:
         logging.exception("Error opening serial port %s" % msg)
@@ -410,13 +410,19 @@ def getSnifferStatus(ser, cmd):
     cmd_bytes = bytearray.fromhex(command)
     hex_byte = ''
 
+    startTime = time.time()
+
     try:
         for cmd_byte in cmd_bytes:
             hex_byte = ("{0:02x}".format(cmd_byte))
             ser.write(bytes.fromhex(hex_byte))
 
         # ---- Read from serial
-        hexResponse = ser.read(100)
+        hexResponse = ser.read(SEGMENT_LEN)
+
+        responseTime = str(time.time() - startTime)
+        print("Response time: " + responseTime)
+
         print("GET: " + hexResponse.hex('-'))
 
         # ---- Validations
@@ -434,6 +440,7 @@ def getSnifferStatus(ser, cmd):
         ) or (
             (hexResponse[COMMAND_INDEX] != STATUS_QUERY)
         )):
+            print("Query reception failed")
             return False
         # ------------------------
 
@@ -499,6 +506,7 @@ def getSnifferStatus(ser, cmd):
         logging.error(e)
         sys.exit()
 
+    print("Query reception succesful")
     return {}
 
 def arduino_map(value, in_min, in_max, out_min, out_max):
@@ -542,10 +550,10 @@ def isCrcOk(hexResponse,size):
     calculatedChecksum = getChecksum(dataString)
     crcMessage = "CRC Calculated: " + calculatedChecksum + " CRC Received: " +checksumString+ " - D"
     if(calculatedChecksum == checksumString):
-        print(crcMessage+"OK: "+calculatedChecksum + " == " +checksumString )
+        logging.debug(crcMessage+"OK: "+calculatedChecksum + " == " +checksumString )
         return True
     else:
-        print(crcMessage+"ERROR: "+calculatedChecksum + " != " +checksumString )
+        logging.debug(crcMessage+"ERROR: "+calculatedChecksum + " != " +checksumString )
         return False
     
 def sendMasterQuery(ser,times):
@@ -570,8 +578,8 @@ def sendMasterQuery(ser,times):
 
     checksum = getChecksum(cmdString)
     command = '7E' + cmdString + checksum + '7F'
-    print("Attempt: " + str(times))
-    print("SENT: " + command)
+    logging.debug("Attempt: " + str(times))
+    logging.debug("SENT: " + command)
 
     try:
         cmdBytes = bytearray.fromhex(command)
@@ -581,15 +589,15 @@ def sendMasterQuery(ser,times):
 
         hexResponse = ser.read(14)
         response = hexResponse.hex('-')
-        print("GET: " + hexResponse.hex('-'))
+        logging.debug("GET: " + hexResponse.hex('-'))
         message =""
         for byte in hexResponse:
           decimal_value = byte
           message+=str(byte).zfill(2)+"-"
-        print("GET: "+ message)
+        logging.debug("GET: "+ message)
 
         responseLen = len(hexResponse)
-        print("receive len: " + str(responseLen))
+        logging.debug("receive len: " + str(responseLen))
         if responseLen != 14:
             sendMasterQuery(ser,times-1)
             return False
@@ -617,9 +625,9 @@ def sendMasterQuery(ser,times):
 
         master = decodeMaster(data)
     
-        print(f"Input Voltage: {master.inputVoltage:.2f}[V]")
-        print(f"Current Consumption: {master.current:.3f}[mA]")
-        print(f"Device Temperature: {master.deviceTemperature}[°C]]")   
+        logging.debug(f"Input Voltage: {master.inputVoltage:.2f}[V]")
+        logging.debug(f"Current Consumption: {master.current:.3f}[mA]")
+        logging.debug(f"Device Temperature: {master.deviceTemperature}[°C]]")   
 
         sampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         timeNow = datetime.datetime.strptime(sampleTime, "%Y-%m-%dT%H:%M:%SZ")
@@ -706,7 +714,7 @@ def sendModbus(uartCmd, snifferAddress, data, ser):
     checksum = getChecksum(cmdString)
     command = SEGMENT_START + cmdString + checksum + SEGMENT_END
     cmdLen = int(len(command)/2)
-    #logging.debug("SENT: " + command)
+    #print("SENT: " + command)
     print("SENT: " + command)
 
     cmd_bytes = bytearray.fromhex(command)
@@ -719,11 +727,25 @@ def sendModbus(uartCmd, snifferAddress, data, ser):
             hex_byte = ('{0:02x}'.format(cmd_byte))
             ser.write(bytes.fromhex(hex_byte))
 
-        hexResponse = ser.read(cmdLen + 10)
+        #hexResponse = ser.read(cmdLen)
+        hexResponse = bytearray()
+        timeoutFlag = 0
+        recieveTime = time.time()
+
+        while timeoutFlag == 0:
+            byte = ser.read()
+            hexResponse += byte
+            currentTime = time.time()
+            if (currentTime - recieveTime > 10):
+                timeoutFlag = 1
+            else:
+                recieveTime = currentTime
         
         print("GET: "+hexResponse.hex('-'))
 
-        print(time.time() - startTime, "seconds")
+        responseTime = str(time.time() - startTime)
+
+        print("Response time: " + responseTime)
 
         # ---- Validations
         responseLen = len(hexResponse)
@@ -807,7 +829,7 @@ def run_monitor():
                 #response = sendMasterQuery(ser,times)
             #else:
                 ### QUERY ###
-            #response = getSnifferStatus(ser, device)
+            response = getSnifferStatus(ser, device)
 
             
             if (deviceData["type"] == "vlad"):
@@ -826,7 +848,7 @@ def run_monitor():
 
                 data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}{serialSW:02X}"
                 ### SET DATA ###
-                #setSnifferData(ser, device, data)
+                setSnifferData(ser, device, data)
 
                 ### MODBUS TEST ###
                 uart_cmd = "14" #comando para que el sniffer envie el paquete via serial
@@ -893,14 +915,17 @@ def setSnifferData(ser,id,data):
     cmd_bytes = bytearray.fromhex(command)
     hex_byte = ''
 
+    startTime = time.time()
     try:
         for cmd_byte in cmd_bytes:
             hex_byte = ("{0:02x}".format(cmd_byte))
             ser.write(bytes.fromhex(hex_byte))
 
         # ---- Read from serial
-        hexResponse = ser.read(100) #la resupesta es el mismo query
+        hexResponse = ser.read(RESPONSE_LEN) #la resupesta es el mismo query
 
+        responseTime = str(time.time() - startTime)
+        print("Response time: " + responseTime)
         print("GET: "+hexResponse.hex('-'))
 
         # ---- Validations
@@ -913,6 +938,7 @@ def setSnifferData(ser,id,data):
         ) or (
             hexResponse != cmd_bytes
         )):
+            print("Set reception failed")
             return False
         # ------------------------
 
