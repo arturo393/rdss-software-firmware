@@ -4,12 +4,17 @@ import { connect } from "react-redux"
 import { Container, Card, Button } from "react-bootstrap"
 import axios from "axios"
 
+
 import { setDevices } from "../../redux/actions/main"
+import Formulario from "./DeviceFormulario.js";
 
 const DevicesEdit = (props) => {
   const { devices, setDevices } = props
 
   const [device, setDevice] = useState({})
+  
+
+
   const [deviceData, setDeviceData] = useState({})
   const [newDevices, setNewDevices] = useState([])
   const [status, setStatus] = useState()
@@ -53,7 +58,6 @@ const DevicesEdit = (props) => {
 
   const saveDevice = (e) => {
     e.preventDefault()
-
     axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/device/save", deviceData).then(
       (result) => {
         document.getElementById("status").style.display = "block"
@@ -70,19 +74,17 @@ const DevicesEdit = (props) => {
       }
     )
   }
-
   const handleChange = (e) => {
     setDeviceData({
       ...deviceData,
       [e.target.id]: e.target.value,
     })
   }
-
   return (
     <>
-      <h5 className="text-center">Device Editor</h5>
-      <div class="container-fuid">
-        <div class="row text-center">
+     <h5 className="text-center">Device Editor</h5>
+        <div class="container-fuid">
+          <div class="row text-center">
           <div class="col-2"></div>
           <div class="col-7">
             <select className="form-control" id="device" onChange={handleDeviceSelected}>
@@ -101,14 +103,15 @@ const DevicesEdit = (props) => {
                 <span className="input-group-text">Name</span>
                 <input type="text" className="form-control" id="name" value={deviceData?.name} onChange={handleChange} />
               </div>
-              <div className="input-group mb-3">
+             <div className="input-group mb-3">
                 <span className="input-group-text">Type</span>
                 <input type="text" className="form-control" id="type" value={deviceData?.type} onChange={handleChange} />
-              </div>
-
-              <button className="btn btn-primary" type="button" onClick={saveDevice}>
-                Save
-              </button>
+              </div> 
+              <  Formulario/>
+             
+    <button className="btn btn-primary" type="button" onClick={saveDevice}>
+         Save
+        </button>
             </div>
           </div>
           <div class="col-2"></div>
@@ -121,6 +124,8 @@ const DevicesEdit = (props) => {
           </div>
         </div>
       </div>
+
+
     </>
   )
 }
