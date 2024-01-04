@@ -27,7 +27,7 @@
 #define UPLINK_FREQ       172000000
 #define SX1278_MAX_PACKET	100
 #define SX1278_DEFAULT_TIMEOUT		3000
-#define LORA_SEND_TIMEOUT 2000 //2000
+#define LORA_SEND_TIMEOUT 20000 //2000
 #define SX1278_POWER_20DBM  0xFF //20dbm
 #define SX1278_POWER_17DBM  0xFC //17dbm
 #define SX1278_POWER_14DBM  0xF9 //14dbm
@@ -205,7 +205,6 @@
 #define CAD_DONE_MASK              (0x1 << 2)
 #define FHSS_CHANGE_CHANNEL_MASK   (0x1 << 1)
 #define CAD_DETECTED_MASK          (0x1 << 0)
-
 typedef enum SPREAD_FACTOR {
 	SF_6 = 6, SF_7, SF_8, SF_9, SF_10, SF_11, SF_12
 } SPREAD_FACTOR_t;
@@ -309,7 +308,7 @@ typedef struct {
 	OPERATING_MODE_t operatingMode;
 	Lora_Mode_t mode;
 	SX1278_Status_t status;
-	uint8_t *rxData;
+	uint8_t rxData[300];
 	uint8_t rxSize;
 	uint8_t *txData;
 	uint8_t txSize;
@@ -339,7 +338,7 @@ void changeMode(SX1278_t *module, Lora_Mode_t mode);
 void initLoRaParameters(SX1278_t *module);
 uint8_t waitForRxDone(SX1278_t *loRa);
 void waitForTxEnd(SX1278_t *loRa);
-uint8_t* getRxFifoData(SX1278_t *module);
+void getRxFifoData(SX1278_t *module);
 int crcErrorActivation(SX1278_t *module);
 void setRxFifoAddr(SX1278_t *module);
 uint8_t setTxFifoAddr(SX1278_t *module);
