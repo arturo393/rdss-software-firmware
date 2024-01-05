@@ -54,6 +54,16 @@ export const setConfig = (config) => (dispatch) => {
   })
 }
 
+// Codigo MEMO
+export const setdbDevicestype = (type) => (dispatch) => {
+  console.log("SET_CONFIGTYPE")
+  dispatch({
+    type: t.SET_CONFIGTYPE,
+    payload: type,
+  })
+}
+
+
 export const setDevices = (devices) => (dispatch) => {
   dispatch({
     type: t.SET_DEVICES,

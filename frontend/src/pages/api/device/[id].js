@@ -7,8 +7,10 @@ export default async function (req, res) {
   const device = await db
     .collection("devices")
     .find({ id: parseInt(id) })
-    .project({ name: 1, type: 1, id: 1 })
+    .project({ name: 1, type: 1, id: 1 ,data:1})
     .limit(1)
     .toArray()
+
+    console.log("MEMOID" ,device)
   res.json(device)
 }

@@ -2,7 +2,10 @@ import React from "react"
 import { Container, Card } from "react-bootstrap"
 
 import NetworkUpload from "./manage/network/NetworkUpload"
-import NetworkForm from "./manage/network/NetworkForm"
+//MEMO
+// import NetworkForm from "./manage/network/NetworkForm"
+// import NetworkForm from "./manage/network/NetworkFormType"
+import NetworkForm from "./manage/DeviceFormulario"
 
 const NetworkParameters = () => {
   return (

@@ -6,15 +6,17 @@ import Schema from "../components/Schema"
 // import Status from "../components/common/Status"
 import Login from "../components/auth/Login"
 import { connect } from "react-redux"
-import { setConfig, setDevices, setMonitorDataEvent } from "../redux/actions/main"
+// CODIGO MEMO
+import { setConfig, setDevices, setMonitorDataEvent ,setdbDevicestype} from "../redux/actions/main"
 import DynamicComponent from "../components/DynamicComponent"
 
 const Home = (props) => {
-  const { isLoggedIn, dbConfig, dbDevices, setConfig, setDevices, setMonitorDataEvent } = props
+  const { isLoggedIn, dbConfig, dbDevices,dbDevicestype,setdbDevicestype, setConfig, setDevices, setMonitorDataEvent } = props
 
   useEffect(() => {
     setConfig(dbConfig)
     setDevices(dbDevices)
+    setdbDevicestype(dbDevicestype)
     setMonitorDataEvent()
   }, [])
 
@@ -35,13 +37,16 @@ export async function getServerSideProps(context) {
   const dbDevices = await axios.get(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/devices").then((res) => {
     return res.data
   })
+  const dbDevicestype = await axios.get(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/devicestype").then((res) => {
+    return res.data
+  })
 
   return {
-    props: { dbConfig, dbDevices },
+    props: { dbConfig, dbDevices , dbDevicestype},
   }
 }
 
-const mapDispatchToProps = { setConfig, setDevices, setMonitorDataEvent }
+const mapDispatchToProps = { setConfig, setDevices,setdbDevicestype, setMonitorDataEvent }
 
 const mapStateToProps = (state) => {
   return {
