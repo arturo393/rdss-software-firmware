@@ -23,8 +23,13 @@ from flask_socketio import SocketIO
 from flask import Flask
 import eventlet
 
-USBPORT0 = "COM4"
-USBPORT1 = "COM5"
+USBPORTTX = "COM4"
+USBPORTRX = "COM7"
+USBPORTAUX = "COM6"
+
+#USBPORTTX = "/dev/ttyUSB0"
+#USBPORTRX = "/dev/ttyUSB1"
+#USBPORTAUX = "/dev/ttyUSB2"
 
 logging.basicConfig(filename=cfg.LOGGING_FILE, level=logging.DEBUG)
 
@@ -61,7 +66,7 @@ socket = SocketIO(app, cors_allowed_origins='*')
 
 database = None
 client = None
-ser = None
+serTx = None
 f_agc_convert = None
 
 
@@ -135,7 +140,7 @@ def dbConnect():
     """
     global database
     global client
-    logging.debug("Conneting to database...")
+    print("Conneting to database...")
     try:
         client = MongoClient(
             "mongodb://"+cfg.db["user"]+":"+cfg.db["passwd"] +
@@ -196,7 +201,7 @@ def insertDevicesDataIntoDB(rtData):
     for device in rtData:
         d = json.loads(device)
         if "rtData" in d:
-            logging.debug("Data written to DB: {}".format(d))
+            print("Data written to DB: {}".format(d))
 
             # Patches
             if "voltage" in d["rtData"]:
@@ -223,27 +228,39 @@ def insertDevicesDataIntoDB(rtData):
 
 
 def openSerialPort(port=""):
-    global ser
-    logging.debug("Open Serial port %s" % port)
+    global serTx, serRx
+    print("Open Serial port %s" % port)
     try:
-        ser = serial.Serial(
-            port=port,
-            baudrate=cfg.serial["baudrate"],
-            parity=cfg.serial["parity"],
-            stopbits=cfg.serial["stopbits"],
-            bytesize=cfg.serial["bytesize"],
-            #timeout=cfg.serial["timeout"],
-            write_timeout=cfg.serial["write_timeout"]
-            #inter_byte_timeout=cfg.serial["inter_byte_timeout"]
-        )
+        if(port == USBPORTTX):
+            serTx = serial.Serial(
+                port=port,
+                baudrate=cfg.serial["baudrate"],
+                parity=cfg.serial["parity"],
+                stopbits=cfg.serial["stopbits"],
+                bytesize=cfg.serial["bytesize"],
+                timeout=cfg.serial["timeout"],
+                write_timeout=cfg.serial["write_timeout"]
+                #inter_byte_timeout=cfg.serial["inter_byte_timeout"]
+            )
+        elif(port == USBPORTRX):
+            serRx = serial.Serial(
+                port=port,
+                baudrate=cfg.serial["baudrate"],
+                parity=cfg.serial["parity"],
+                stopbits=cfg.serial["stopbits"],
+                bytesize=cfg.serial["bytesize"],
+                timeout=cfg.serial["timeout"],
+                write_timeout=cfg.serial["write_timeout"]
+                #inter_byte_timeout=cfg.serial["inter_byte_timeout"]
+            )
     except serial.SerialException as msg:
         logging.exception("Error opening serial port %s" % msg)
         logging.exception("Trying to open " + port)
-        openSerialPort(USBPORT0)
+        openSerialPort(USBPORTTX)
     except:
         exctype, errorMsg = sys.exc_info()[:2]
         logging.exception("%s  %s" % (errorMsg, exctype))
-        openSerialPort(USBPORT1)
+        openSerialPort(USBPORTRX)
 
 
 def getChecksum(cmd):
@@ -284,7 +301,7 @@ def evaluateAlerts(response):
         alerts["power"] = True
     return alerts
 
-def setAttenuation(ser,device,attenuation):
+def setAttenuation(serTx, serRx,device,attenuation):
     """Sets device downlink attenuation
 
     Args:
@@ -311,8 +328,8 @@ def setAttenuation(ser,device,attenuation):
     checksum = getChecksum(cmd_string)
     command = '7E' + cmd_string + checksum + '7F'
 
-    logging.debug("Attenuation:"+str(attenuation))
-    logging.debug("SENT: "+command)
+    print("Attenuation:"+str(attenuation))
+    print("SENT: "+command)
 
     cmd_bytes = bytearray.fromhex(command)
     hex_byte = ''
@@ -320,12 +337,12 @@ def setAttenuation(ser,device,attenuation):
     try:
         for cmd_byte in cmd_bytes:
             hex_byte = ("{0:02x}".format(cmd_byte))
-            ser.write(bytes.fromhex(hex_byte))
+            serTx.write(bytes.fromhex(hex_byte))
 
         # ---- Read from serial
-        hexResponse = ser.read(100)
+        hexResponse = serRx.read(100)
 
-        logging.debug("GET: "+hexResponse.hex('-'))
+        print("GET: "+hexResponse.hex('-'))
 
         # ---- Validations
         if ((
@@ -356,17 +373,19 @@ def setAttenuation(ser,device,attenuation):
         if(data[0] == vladRev23Id):
             data0 = data[0]
 
-        ser.flushInput()
-        ser.flushOutput()
+        serTx.flushInput()
+        serTx.flushOutput()
+        serRx.flushInput()
+        serRx.flushOutput()
 
     except Exception as e:
         logging.error(e)
         sys.exit()
 
-    logging.debug("changing attenuation")
+    print("changing attenuation")
     return True
 
-def getSnifferStatus(ser, cmd):
+def getSnifferStatus(serTx, serRx, cmd):
     """
     -Description: This functionsend a cmd, wait one minute if we have data write to the databse, if not write time out
     -param text: ser serial oject, devicecount actuals device in the network, cmd command to send, cursor is the database object
@@ -375,9 +394,9 @@ def getSnifferStatus(ser, cmd):
 
     SEGMENT_START = 126
     SEGMENT_END = 127
-    SEGMENT_LEN = 22
+    SEGMENT_LEN = 24
     DATA_START_INDEX = 6
-    DATA_END_INDEX = 19
+    DATA_END_INDEX = 21
     MAX_2BYTE = 4095
     I_MAX = 20
     V_MAX = 10
@@ -415,10 +434,10 @@ def getSnifferStatus(ser, cmd):
     try:
         for cmd_byte in cmd_bytes:
             hex_byte = ("{0:02x}".format(cmd_byte))
-            ser.write(bytes.fromhex(hex_byte))
+            serTx.write(bytes.fromhex(hex_byte))
 
         # ---- Read from serial
-        hexResponse = ser.read(SEGMENT_LEN)
+        hexResponse = serRx.read(SEGMENT_LEN)
 
         responseTime = str(time.time() - startTime)
         print("Response time: " + responseTime)
@@ -451,36 +470,43 @@ def getSnifferStatus(ser, cmd):
                 data.append(hexResponse[i])
 
         #Decodificaion con datos ordenados con aout2+swin+swout segun codificacion nueva
-        aIn1_1_10V = ( data[0] | data[1] << 8) # byte 1-2
-        aOut1_1_10V = ( data[2] | data[3] << 8 ) # byte 3-4 
-        aIn2_x_20mA = ( data[4] | data [5] << 8) # byte 5-6
-        aOut2_x_20mA = ( data[6] | data[7] << 8) # byte 7-8
+        aIn_1_10V = ( data[0] | data[1] << 8) # byte 1-2
+        aOut_1_10V = ( data[2] | data[3] << 8 ) # byte 3-4 
+        aIn_x_20mA = ( data[4] | data [5] << 8) # byte 5-6
+        aOut_x_20mA = ( data[6] | data[7] << 8) # byte 7-8
         swIn_x_20mA = "ON" if (bool (data[8]) == 0x01) else "OFF" # byte 9
         swOut_x_20mA = "ON" if (bool (data[9]) == 0x01) else "OFF" # byte 10
         dIn1 = "ON" if (bool (data[10]) == 0x01) else "OFF" # byte 11
         dIn2 = "ON" if (bool (data[11]) == 0x01) else "OFF" # byte 12
-        swSerial = "R485" if (bool (data[12]) == 0x01) else "RS232" # byte 13 (default: 0/rs232)
-            
-        print(f"ain1: {aIn1_1_10V}")
-        print(f"aout1: {aOut1_1_10V}")
-        print(f"ain2: {aIn2_x_20mA}")
-        print(f"aout2: {aOut2_x_20mA}")
+        dOut1 = "ON" if (bool (data[10]) == 0x01) else "OFF" # byte 13
+        dOut2 = "ON" if (bool (data[10]) == 0x01) else "OFF" # byte 14
+        swSerial = "R485" if (bool (data[12]) == 0x01) else "RS232" # byte 15 (default: 0/rs232)
+
+        #Editables    
+        print(f"ain1: {aIn_1_10V}")
+        print(f"aout1: {aOut_1_10V}")
+        print(f"ain2: {aIn_x_20mA}")
+        print(f"aout2: {aOut_x_20mA}")
+        print(f"din1: {dIn1}")
+        print(f"din2: {dIn2}")
+        print(f"dout1: {dOut1}")
+        print(f"dout2: {dOut2}")
+        #No editables
         print(f"din_sw: {swIn_x_20mA}") #digital
         print(f"dout_sw: {swOut_x_20mA}") #digital
-        print(f"din_1: {dIn1}")
-        print(f"din_2: {dIn2}")
+        
         print(f"swSerial: {swSerial}")
         
-        vIn1_linear = round(arduino_map(aIn1_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
-        vOut1_linear = round(arduino_map(aOut1_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
+        vIn1_linear = round(arduino_map(aIn_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
+        vOut1_linear = round(arduino_map(aOut_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
         if(swIn_x_20mA == swOut_x_20mA == "ON"):
             #4-20mA
-            iIn2_linear = round(arduino_map(aIn2_x_20mA, 0, MAX_2BYTE, 0, I_MAX), 2)
-            iOut2_linear = round(arduino_map(aOut2_x_20mA, 0, MAX_2BYTE, 0, I_MAX), 2)
+            iIn2_linear = round(arduino_map(aIn_x_20mA, 0, MAX_2BYTE, 0, I_MAX), 2)
+            iOut2_linear = round(arduino_map(aOut_x_20mA, 0, MAX_2BYTE, 0, I_MAX), 2)
         else: 
             #0-20mA
-            iIn2_linear = round(arduino_map(aIn2_x_20mA, 0, MAX_2BYTE, 4, I_MAX), 2)
-            iOut2_linear = round(arduino_map(aOut2_x_20mA, 0, MAX_2BYTE, 4, I_MAX), 2)
+            iIn2_linear = round(arduino_map(aIn_x_20mA, 0, MAX_2BYTE, 4, I_MAX), 2)
+            iOut2_linear = round(arduino_map(aOut_x_20mA, 0, MAX_2BYTE, 4, I_MAX), 2)
 
         print("Datos escalados: ")
         print(f"Analog1 Input Voltage: {vIn1_linear} V")
@@ -499,8 +525,10 @@ def getSnifferStatus(ser, cmd):
         #    "power": downlinkOutputPowerAvg
         #}
         # -----------------------------------------------------
-        ser.flushInput()
-        ser.flushOutput()
+        serTx.flushInput()
+        serTx.flushOutput()
+        serRx.flushInput()
+        serRx.flushOutput()
 
     except Exception as e:
         logging.error(e)
@@ -550,13 +578,13 @@ def isCrcOk(hexResponse,size):
     calculatedChecksum = getChecksum(dataString)
     crcMessage = "CRC Calculated: " + calculatedChecksum + " CRC Received: " +checksumString+ " - D"
     if(calculatedChecksum == checksumString):
-        logging.debug(crcMessage+"OK: "+calculatedChecksum + " == " +checksumString )
+        print(crcMessage+"OK: "+calculatedChecksum + " == " +checksumString )
         return True
     else:
-        logging.debug(crcMessage+"ERROR: "+calculatedChecksum + " != " +checksumString )
+        print(crcMessage+"ERROR: "+calculatedChecksum + " != " +checksumString )
         return False
     
-def sendMasterQuery(ser,times):
+def sendMasterQuery(serTx, serRx,times):
     """
     Sends a command, waits for one minute if data is received, and returns the data.
     Args:
@@ -578,46 +606,46 @@ def sendMasterQuery(ser,times):
 
     checksum = getChecksum(cmdString)
     command = '7E' + cmdString + checksum + '7F'
-    logging.debug("Attempt: " + str(times))
-    logging.debug("SENT: " + command)
+    print("Attempt: " + str(times))
+    print("SENT: " + command)
 
     try:
         cmdBytes = bytearray.fromhex(command)
         for cmdByte in cmdBytes:
             hexByte = "{0:02x}".format(cmdByte)
-            ser.write(bytes.fromhex(hexByte))
+            serTx.write(bytes.fromhex(hexByte))
 
-        hexResponse = ser.read(14)
+        hexResponse = serRx.read(14)
         response = hexResponse.hex('-')
-        logging.debug("GET: " + hexResponse.hex('-'))
+        print("GET: " + hexResponse.hex('-'))
         message =""
         for byte in hexResponse:
           decimal_value = byte
           message+=str(byte).zfill(2)+"-"
-        logging.debug("GET: "+ message)
+        print("GET: "+ message)
 
         responseLen = len(hexResponse)
-        logging.debug("receive len: " + str(responseLen))
+        print("receive len: " + str(responseLen))
         if responseLen != 14:
-            sendMasterQuery(ser,times-1)
+            sendMasterQuery(serTx, serRx,times-1)
             return False
         if  hexResponse[0] != 126:
-            sendMasterQuery(ser,times-1)
+            sendMasterQuery(serTx, serRx,times-1)
             return False
         if hexResponse[responseLen - 1 ] != 127:
-            sendMasterQuery(ser,times-1)
+            sendMasterQuery(serTx, serRx,times-1)
             return False
         if hexResponse[2] != int(cmd, 16):
-            sendMasterQuery(ser,times-1)
+            sendMasterQuery(serTx, serRx,times-1)
             return False
         if  hexResponse[3] != 19:
-            sendMasterQuery(ser,times-1)
+            sendMasterQuery(serTx, serRx,times-1)
             return False
         if hexResponse[4] in [2, 3, 4]:
-            sendMasterQuery(ser,times-1)
+            sendMasterQuery(serTx, serRx,times-1)
             return False
         if isCrcOk(hexResponse,responseLen) == False:
-            sendMasterQuery(ser,times-1)
+            sendMasterQuery(serTx, serRx,times-1)
             return False
         
         data = list(hexResponse[i] for i in range(6, responseLen - 3))
@@ -625,9 +653,9 @@ def sendMasterQuery(ser,times):
 
         master = decodeMaster(data)
     
-        logging.debug(f"Input Voltage: {master.inputVoltage:.2f}[V]")
-        logging.debug(f"Current Consumption: {master.current:.3f}[mA]")
-        logging.debug(f"Device Temperature: {master.deviceTemperature}[°C]]")   
+        print(f"Input Voltage: {master.inputVoltage:.2f}[V]")
+        print(f"Current Consumption: {master.current:.3f}[mA]")
+        print(f"Device Temperature: {master.deviceTemperature}[°C]]")   
 
         sampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         timeNow = datetime.datetime.strptime(sampleTime, "%Y-%m-%dT%H:%M:%SZ")
@@ -640,8 +668,10 @@ def sendMasterQuery(ser,times):
             "power": master.deviceTemperature
         }
 
-        ser.flushInput()
-        ser.flushOutput()
+        serTx.flushInput()
+        serTx.flushOutput()
+        serRx.flushInput()
+        serRx.flushOutput()
 
     except Exception as e:
         logging.error(e)
@@ -655,7 +685,7 @@ def sendStatusToFrontEnd(rtData):
     Sends via SocketIO the real-time provisioned devices status
     This updates frontend interface
     """
-    logging.debug("Emiting event...")
+    print("Emiting event...")
 
     eventMessage = {
         "event": 'set_rtdata_event',
@@ -681,14 +711,14 @@ def showBanner(provisionedDevicesArr, timeNow):
     """
     Just shows a message to console
     """
-    logging.debug("-------------------------------------------------------")
-    logging.debug("Starting Polling - TimeStamp: %s ", timeNow)
-    logging.debug("Devices Count:"+str(len(provisionedDevicesArr)))
+    print("-------------------------------------------------------")
+    print("Starting Polling - TimeStamp: %s ", timeNow)
+    print("Devices Count:"+str(len(provisionedDevicesArr)))
 
 
 
 
-def sendModbus(uartCmd, snifferAddress, data, ser):
+def sendModbus(uartCmd, snifferAddress, data, serTx, serRx):
     """
     Sends variable length segment.
     Args:
@@ -725,21 +755,26 @@ def sendModbus(uartCmd, snifferAddress, data, ser):
     try:
         for cmd_byte in cmd_bytes:
             hex_byte = ('{0:02x}'.format(cmd_byte))
-            ser.write(bytes.fromhex(hex_byte))
+            serTx.write(bytes.fromhex(hex_byte))
 
-        #hexResponse = ser.read(cmdLen)
+        hexResponse = serRx.read(cmdLen)
+
+        '''
+        timeout en cero y leer desde inicio de trama 7e hasta fin de trama 7f?
+        el monitor deberia recibir siempre tramas con protocolo, las que no son se descartan
         hexResponse = bytearray()
         timeoutFlag = 0
         recieveTime = time.time()
 
         while timeoutFlag == 0:
-            byte = ser.read()
+            byte = serRx.read()
             hexResponse += byte
             currentTime = time.time()
             if (currentTime - recieveTime > 10):
                 timeoutFlag = 1
             else:
                 recieveTime = currentTime
+        '''
         
         print("GET: "+hexResponse.hex('-'))
 
@@ -776,8 +811,11 @@ def sendModbus(uartCmd, snifferAddress, data, ser):
             if(DATA_START_INDEX <= i < DATA_START_INDEX + intLen):
                 dataReceived.append(hexResponse[i])
 
-        ser.flushInput()
-        ser.flushOutput()
+        serTx.flushInput()
+        serTx.flushOutput()
+        serRx.flushInput()
+        serRx.flushOutput()
+
     except Exception as e:
         logging.error(e)
         sys.exit()
@@ -808,7 +846,7 @@ def run_monitor():
             device = int(x["id"])
             deviceData = {}
             deviceData["rtData"] = {}
-            logging.debug("ID: %s", device)
+            print("ID: %s", device)
 
             
             deviceData["id"] = device
@@ -829,7 +867,7 @@ def run_monitor():
                 #response = sendMasterQuery(ser,times)
             #else:
                 ### QUERY ###
-            response = getSnifferStatus(ser, device)
+            response = getSnifferStatus(serTx, serRx, device)
 
             
             if (deviceData["type"] == "vlad"):
@@ -848,7 +886,7 @@ def run_monitor():
 
                 data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}{serialSW:02X}"
                 ### SET DATA ###
-                setSnifferData(ser, device, data)
+                setSnifferData(serTx, serRx, device, data)
 
                 ### MODBUS TEST ###
                 uart_cmd = "14" #comando para que el sniffer envie el paquete via serial
@@ -864,11 +902,11 @@ def run_monitor():
                         data = data + '00'
                     i+=1
                 data = data + 'FF' #para indicar el fin de la data en el dispositivo que recibe y reenvia serial
-                sendModbus(uart_cmd, sniffer_add, data, ser)
+                sendModbus(uart_cmd, sniffer_add, data, serTx, serRx)
                 ### END TEST ###
                 
             else:
-                logging.debug("No response from device")
+                print("No response from device")
                 deviceData["connected"] = False
                 deviceData["rtData"]["sampleTime"] = {"$date": SampleTime}
                 deviceData["rtData"]["alerts"] = {"connection": True}
@@ -877,18 +915,19 @@ def run_monitor():
             #rtData.append(json.dumps(deviceData, default=defaultJSONconverter))
             # rtData.append(json.dumps(deviceData))
             # END FOR X
-        logging.debug("Connected devices: %s", connectedDevices)
+        print("Connected devices: %s", connectedDevices)
         #insertDevicesDataIntoDB(rtData)
         #sendStatusToFrontEnd(rtData)
     else:
         #sendStatusToFrontEnd([])
-        logging.debug("No provisioned devices found in the DB")
+        print("No provisioned devices found in the DB")
 
-def setSnifferData(ser,id,data):
+def setSnifferData(serTx, serRx,id,data):
     """Sets device downlink attenuation
 
     Args:
-        ser: serial port
+        serTx: serial port for transmission
+        serRx: serial pott for reception
         id: device ID
         attenuation: integer between 0 and 32
 
@@ -919,10 +958,10 @@ def setSnifferData(ser,id,data):
     try:
         for cmd_byte in cmd_bytes:
             hex_byte = ("{0:02x}".format(cmd_byte))
-            ser.write(bytes.fromhex(hex_byte))
+            serTx.write(bytes.fromhex(hex_byte))
 
         # ---- Read from serial
-        hexResponse = ser.read(RESPONSE_LEN) #la resupesta es el mismo query
+        hexResponse = serRx.read(RESPONSE_LEN) #la resupesta es el mismo query
 
         responseTime = str(time.time() - startTime)
         print("Response time: " + responseTime)
@@ -942,8 +981,10 @@ def setSnifferData(ser,id,data):
             return False
         # ------------------------
 
-        ser.flushInput()
-        ser.flushOutput()
+        serTx.flushInput()
+        serTx.flushOutput()
+        serRx.flushInput()
+        serRx.flushOutput()
 
     except Exception as e:
         logging.error(e)
@@ -959,11 +1000,12 @@ def listen():
     while True:
         if database is None:
             dbConnect()
-        if ser is None:
+        if (serTx is None):
             try:
-                openSerialPort(USBPORT0)
+                openSerialPort(USBPORTTX)    #Puerto para Tx
+                openSerialPort(USBPORTRX)    #Puerto para Rx
             except:
-                openSerialPort(USBPORT1)
+                openSerialPort(USBPORTAUX)
 
         run_monitor()
         eventlet.sleep(cfg.POLLING_SLEEP)

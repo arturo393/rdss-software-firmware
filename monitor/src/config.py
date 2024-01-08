@@ -36,7 +36,7 @@ serial = {
     "parity": "N",
     "stopbits": 1,
     "bytesize": 8,
-    "timeout": 12,
+    "timeout": 1.8,
     "write_timeout": 12,
     "inter_byte_timeout": 0.1
 }
