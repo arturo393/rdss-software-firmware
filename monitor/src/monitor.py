@@ -756,22 +756,6 @@ def sendModbus(uartCmd, snifferAddress, data, serTx, serRx):
             serTx.write(bytes.fromhex(hex_byte))
 
         hexResponse = serRx.read(cmdLen)
-
-        '''
-        el monitor deberia recibir siempre tramas con protocolo, las que no son se descartan
-        hexResponse = bytearray()
-        timeoutFlag = 0
-        recieveTime = time.time()
-
-        while timeoutFlag == 0:
-            byte = serRx.read()
-            hexResponse += byte
-            currentTime = time.time()
-            if (currentTime - recieveTime > 10):
-                timeoutFlag = 1
-            else:
-                recieveTime = currentTime
-        '''
         
         logging.debug("GET: "+hexResponse.hex('-'))
 
@@ -818,105 +802,6 @@ def sendModbus(uartCmd, snifferAddress, data, serTx, serRx):
     
     logging.debug("Modbus reception succesful")
     return True
-
-
-def run_monitor():
-    """
-    run_monitor(): Main process
-    1. Gets provisioned devices from DB
-    2. For each device gets status from serial port
-    3. Calculate if status variables are alerted
-    4. Send real-time status to frontend
-    5. Save real-time status to DB
-    """
-    rtData = []
-    provisionedDevicesArr = getProvisionedDevices()
-    connectedDevices = 0
-    times = 3
-    SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-    timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
-    showBanner(provisionedDevicesArr, timeNow)
-
-    if (len(provisionedDevicesArr) > 0):
-        for x in provisionedDevicesArr:
-            device = int(x["id"])
-            deviceData = {}
-            deviceData["rtData"] = {}
-            logging.debug("ID: %s", device)
-
-            
-            deviceData["id"] = device
-            # deviceData["type"] = x["type"]
-            # deviceData["name"] = x["name"]
-            if ('type' in x):
-                deviceData["type"] = x["type"]
-            else:
-                deviceData["type"] = ''
-            if ('name' in x):
-                deviceData["name"] = x["name"]
-            else:
-                deviceData["name"] = ''
-
-            #if(deviceData["type"] == "vlad-rev23"):
-                #response = sendVladRev23Query(ser, device,times)
-            #elif(deviceData["type"] == "master"):
-                #response = sendMasterQuery(ser,times)
-            #else:
-                ### QUERY ###
-            response = getSnifferStatus(serTx, serRx, device)
-
-            
-            if (deviceData["type"] == "vlad"):
-                aOut1_0_10V = 1000
-                aOut2_x_20mA = 500
-                dOut1 = 0
-                dOut2 = 0
-                serialSW = 0 #seteaer a rs232
-                #serialSW = 1 #setear a rs485
-
-                # Invertir los bytes de aout1
-                aout1 = ((aOut1_0_10V >> 8) & 0xFF) | ((aOut1_0_10V << 8) & 0xFF00)
-
-                # Invertir los bytes de aout2
-                aout2 = ((aOut2_x_20mA >> 8) & 0xFF) | ((aOut2_x_20mA << 8) & 0xFF00)
-
-                data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}{serialSW:02X}"
-                ### SET DATA ###
-                setSnifferData(serTx, serRx, device, data)
-
-                ### MODBUS TEST ###
-                uart_cmd = "14" #comando para que el sniffer envie el paquete via serial
-                sniffer_add = "08"
-                data = ""
-                MAXDATA = 255
-                i = 0
-                while i <= MAXDATA-10-1:
-                    if i != 127:
-                        aux_hex = format(i, '02x')
-                        data = data + aux_hex
-                    else: 
-                        data = data + '00'
-                    i+=1
-                data = data + 'FF' #para indicar el fin de la data en el dispositivo que recibe y reenvia serial
-                sendModbus(uart_cmd, sniffer_add, data, serTx, serRx)
-                ### END TEST ###
-                
-            else:
-                logging.debug("No response from device")
-                deviceData["connected"] = False
-                deviceData["rtData"]["sampleTime"] = {"$date": SampleTime}
-                deviceData["rtData"]["alerts"] = {"connection": True}
-                #updateDeviceConnectionStatus(device, False)
-
-            #rtData.append(json.dumps(deviceData, default=defaultJSONconverter))
-            # rtData.append(json.dumps(deviceData))
-            # END FOR X
-        logging.debug("Connected devices: %s", connectedDevices)
-        #insertDevicesDataIntoDB(rtData)
-        #sendStatusToFrontEnd(rtData)
-    else:
-        #sendStatusToFrontEnd([])
-        logging.debug("No provisioned devices found in the DB")
 
 def setSnifferData(serTx, serRx,id,data):
     """Sets device downlink attenuation
@@ -988,6 +873,138 @@ def setSnifferData(serTx, serRx,id,data):
 
     logging.debug("changing attenuation")
     return True
+
+def getRealValues(deviceData):
+    #el argumento recibido es toda la data del sniffer (deviceData del runmonitor)
+    #asumiendo que el orden de las variables siempre es aout1, aout2, dout1, dout2, swSerial
+    out = ""
+    for var in deviceData:
+        varType = var["tipo"]
+        if(varType == "aout"):
+            value = var["value"]
+            minAnalog = var["minimumAnalog"]
+            maxAnalog = var["maximumAnalog"]
+            minConverted = var["minimumconverted"]
+            maxConverted = var["maximumconverted"]
+            if value > maxConverted:
+                value = maxConverted
+            if value < minConverted:
+                value = minConverted
+            mappedValue = round(arduino_map(value, minAnalog, maxAnalog, minConverted, maxConverted)) #solo se pueden programar numeros enteros
+            mappedValue = ((mappedValue >> 8) & 0xFF) | ((mappedValue << 8) & 0xFF00)
+            out = out + f"{mappedValue:02x}"
+
+        elif(varType == "dout"):
+            value = var["valor"]
+            on = var["stateon"]
+            off = var["stateoff"]
+            if type(value) is not bool:
+                value = off
+            if value == on:
+                out = out + f"{1:02x}"
+            else:
+                out = out + f"{0:02x}"
+    return out
+
+def run_monitor():
+    """
+    run_monitor(): Main process
+    1. Gets provisioned devices from DB
+    2. For each device gets status from serial port
+    3. Calculate if status variables are alerted
+    4. Send real-time status to frontend
+    5. Save real-time status to DB
+    """
+    rtData = []
+    provisionedDevicesArr = getProvisionedDevices()
+    connectedDevices = 0
+    times = 3
+    SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
+    showBanner(provisionedDevicesArr, timeNow)
+
+    if (len(provisionedDevicesArr) > 0):
+        for x in provisionedDevicesArr:
+            device = int(x["id"])
+            deviceData = {}
+            deviceData["rtData"] = {}
+            logging.debug("ID: %s", device)
+
+            
+            deviceData["id"] = device
+            # deviceData["type"] = x["type"]
+            # deviceData["name"] = x["name"]
+            if ('type' in x):
+                deviceData["type"] = x["type"]
+            else:
+                deviceData["type"] = ''
+            if ('name' in x):
+                deviceData["name"] = x["name"]
+            else:
+                deviceData["name"] = ''
+
+            #if(deviceData["type"] == "vlad-rev23"):
+                #response = sendVladRev23Query(ser, device,times)
+            #elif(deviceData["type"] == "master"):
+                #response = sendMasterQuery(ser,times)
+            #else:
+                ### QUERY ###
+            response = getSnifferStatus(serTx, serRx, device)
+
+            
+            if (deviceData["type"] == "vlad"):
+                aOut1_0_10V = 1000
+                aOut2_x_20mA = 500
+                dOut1 = 0
+                dOut2 = 0
+                serialSW = 0 #seteaer a rs232
+                #serialSW = 1 #setear a rs485
+
+                # Invertir los bytes de aout1
+                aout1 = ((aOut1_0_10V >> 8) & 0xFF) | ((aOut1_0_10V << 8) & 0xFF00)
+
+                # Invertir los bytes de aout2
+                aout2 = ((aOut2_x_20mA >> 8) & 0xFF) | ((aOut2_x_20mA << 8) & 0xFF00)
+
+                data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}{serialSW:02X}"
+                ### SET DATA ###
+                #data = getRealValues(x)
+                setSnifferData(serTx, serRx, device, data)
+
+                ### MODBUS TEST ###
+                uart_cmd = "14" #comando para que el sniffer envie el paquete via serial
+                sniffer_add = "08"
+                data = ""
+                MAXDATA = 255
+                i = 0
+                while i <= MAXDATA-10-1:
+                    if i != 127:
+                        aux_hex = format(i, '02x')
+                        data = data + aux_hex
+                    else: 
+                        data = data + '00'
+                    i+=1
+                data = data + 'FF' #para indicar el fin de la data en el dispositivo que recibe y reenvia serial
+                sendModbus(uart_cmd, sniffer_add, data, serTx, serRx)
+                ### END TEST ###
+                
+            else:
+                logging.debug("No response from device")
+                deviceData["connected"] = False
+                deviceData["rtData"]["sampleTime"] = {"$date": SampleTime}
+                deviceData["rtData"]["alerts"] = {"connection": True}
+                #updateDeviceConnectionStatus(device, False)
+
+            #rtData.append(json.dumps(deviceData, default=defaultJSONconverter))
+            # rtData.append(json.dumps(deviceData))
+            # END FOR X
+        logging.debug("Connected devices: %s", connectedDevices)
+        insertDevicesDataIntoDB(rtData)
+        #sendStatusToFrontEnd(rtData)
+    else:
+        #sendStatusToFrontEnd([])
+        logging.debug("No provisioned devices found in the DB")
+
 
 def listen():
     """
