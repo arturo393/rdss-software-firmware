@@ -29,7 +29,7 @@ import eventlet
 
 USBPORTTX = "/dev/ttyUSB0"
 USBPORTRX = "/dev/ttyUSB1"
-USBPORTAUX = "/dev/ttyUSB2"
+USBPORTAUX = "/dev/ttyUSB3"
 
 logging.basicConfig(filename=cfg.LOGGING_FILE, level=logging.DEBUG)
 
