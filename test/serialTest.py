@@ -2,11 +2,11 @@ import serial
 import logging
 import sys
 
-logging.basicConfig(filename="serialTest.log", level=logging.DEBUG)
+#logging.basicConfig(filename="serialTest.log", level=logging.debug)
 
 ser = serial.Serial(
-    #port='COM1',\
-    port="/dev/ttyS0",\
+    port='COM1',\
+    #port="/dev/ttyS0",\
     baudrate=115200,\
     parity=serial.PARITY_NONE,\
     stopbits=serial.STOPBITS_ONE,\
@@ -14,24 +14,23 @@ ser = serial.Serial(
     timeout=5)
 
 #this will store the line
-#line = ''
 line = []
 
 while True:
-    logging.debug("Starting read...")
+    #print("Starting read...")
     try:
-        logging.debug("Waiting...")
+        #print("Waiting...")
         for c in ser.read():
             line.append(c)
-            logging.debug(c)
+            #print(c)
             if c == 255:
-                #logging.debug("Line: " + ''.join(line))
+                #print("Line: " + ''.join(line))
                 for cmd_int in line:
-                    ser.write(cmd_int.to_bytes())
-                logging.debug("Message retransmitted:")
-                logging.debug(line)
-                logging.debug("Message length: " + str(len(line)))
-                logging.debug("-----")
+                    ser.write(cmd_int.to_bytes(1, 'big'))
+                print("Message retransmitted:")
+                print(line)
+                print("Message length: " + str(len(line)))
+                print("-----")
                 line = []
                 ser.flushInput()
                 ser.flushOutput()

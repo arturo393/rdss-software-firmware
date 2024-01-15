@@ -445,21 +445,20 @@ def getSnifferStatus(serTx, serRx, id):
         logging.debug("GET: " + hexResponse.hex('-'))
 
         # ---- Validations
-        if ((
-            (len(hexResponse) > SEGMENT_LEN)
-            or (len(hexResponse) < SEGMENT_LEN)
-            or hexResponse == None
-            or hexResponse == ""
-            or hexResponse == " "
-        ) or (
-            hexResponse[0] != SEGMENT_START
-            and hexResponse[SEGMENT_LEN - 1] != SEGMENT_END
-        ) or ( 
-            hexResponse[ID_INDEX] != int(id,16)
-        ) or (
-            (hexResponse[COMMAND_INDEX] != STATUS_QUERY)
-        )):
-            logging.debug("Query reception failed")
+        if(hexResponse == None or hexResponse == "" or hexResponse == " " or len(hexResponse) == 0):
+            logging.debug("Query reception failed: " + "Response empty")
+            return False
+        if((len(hexResponse) > SEGMENT_LEN) or (len(hexResponse) < SEGMENT_LEN)):
+            logging.debug("Query reception failed: " + "Incorrect response length: " + str(len(hexResponse)))
+            return False
+        if(hexResponse[0] != SEGMENT_START or hexResponse[SEGMENT_LEN - 1] != SEGMENT_END):
+            logging.debug("Query reception failed: " + "Incorrect start or end byte")
+            return False
+        if(hexResponse[ID_INDEX] != int(id, 16)):
+            logging.debug("Query reception failed: " + "Incorrect ID received: " + str(int(id,16)))
+            return False
+        if(hexResponse[COMMAND_INDEX] != STATUS_QUERY):
+            logging.debug("Query reception failed: " + "Incorrect command received: " + str(hexResponse[COMMAND_INDEX]))
             return False
         # ------------------------
 
@@ -766,21 +765,17 @@ def sendModbus(uartCmd, snifferAddress, data, serTx, serRx):
         # ---- Validations
         responseLen = len(hexResponse)
 
-        if ((hexResponse == None
-            or hexResponse == ""
-            or hexResponse == " "
-            or hexResponse == b''
-        ) or (
-            hexResponse != cmd_bytes
-        ) or (
-            hexResponse[0] != int(SEGMENT_START, 16)
-            and hexResponse[responseLen - 1] != int(SEGMENT_END, 16)
-        ) or ( 
-            hexResponse[ID_INDEX] != int(snifferAddress,16)
-        ) or (
-            (hexResponse[COMMAND_INDEX] != int(uartCmd, 16))
-        )):
-            logging.debug("Modbus reception failed")
+        if(hexResponse == None or hexResponse == "" or hexResponse == " " or hexResponse == b'' or responseLen == 0):
+            logging.debug("Modbus reception failed: Response empty")
+            return False
+        if(hexResponse[0] != int(SEGMENT_START, 16) or hexResponse[responseLen - 1] != int(SEGMENT_END)):
+            logging.debug("Modbus reception failed: Incorrect start or end byte")
+            return False
+        if(hexResponse[ID_INDEX] != int(snifferAddress,16)):
+            logging.debug("Modbus reception failed: Incorrect ID: " + str(hexResponse[ID_INDEX]))
+            return False
+        if(hexResponse[COMMAND_INDEX] != int(uartCmd,16)):
+            logging.debug("Modbus reception failed: Incorrect command: " + str(hexResponse[COMMAND_INDEX]))
             return False
         
         # ----Extract data
@@ -849,16 +844,14 @@ def setSnifferData(serTx, serRx,id,data):
         logging.debug("GET: "+hexResponse.hex('-'))
 
         # ---- Validations
-        if ((
-            (len(hexResponse) > RESPONSE_LEN)
-            or (len(hexResponse) < RESPONSE_LEN)
-            or hexResponse == None
-            or hexResponse == ""
-            or hexResponse == " "
-        ) or (
-            hexResponse != cmd_bytes
-        )):
-            logging.debug("Set reception failed")
+        if(hexResponse == None or hexResponse == "" or hexResponse == " " or len(hexResponse) == 0):
+            logging.debug("Set reception failed: " + "Response empty")
+            return False
+        if((len(hexResponse) > RESPONSE_LEN) or (len(hexResponse) < RESPONSE_LEN)):
+            logging.debug("Set reception failed: " + "Incorrect response length: " + str(len(hexResponse)) + ", expected " + str(RESPONSE_LEN))
+            return False
+        if(hexResponse != cmd_bytes):
+            logging.debug("Set reception failed: " + "Unexpected response: " + hexResponse.hex('-'))
             return False
         # ------------------------
 
@@ -955,8 +948,8 @@ def run_monitor():
             if (deviceData["type"] == "vlad"):
                 aOut1_0_10V = 1000
                 aOut2_x_20mA = 500
-                dOut1 = 0
-                dOut2 = 0
+                dOut1 = 1
+                dOut2 = 1
                 serialSW = 0 #seteaer a rs232
                 #serialSW = 1 #setear a rs485
 
