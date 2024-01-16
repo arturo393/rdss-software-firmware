@@ -31,6 +31,8 @@ USBPORTTX = "/dev/ttyUSB0"
 USBPORTRX = "/dev/ttyUSB1"
 USBPORTAUX = "/dev/ttyUSB3"
 
+data_mod = ""
+
 logging.basicConfig(filename=cfg.LOGGING_FILE, level=logging.DEBUG)
 
 class VladModule:
@@ -238,7 +240,7 @@ def openSerialPort(port=""):
                 parity=cfg.serial["parity"],
                 stopbits=cfg.serial["stopbits"],
                 bytesize=cfg.serial["bytesize"],
-                timeout=cfg.serial["timeout"],
+                timeout=0.5,
                 write_timeout=cfg.serial["write_timeout"]
                 #inter_byte_timeout=cfg.serial["inter_byte_timeout"]
             )
@@ -755,6 +757,17 @@ def sendModbus(uartCmd, snifferAddress, data, serTx, serRx):
             serTx.write(bytes.fromhex(hex_byte))
 
         hexResponse = serRx.read(cmdLen)
+        #---DEBUG---
+        if len(hexResponse) == 0:
+            logging.debug("Reading from Tx USB")
+            auxResponse = serTx.read_until()
+            logging.debug("Data read: " + auxResponse.hex('-'))
+            if(auxResponse == 3):
+                logging.debug("NOT_VALID_FRAME")
+            if(auxResponse == 4):
+                logging.debug("WRONG_MODULE_FUNCTION")
+            if(auxResponse == 6):
+                logging.debug("CRC_ERROR")
         
         logging.debug("GET: "+hexResponse.hex('-'))
 
@@ -899,6 +912,8 @@ def getRealValues(deviceData):
                 out = out + f"{0:02x}"
     return out
 
+contador = 0
+
 def run_monitor():
     """
     run_monitor(): Main process
@@ -942,14 +957,14 @@ def run_monitor():
                 #response = sendMasterQuery(ser,times)
             #else:
                 ### QUERY ###
-            response = getSnifferStatus(serTx, serRx, device)
+            #response = getSnifferStatus(serTx, serRx, device)
 
             
             if (deviceData["type"] == "vlad"):
                 aOut1_0_10V = 1000
                 aOut2_x_20mA = 500
-                dOut1 = 1
-                dOut2 = 1
+                dOut1 = 0
+                dOut2 = 0
                 serialSW = 0 #seteaer a rs232
                 #serialSW = 1 #setear a rs485
 
@@ -962,23 +977,28 @@ def run_monitor():
                 data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}{serialSW:02X}"
                 ### SET DATA ###
                 #data = getRealValues(x)
-                setSnifferData(serTx, serRx, device, data)
+                #setSnifferData(serTx, serRx, device, data)
 
                 ### MODBUS TEST ###
                 uart_cmd = "14" #comando para que el sniffer envie el paquete via serial
                 sniffer_add = "08"
                 data = ""
                 MAXDATA = 255
-                i = 0
-                while i <= MAXDATA-10-1:
-                    if i != 127:
-                        aux_hex = format(i, '02x')
-                        data = data + aux_hex
-                    else: 
-                        data = data + '00'
-                    i+=1
-                data = data + 'FF' #para indicar el fin de la data en el dispositivo que recibe y reenvia serial
+                global contador
+
+                i = 1
+                if contador*5 < MAXDATA-10-1-5:
+                    while i <= contador*5:
+                        if i == 127:
+                            data = f"{data}{0:02x}"
+                        else:
+                            data = f"{data}{i:02X}"
+                        i += 1
+                    data = data + "FF"
+                else:
+                    contador = 0
                 sendModbus(uart_cmd, sniffer_add, data, serTx, serRx)
+                contador += 1
                 ### END TEST ###
                 
             else:
