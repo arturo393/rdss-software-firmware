@@ -229,11 +229,11 @@ def insertDevicesDataIntoDB(rtData):
                 logging.exception(e)
 
 
-def openSerialPort(port=""):
+def openSerialPort(port="", function=""):
     global serTx, serRx
-    logging.debug("Open Serial port %s" % port)
+    logging.debug("Opening serial port " + port + " as " + function)
     try:
-        if(port == USBPORTTX):
+        if function == "tx":
             serTx = serial.Serial(
                 port=port,
                 baudrate=cfg.serial["baudrate"],
@@ -244,7 +244,7 @@ def openSerialPort(port=""):
                 write_timeout=cfg.serial["write_timeout"]
                 #inter_byte_timeout=cfg.serial["inter_byte_timeout"]
             )
-        elif(port == USBPORTRX):
+        elif(function == "rx"):
             serRx = serial.Serial(
                 port=port,
                 baudrate=cfg.serial["baudrate"],
@@ -781,7 +781,7 @@ def sendModbus(uartCmd, snifferAddress, data, serTx, serRx):
         if(hexResponse == None or hexResponse == "" or hexResponse == " " or hexResponse == b'' or responseLen == 0):
             logging.debug("Modbus reception failed: Response empty")
             return False
-        if(hexResponse[0] != int(SEGMENT_START, 16) or hexResponse[responseLen - 1] != int(SEGMENT_END)):
+        if(hexResponse[0] != int(SEGMENT_START,16) or hexResponse[responseLen - 1] != int(SEGMENT_END,16)):
             logging.debug("Modbus reception failed: Incorrect start or end byte")
             return False
         if(hexResponse[ID_INDEX] != int(snifferAddress,16)):
@@ -853,8 +853,8 @@ def setSnifferData(serTx, serRx,id,data):
         hexResponse = serRx.read(RESPONSE_LEN) #la resupesta es el mismo query
 
         responseTime = str(time.time() - startTime)
-        logging.debug("Response time: " + responseTime)
         logging.debug("GET: "+hexResponse.hex('-'))
+        logging.debug("Response time: " + responseTime)
 
         # ---- Validations
         if(hexResponse == None or hexResponse == "" or hexResponse == " " or len(hexResponse) == 0):
@@ -912,6 +912,77 @@ def getRealValues(deviceData):
                 out = out + f"{0:02x}"
     return out
 
+def sendTxQuery(serTx):
+    DATALEN = 1
+    RESPONSE_LEN = 7
+    MASTER = 0
+    ID = 0
+    QUERY_CMD = '16'
+    SEGMENT_START = '7E'
+    SEGMENT_END = '7F'
+    
+
+    dataLenStr = f"{DATALEN:02x}{0:02x}"
+    data = "00"
+    cmd_string = f"{MASTER:02x}{ID:02x}{QUERY_CMD}{dataLenStr}{data}"
+    checksum = getChecksum(cmd_string)
+    command = SEGMENT_START + cmd_string + checksum + SEGMENT_END
+
+    logging.debug("SENT: " + command)
+    cmd_bytes = bytearray.fromhex(command)
+    hex_byte = ''
+
+    startTime = time.time()
+    try:
+        for cmd_byte in cmd_bytes:
+            hex_byte = ("{0:02x}".format(cmd_byte))
+            serTx.write(bytes.fromhex(hex_byte))
+
+        # ---- Read from serial
+        hexResponse = serTx.read(RESPONSE_LEN)
+
+        responseTime = str(time.time() - startTime)
+        logging.debug("GET: "+hexResponse.hex('-'))
+        logging.debug("Response time: " + responseTime)
+        
+        # ---- Validations
+        if(hexResponse == None or hexResponse == "" or hexResponse == " " or len(hexResponse) == 0):
+            logging.debug("TxQuery reception failed: " + "Response empty")
+            return False
+        if((len(hexResponse) > RESPONSE_LEN) or (len(hexResponse) < RESPONSE_LEN)):
+            logging.debug("TxQuery reception failed: " + "Incorrect response length: " + str(len(hexResponse)) + ", expected " + str(RESPONSE_LEN))
+            return False
+        # ------------------------
+
+        serTx.flushInput()
+        serTx.flushOutput()
+
+    except Exception as e:
+        logging.error(e)
+        sys.exit()
+
+    if(str(hexResponse[3]) == "2"):
+        logging.debug("USB0 is TX")
+    else:
+        logging.debug("USB0 is RX")
+    return str(hexResponse[3])
+
+def setMasterPorts():
+    openSerialPort(USBPORTTX, "tx")
+    status = sendTxQuery(serTx)
+    if status == "2":
+        openSerialPort(USBPORTRX, "rx")
+        logging.debug("Ports opened")
+        return
+    elif status == "3":
+        serTx.close()
+        openSerialPort(USBPORTRX, "tx")
+        openSerialPort(USBPORTTX, "rx")
+        logging.debug("Ports opened")
+        return
+    else:
+        logging.debug("Unrecognized lora mode")
+
 contador = 0
 
 def run_monitor():
@@ -957,7 +1028,7 @@ def run_monitor():
                 #response = sendMasterQuery(ser,times)
             #else:
                 ### QUERY ###
-            #response = getSnifferStatus(serTx, serRx, device)
+            response = getSnifferStatus(serTx, serRx, device)
 
             
             if (deviceData["type"] == "vlad"):
@@ -977,7 +1048,7 @@ def run_monitor():
                 data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}{serialSW:02X}"
                 ### SET DATA ###
                 #data = getRealValues(x)
-                #setSnifferData(serTx, serRx, device, data)
+                setSnifferData(serTx, serRx, device, data)
 
                 ### MODBUS TEST ###
                 uart_cmd = "14" #comando para que el sniffer envie el paquete via serial
@@ -1028,8 +1099,8 @@ def listen():
             dbConnect()
         if (serTx is None):
             try:
-                openSerialPort(USBPORTTX)    #Puerto para Tx
-                openSerialPort(USBPORTRX)    #Puerto para Rx
+                logging.debug("Opening ports...")
+                setMasterPorts()
             except:
                 openSerialPort(USBPORTAUX)
 
