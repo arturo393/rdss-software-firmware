@@ -1028,7 +1028,9 @@ def run_monitor():
                 #response = sendMasterQuery(ser,times)
             #else:
                 ### QUERY ###
-            response = getSnifferStatus(serTx, serRx, device)
+            SNIFFERID = 8
+            #SNIFFERID = device
+            response = getSnifferStatus(serTx, serRx, SNIFFERID)
 
             
             if (deviceData["type"] == "vlad"):
@@ -1036,8 +1038,8 @@ def run_monitor():
                 aOut2_x_20mA = 500
                 dOut1 = 0
                 dOut2 = 0
-                serialSW = 0 #seteaer a rs232
-                #serialSW = 1 #setear a rs485
+                #serialSW = 0 #seteaer a rs232
+                serialSW = 1 #setear a rs485
 
                 # Invertir los bytes de aout1
                 aout1 = ((aOut1_0_10V >> 8) & 0xFF) | ((aOut1_0_10V << 8) & 0xFF00)
@@ -1048,7 +1050,7 @@ def run_monitor():
                 data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}{serialSW:02X}"
                 ### SET DATA ###
                 #data = getRealValues(x)
-                setSnifferData(serTx, serRx, device, data)
+                setSnifferData(serTx, serRx, SNIFFERID, data)
 
                 ### MODBUS TEST ###
                 uart_cmd = "14" #comando para que el sniffer envie el paquete via serial
@@ -1068,7 +1070,7 @@ def run_monitor():
                     data = data + "FF"
                 else:
                     contador = 0
-                sendModbus(uart_cmd, sniffer_add, data, serTx, serRx)
+                sendModbus(uart_cmd, f"{SNIFFERID:02x}", data, serTx, serRx)
                 contador += 1
                 ### END TEST ###
                 
