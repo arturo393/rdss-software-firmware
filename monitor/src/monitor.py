@@ -481,7 +481,7 @@ def getSnifferStatus(serTx, serRx, id):
         dIn2 = "ON" if (bool (data[11]) == 0x01) else "OFF" # byte 12
         dOut1 = "ON" if (bool (data[12]) == 0x01) else "OFF" # byte 13
         dOut2 = "ON" if (bool (data[13]) == 0x01) else "OFF" # byte 14
-        swSerial = "R485" if (bool (data[14]) == 0x01) else "RS232" # byte 15 (default: 0/rs232)
+        swSerial = "RS485" if (bool (data[14]) == 0x01) else "RS232" # byte 15 (default: 0/rs232)
 
         #Editables    
         logging.debug(f"ain1: {aIn_1_10V}")

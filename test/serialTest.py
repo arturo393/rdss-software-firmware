@@ -42,3 +42,4 @@ while True:
     except Exception as e:
         logging.error(e)
         sys.exit()
+ser.close()
