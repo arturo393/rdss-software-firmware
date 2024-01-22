@@ -230,6 +230,12 @@ def insertDevicesDataIntoDB(rtData):
 
 
 def openSerialPort(port="", function=""):
+    """
+    Opens rx or tx serial port to correpsonding USB port
+    Args:
+        port: Port to be opened.
+        function: Type of port to be opened: "rx" or "tx".
+    """
     global serTx, serRx
     logging.debug("Opening serial port " + port + " as " + function)
     try:
@@ -389,9 +395,13 @@ def setAttenuation(serTx, serRx,device,attenuation):
 
 def getSnifferStatus(serTx, serRx, id):
     """
-    -Description: This functionsend a cmd, wait one minute if we have data write to the databse, if not write time out
-    -param text: ser serial oject, devicecount actuals device in the network, cmd command to send, cursor is the database object
-    -return:
+    Sends request to sniffer to obtain values of analog and digital i/o
+    Args:
+        serTx: Transmission serial port.
+        serRx: Reception serial port.
+        id: id number of sniffer that will respond.
+    Returns:
+        boolean: True if valid segment is received.
     """
 
     SEGMENT_START = 126
@@ -725,8 +735,10 @@ def sendModbus(uartCmd, snifferAddress, data, serTx, serRx):
         uartcmd: Command to send.
         sniffer_address: Address of target sniffer.
         data: Data to be added to modBus segment.
-        ser: Serial port.
-    Returns true if answer segment from sniffer is valid.
+        serTx: Transmission serial port.
+        serRx: Reception serial port.
+    Returns:
+        boolean: true if answer segment from sniffer is valid.
     """
     SNIFFER = "0A"
     SEGMENT_START = '7E'
@@ -811,14 +823,14 @@ def sendModbus(uartCmd, snifferAddress, data, serTx, serRx):
     logging.debug("Modbus reception succesful")
     return True
 
-def setSnifferData(serTx, serRx,id,data):
+def setSnifferData(serTx, serRx, id, data):
     """Sets device downlink attenuation
 
     Args:
         serTx: serial port for transmission
-        serRx: serial pott for reception
+        serRx: serial port for reception
         id: device ID
-        attenuation: integer between 0 and 32
+        data: values to set formatted as f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}{serialSW:02X}"
 
     Returns:
         boolean: if changed was applied or error
@@ -881,6 +893,13 @@ def setSnifferData(serTx, serRx,id,data):
     return True
 
 def getRealValues(deviceData):
+    """
+    Obtains real values from data extracted from database
+    Args:
+        deviceData: json with data to analyze
+    Returns:
+        out: string with converted values: aout1+aout2+dout1+dout2+swSerial
+    """
     #el argumento recibido es toda la data del sniffer (deviceData del runmonitor)
     #asumiendo que el orden de las variables siempre es aout1, aout2, dout1, dout2, swSerial
     out = ""
@@ -968,6 +987,9 @@ def sendTxQuery(serTx):
     return str(hexResponse[3])
 
 def setMasterPorts():
+    """
+    
+    """
     openSerialPort(USBPORTTX, "tx")
     status = sendTxQuery(serTx)
     if status == "2":
