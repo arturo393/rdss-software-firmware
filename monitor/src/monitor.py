@@ -23,6 +23,8 @@ from flask_socketio import SocketIO
 from flask import Flask
 import eventlet
 
+#---SERIAL COMMUNICATION PORTS---
+
 #USBPORTTX = "COM4"
 #USBPORTRX = "COM7"
 #USBPORTAUX = "COM6"
@@ -31,7 +33,7 @@ USBPORTTX = "/dev/ttyUSB0"
 USBPORTRX = "/dev/ttyUSB1"
 USBPORTAUX = "/dev/ttyUSB3"
 
-data_mod = ""
+#------
 
 logging.basicConfig(filename=cfg.LOGGING_FILE, level=logging.DEBUG)
 
@@ -231,11 +233,12 @@ def insertDevicesDataIntoDB(rtData):
 
 def openSerialPort(port="", function=""):
     """
-    Opens rx or tx serial port to correpsonding USB port
+    Opens rx or tx serial port to correpsonding USB/Serial port
     Args:
         port: Port to be opened.
         function: Type of port to be opened: "rx" or "tx".
     """
+
     global serTx, serRx
     logging.debug("Opening serial port " + port + " as " + function)
     try:
@@ -428,6 +431,7 @@ def getSnifferStatus(serTx, serRx, id):
     #     "power": 100
     # })
 
+    # ---- Build segment
     id = hex(id)
     if(len(id) == 3):
         id_string = f'{SNIFFER:02x}' + '0' + id[2:3] + f'{STATUS_QUERY:02x}'+'0000'
@@ -444,6 +448,7 @@ def getSnifferStatus(serTx, serRx, id):
     startTime = time.time()
 
     try:
+        # ---- Send via serial
         for cmd_byte in cmd_bytes:
             hex_byte = ("{0:02x}".format(cmd_byte))
             serTx.write(bytes.fromhex(hex_byte))
@@ -480,7 +485,7 @@ def getSnifferStatus(serTx, serRx, id):
             if(DATA_START_INDEX <= i < DATA_END_INDEX):
                 data.append(hexResponse[i])
 
-        #Decodificaion con datos ordenados con aout2+swin+swout segun codificacion nueva
+        # ---- Decode received data
         aIn_1_10V = ( data[0] | data[1] << 8) # byte 1-2
         aOut_1_10V = ( data[2] | data[3] << 8 ) # byte 3-4 
         aIn_x_20mA = ( data[4] | data [5] << 8) # byte 5-6
@@ -503,29 +508,62 @@ def getSnifferStatus(serTx, serRx, id):
         logging.debug(f"dout1: {dOut1}")
         logging.debug(f"dout2: {dOut2}")
         #No editables
-        logging.debug(f"din_sw: {swIn_x_20mA}") #digital
-        logging.debug(f"dout_sw: {swOut_x_20mA}") #digital
+        logging.debug(f"din_sw: {swIn_x_20mA}")
+        logging.debug(f"dout_sw: {swOut_x_20mA}")
         logging.debug(f"swSerial: {swSerial}")
-        
-        vIn1_linear = round(arduino_map(aIn_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
-        vOut1_linear = round(arduino_map(aOut_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
+
+        # ---- Linear mapping
+        aIn_1_10V_linear = round(arduino_map(aIn_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
+        aOut_1_10V_linear = round(arduino_map(aOut_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
         if(swIn_x_20mA == swOut_x_20mA == "ON"):
             #4-20mA
-            iIn2_linear = round(arduino_map(aIn_x_20mA, 0, MAX_2BYTE, 0, I_MAX), 2)
-            iOut2_linear = round(arduino_map(aOut_x_20mA, 0, MAX_2BYTE, 0, I_MAX), 2)
+            aIn_x_20mA_linear = round(arduino_map(aIn_x_20mA, 0, MAX_2BYTE, 0, I_MAX), 2)
+            aOut_x_20mA_linear = round(arduino_map(aOut_x_20mA, 0, MAX_2BYTE, 0, I_MAX), 2)
         else: 
             #0-20mA
-            iIn2_linear = round(arduino_map(aIn_x_20mA, 0, MAX_2BYTE, 4, I_MAX), 2)
-            iOut2_linear = round(arduino_map(aOut_x_20mA, 0, MAX_2BYTE, 4, I_MAX), 2)
+            aIn_x_20mA_linear = round(arduino_map(aIn_x_20mA, 0, MAX_2BYTE, 4, I_MAX), 2)
+            aOut_x_20mA_linear = round(arduino_map(aOut_x_20mA, 0, MAX_2BYTE, 4, I_MAX), 2)
 
         logging.debug("Datos escalados: ")
-        logging.debug(f"Analog1 Input Voltage: {vIn1_linear} V")
-        logging.debug(f"Analog1 Output Voltage: {vOut1_linear} V")
-        logging.debug(f"Analog2 Input Current: {iIn2_linear} mA")
-        logging.debug(f"Analog2 Output Current: {iOut2_linear} mA")
+        logging.debug(f"Analog1 Input Voltage: {aIn_1_10V_linear} V")
+        logging.debug(f"Analog1 Output Voltage: {aOut_1_10V_linear} V")
+        logging.debug(f"Analog2 Input Current: {aIn_x_20mA_linear} mA")
+        logging.debug(f"Analog2 Output Current: {aOut_x_20mA_linear} mA")
             
         SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
+
+        # ---- Package received data in json for DB
+        finalData = {
+            "aIn_1_10V": {
+                "value":aIn_1_10V_linear
+            },
+            "aOut_1_10V": {
+                "value":aOut_1_10V_linear
+            },
+            "aIn_x_20mA": {
+                "value":aIn_x_20mA_linear
+            },
+            "aOut_x_20mA": {
+                "value":aOut_x_20mA_linear
+            },
+            "dIn1": {
+                "value": dIn1
+            },
+            "dIn2": {
+                "value": dIn2
+            },
+            "dOut1": {
+                "value": dOut1
+            },
+            "dOut2": {
+                "value": dOut2
+            },
+            "swSerial": {
+                "value": swSerial
+            }
+        }
+
         #finalData = {
         #    "sampleTime": timeNow,
         #    "voltage": lineVoltageConverted,
@@ -545,12 +583,10 @@ def getSnifferStatus(serTx, serRx, id):
         sys.exit()
 
     logging.debug("Query reception succesful")
-    return {}
+    return {finalData}
 
 def arduino_map(value, in_min, in_max, out_min, out_max):
     return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
-
-
 
 def decodeMaster(buffer):
     bufferIndex = 0
@@ -745,10 +781,9 @@ def sendModbus(uartCmd, snifferAddress, data, serTx, serRx):
     SEGMENT_END = '7F'
     ID_INDEX = 2
     COMMAND_INDEX = 3
-    SERIAL_RESPONSE_CMD = 204 #CC
     DATA_START_INDEX = 6
 
-
+    # ---- Build segment
     intLen = int(len(data)/2)
     dataLen = format(intLen, '04x')
     formatLen = dataLen[2:] + dataLen[0:2]
@@ -764,11 +799,14 @@ def sendModbus(uartCmd, snifferAddress, data, serTx, serRx):
     startTime = time.time()
 
     try:
+        # ---- Send via serial
         for cmd_byte in cmd_bytes:
             hex_byte = ('{0:02x}'.format(cmd_byte))
             serTx.write(bytes.fromhex(hex_byte))
 
+        # ---- Read serial
         hexResponse = serRx.read(cmdLen)
+
         #---DEBUG---
         if len(hexResponse) == 0:
             logging.debug("Reading from Tx USB")
@@ -803,8 +841,7 @@ def sendModbus(uartCmd, snifferAddress, data, serTx, serRx):
             logging.debug("Modbus reception failed: Incorrect command: " + str(hexResponse[COMMAND_INDEX]))
             return False
         
-        # ----Extract data
-        # Los datos recibidos no tienen formato conocido, solo se quitan los bytes de formato/validacion que agrega el sniffer
+        # ---- Extract data / remove headers
         dataReceived = []
 
         for i in range(0, responseLen):
@@ -841,11 +878,12 @@ def setSnifferData(serTx, serRx, id, data):
     SEGMENT_END = '7F'
     RESPONSE_LEN = 16
 
+    # ---- Build segment
     data_len = f"{DATALEN:02x}{0:02x}"
     id = f"{id:02x}"
-    set_out = "B6" #nombre del comando
+    set_out_cmd = "B6"
     device = f"{SNIFFER:02x}"
-    cmd_string = f"{device}{id}{set_out}{data_len}{data}"
+    cmd_string = f"{device}{id}{set_out_cmd}{data_len}{data}"
     checksum = getChecksum(cmd_string)
     command = SEGMENT_START + cmd_string + checksum + SEGMENT_END
 
@@ -857,18 +895,19 @@ def setSnifferData(serTx, serRx, id, data):
 
     startTime = time.time()
     try:
+        # ---- Send via serial
         for cmd_byte in cmd_bytes:
             hex_byte = ("{0:02x}".format(cmd_byte))
             serTx.write(bytes.fromhex(hex_byte))
 
         # ---- Read from serial
-        hexResponse = serRx.read(RESPONSE_LEN) #la resupesta es el mismo query
+        hexResponse = serRx.read(RESPONSE_LEN)
 
         responseTime = str(time.time() - startTime)
         logging.debug("GET: "+hexResponse.hex('-'))
         logging.debug("Response time: " + responseTime)
 
-        # ---- Validations
+        # ---- Validations (response == query)
         if(hexResponse == None or hexResponse == "" or hexResponse == " " or len(hexResponse) == 0):
             logging.debug("Set reception failed: " + "Response empty")
             return False
@@ -932,6 +971,13 @@ def getRealValues(deviceData):
     return out
 
 def sendTxQuery(serTx):
+    """
+    Sends query to master at TX port, to determine if its RX or TX master
+    Args:
+        serTx: Tx serial port object
+    Returns:
+        2 if connected master is RX, or 3 if connected master is TX
+    """
     DATALEN = 1
     RESPONSE_LEN = 7
     MASTER = 0
@@ -940,7 +986,7 @@ def sendTxQuery(serTx):
     SEGMENT_START = '7E'
     SEGMENT_END = '7F'
     
-
+    # ---- Build segment
     dataLenStr = f"{DATALEN:02x}{0:02x}"
     data = "00"
     cmd_string = f"{MASTER:02x}{ID:02x}{QUERY_CMD}{dataLenStr}{data}"
@@ -953,6 +999,7 @@ def sendTxQuery(serTx):
 
     startTime = time.time()
     try:
+        # ---- Send via serial
         for cmd_byte in cmd_bytes:
             hex_byte = ("{0:02x}".format(cmd_byte))
             serTx.write(bytes.fromhex(hex_byte))
@@ -988,14 +1035,16 @@ def sendTxQuery(serTx):
 
 def setMasterPorts():
     """
-    
+    Assigns TX and RX port to correponding masters. 
     """
     openSerialPort(USBPORTTX, "tx")
     status = sendTxQuery(serTx)
+    #TX master at correct port
     if status == "2":
         openSerialPort(USBPORTRX, "rx")
         logging.debug("Ports opened")
         return
+    #TX master at incorrect port
     elif status == "3":
         serTx.close()
         openSerialPort(USBPORTRX, "tx")
@@ -1053,6 +1102,7 @@ def run_monitor():
             SNIFFERID = 8
             #SNIFFERID = device
             response = getSnifferStatus(serTx, serRx, SNIFFERID)
+            #response es el json que luego se deberia subir a la base de datos
 
             
             if (deviceData["type"] == "vlad"):
