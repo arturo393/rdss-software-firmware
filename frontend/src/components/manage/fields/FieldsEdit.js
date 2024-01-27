@@ -17,10 +17,6 @@ const FieldsEdit = (props) => {
         setGroups(fields_group.data)
       }
 
-    console.log("GROUPS", groups)
-    console.log("FIELDS", fields)
-    console.log("SELECTED GROUP", selectedGroup)
-
     useEffect(() => {
         getFieldsData()
         document.getElementById("status").style.display = "none"
@@ -98,7 +94,6 @@ const FieldsEdit = (props) => {
     const removeGroup = async (e) => {
         e.preventDefault()
 
-        console.log("DEL GROUP", selectedGroup)
         const groupHasFields = fields.some(field => field.group_id === selectedGroup);
         if (!groupHasFields && selectedGroup) {
             const group = groups.find(group => group._id === selectedGroup)
@@ -155,12 +150,11 @@ const FieldsEdit = (props) => {
                             </button>
                     </div>
                     
-                    
                         {selectedGroup && fields && fields.filter((field) => field.group_id === selectedGroup).map(field => (
                             <>
-                            <div className="input-group mb-3">
-                                <span className="input-group-text text-wrap w-50">{field.name}</span>
-                                <button className="btn btn-warning" type="button" onClick={() => removeField(field.name)}>
+                            <div className="input-group d-flex bd-highlight mb-3">
+                                <span className="input-group-text text-wrap p-2 flex-grow-1 bd-highlight">{field.name}</span>
+                                <button className="btn btn-warning p-2 bd-highlight" type="button" onClick={() => removeField(field.name)}>
                                     Remove Field
                                 </button> 
                                 </div>  

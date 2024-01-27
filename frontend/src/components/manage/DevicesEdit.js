@@ -140,7 +140,7 @@ const DevicesEdit = (props) => {
                   </div>
                 ))}
 
-              <button className="btn btn-primary" type="button" onClick={saveDevice}>
+              <button className="btn btn-primary w-100" type="button" onClick={saveDevice}>
                 Save
               </button>
             </div>
