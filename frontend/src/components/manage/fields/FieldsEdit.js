@@ -111,10 +111,7 @@ const FieldsEdit = (props) => {
         
     }
 
-    const handleFieldDefaultValue = async (name) => {
-        console.log("FORM DATA",formData,name,selectedGroup)
-
-   
+    const handleFieldDefaultValue = async (name) => {   
         const field = fields.find(field => field.group_id === selectedGroup  && field.name === name )
         const res = await axios.put(`${url}/api/fields?id=${field._id}&name=${field.name}`, {default_value: formData?.new_field_default_value || ""})
         getFieldsData()
@@ -167,14 +164,14 @@ const FieldsEdit = (props) => {
                     
                         {selectedGroup && fields && fields.filter((field) => field.group_id === selectedGroup).map(field => (
                             <>
-                            <div className="input-group d-flex bd-highlight mb-3">
-                                <span className="input-group-text text-wrap p-2 flex-grow-1 bd-highlight w-25">{field.name} (default: {field.default_value})</span>
+                            <div className="input-group d-flex bd-highlight mb-1">
+                                <span className="input-group-text text-wrap flex-grow-1 bd-highlight">{field.name} <br/>{field.default_value && (<span className="badge bg-dark text-light"> default value: {field.default_value}</span>)}</span>
                                 <input type="text" className="form-control" id="new_field_default_value"  onChange={handleChange} />
 
-                                <button className="btn btn-secondary p-2 bd-highlight" type="button" onClick={() => handleFieldDefaultValue(field.name)}>
+                                <button className="btn btn-secondary btn-sm bd-highlight" type="button" onClick={() => handleFieldDefaultValue(field.name)}>
                                     Set Default Value
                                 </button> 
-                                <button className="btn btn-warning p-2 bd-highlight" type="button" onClick={() => removeField(field.name)}>
+                                <button className="btn btn-warning btn-sm   bd-highlight mx-1" type="button" onClick={() => removeField(field.name)}>
                                     Remove Field
                                 </button> 
                                 </div>  
