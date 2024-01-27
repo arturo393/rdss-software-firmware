@@ -53,6 +53,9 @@ const Header = (props) => {
                 <a className="dropdown-item" onClick={() => setActiveComponent("networkParameters")}>
                   Alerts Limits
                 </a>
+                <a className="dropdown-item" onClick={() => setActiveComponent("fieldsEdit")}>
+                  Device Fields
+                </a>
                 <a className="dropdown-item" onClick={() => setActiveComponent("devicesEdit")}>
                   Device Management
                 </a>

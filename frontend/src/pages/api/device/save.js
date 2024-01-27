@@ -4,8 +4,8 @@ export default async function (req, res, next) {
   const { db } = await connectToDatabase()
   let inserted = false
 
-  console.log(req)
   if (req.body.id) {
+    const { id, _id,  type, data, name, attenuation, changed, ...fields_values } = req.body
     db.collection("devices").updateOne(
       {
         id: req.body.id,
@@ -16,7 +16,8 @@ export default async function (req, res, next) {
           type: req.body.type,
           attenuation: req.body.attenuation,
           changed: true,
-          data : req.body.data
+          data : req.body.data,
+          ...fields_values
         },
       }
     )

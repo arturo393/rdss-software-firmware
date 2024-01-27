@@ -3,31 +3,33 @@ import { connect } from "react-redux"
 
 import { Container, Card, Button } from "react-bootstrap"
 import axios from "axios"
+
 import { setDevices } from "../../redux/actions/main"
-// import Formulario from "./DeviceFormulario.js";
 
 const DevicesEdit = (props) => {
   const { devices, setDevices } = props
+
   const [device, setDevice] = useState({})
-
   const [deviceData, setDeviceData] = useState({})
-  const [deviceDataType, setDeviceDataType] = useState({})
-  
-  const [shopCart, setShopCart] = useState({item1:"Juice", item2: "Icrecream"});
-
-  // let copyOfObject = { ...shopCart }
-  // delete copyOfObject['propertyToRemove']
-  
-  // setShopCart( shopCart => ({
-  //       ...copyOfObject
-  //     }));
-
-
-
   const [newDevices, setNewDevices] = useState([])
   const [status, setStatus] = useState()
 
+  const [fields, setFields] = useState([])
+  const [fields_group, setFields_group] = useState([])
+
+  const [selectedFieldGroup, setSelectedFieldGroup] = useState(null);
+
+  const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`
+
+
   useEffect(() => {
+    const getFieldsData  = async() => {
+      const fields = await axios.get(`${url}/api/fields`)
+      const fields_group = await axios.get(`${url}/api/fields_group`)
+      setFields(fields.data)
+      setFields_group(fields_group.data)
+    }
+    getFieldsData()
     document.getElementById("status").style.display = "none"
   }, [])
 
@@ -44,7 +46,7 @@ const DevicesEdit = (props) => {
     document.getElementById("status").style.display = "none"
     document.getElementById("name").value = ""
     document.getElementById("type").value = ""
-
+    setSelectedFieldGroup(null);
     const deviceId = e.target.value
     if (deviceId) {
       const uri = process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/device/" + deviceId
@@ -60,16 +62,13 @@ const DevicesEdit = (props) => {
         )
         .then((res) => {
           setDeviceData(res)
-          setDeviceDataType(res.data)
         })
       // setDeviceData(devices.find((device) => device.id === Number(deviceId)))
-
     }
   }
 
   const saveDevice = (e) => {
     e.preventDefault()
-     
 
     axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/device/save", deviceData).then(
       (result) => {
@@ -87,6 +86,7 @@ const DevicesEdit = (props) => {
       }
     )
   }
+
   const handleChange = (e) => {
     setDeviceData({
       ...deviceData,
@@ -94,38 +94,6 @@ const DevicesEdit = (props) => {
     })
   }
 
-
-  // const handleChange = (e) => {
-  //   setDeviceData({
-  //     ...deviceData,
-  //     data: {
-  //       ...deviceData,
-  //       din : { ...deviceData.din,
-  //         tipo:  e.target.value,
-  //         name: "memo"
-  //     }
-  //   }
-  //   })
-  // }
-
-
-  const handleChangetype = (e) => {
-    
-
-
-//  deviceDataType.din.tipo=e.target.value
-setDeviceDataType((deviceDataType) => ({
-  ...deviceDataType,
-  din: {
-    ...deviceDataType.din,
-    tipo:  e.target.value,
-  }
-}));
-
- 
-
-
-  }
   return (
     <>
       <h5 className="text-center">Device Editor</h5>
@@ -136,10 +104,9 @@ setDeviceDataType((deviceDataType) => ({
             <select className="form-control" id="device" onChange={handleDeviceSelected}>
               <option value={0}>=== Select a Device ===</option>
               {devices.map((device) => {
-                return ( 
+                return (
                   <option value={device.id}>
-                    {/* {device.name} ({device.type}-{device.id}) */}
-                    {device.name} ({"device"}-{device.id})
+                    {device.name} ({device.type}-{device.id})
                   </option>
                 )
               })}
@@ -151,145 +118,43 @@ setDeviceDataType((deviceDataType) => ({
                 <input type="text" className="form-control" id="name" value={deviceData?.name} onChange={handleChange} />
               </div>
               <div className="input-group mb-3">
-                <span className="input-group-text">Type</span>
-                <input type="text" className="form-control" id="type" value={deviceData?.type} onChange={handleChange} />
+                {/* <span className="input-group-text">Type</span> */}
+                <input type="hidden" className="form-control" id="type" value={deviceData?.type} onChange={handleChange} />
               </div>
+              
+                {fields_group && fields_group.map(group => (
+                  <div className="input-group mb-5">
+                  <span className="input-group-text w-100 bg-dark text-light">{group.name}</span>
+                    {fields && fields.filter((field) => field.field_group_id === group.id).map(field => (
+                      <div className="input-group mb-1">
 
-              {/* MEMO FORMULARIO */}
-              {/* <  Formulario/>  */}
+                      <span className="input-group-text w-25 text-wrap">{field.name}</span>
+                      <input
+                        type="text"
+                        className="form-control"
+                        id={group.name+"|"+field.name} value={deviceData[group?.name + "|" + field?.name] || ""}
+                        onChange={handleChange}
+                      />
+                    </div>
+                    ))}              
+                  </div>
+                ))}
 
-              <div>
-                <div className="">Select Items</div>
-                <label>Din </label>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">tipo</span>
-                  {/* <input type="text" className="" id="type1" value={deviceData?.data?.din?.tipo} onChange={handleChange} /> */}
-                  <input type="text" className=""  name="tipo1" value={deviceData?.data?.din?.tipo} onChange={handleChange} />
-               
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">Name</span>
-                  <input type="text" className="" id="name1" value={deviceData?.data?.din?.name} />
-                </div>
-                <div className="input-group mb-4">
-                  <span className="input-group-text">stateon</span>
-                  <input type="text" className="" id="stateon1" name="stateon" value={deviceData?.data?.din?.stateon} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">stateon</span>
-                  <input type="text" className="" id="stateoff1" value={deviceData?.data?.din?.stateoff} onChange={() => console.log("memo")} />
-                </div>
-                <label>Ain </label>
-                <div className="input-group mb-3">
-                  <span className="">tipo</span>
-                  <input type="text" className="" id="tipo2" value={deviceData?.data?.ain?.tipo} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">Name</span>
-                  <input type="text" className="" id="name2" value={deviceData?.data?.ain?.name} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">unit</span>
-                  <input type="text" className="" id="unit2" value={deviceData?.data?.ain?.unit} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">maximumanalog</span>
-                  <input type="text" className="" id="maximumanalog2" value={deviceData?.data?.ain?.maximumanalog} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">maximumconverted</span>
-                  <input type="text" className="" id="maximumconverted2" value={deviceData?.data?.ain?.maximumconverted} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">minimumconverted</span>
-                  <input type="text" className="" id="minimumconverted2" value={deviceData?.data?.ain?.minimumconverted} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">maximumalert</span>
-                  <input type="text" className="" id="maximumalert2" value={deviceData?.data?.ain?.maximumalert} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">minimumalert</span>
-                  <input type="text" className="" id="minimumalert2" value={deviceData?.data?.ain?.minimumalert} onChange={() => console.log("memo")} />
-                </div>
-
-                <br></br>
-                <label>Aout </label>
-
-                <div className="input-group mb-3">
-                  <span className="input-group-text">tipo</span>
-                  <input type="text" className="" id="tipo3" value={deviceData?.data?.aout?.tipo} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">Name</span>
-                  <input type="text" className="" id="name3" value={deviceData?.data?.aout?.name} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">minimumanalog</span>
-                  <input type="text" className="" id="minimumanalog3" value={deviceData?.data?.aout?.minimumanalog} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">maximumanalog</span>
-                  <input type="text" className="" id="maximumanalog3" value={deviceData?.data?.aout?.maximumanalog} onChange={() => console.log("memo")} />
-                </div>
-
-                <label>modbus </label>
-
-                <div className="input-group mb-3">
-                  <span className="input-group-text">tipo</span>
-                  <input type="text" className="" id="tipo4" value={deviceData?.data?.modbus?.tipo} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">Name</span>
-                  <input type="text" className="" id="name4" value={deviceData?.data?.modbus?.name} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">query</span>
-                  <input type="text" className="" id="query4" value={deviceData?.data?.modbus?.query} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">answer</span>
-                  <input type="text" className="" id="answer4" value={deviceData?.data?.modbus?.answer} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">startindex</span>
-                  <input type="text" className="" id="startindex4" value={deviceData?.data?.modbus?.startindex} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">datalength</span>
-                  <input type="text" className="" id="datalength4" value={deviceData?.data?.modbus?.datalength} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">dinimumalert</span>
-                  <input type="text" className="" id="dinimumalert4" value={deviceData?.data?.modbus?.maximumanalog} onChange={() => console.log("memo")} />
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text">dinimumalert</span>
-                  <input type="text" className="" id="maximumalert4" value={deviceData?.data?.modbus?.maximumanalog} onChange={() => console.log("memo")} />
-                </div>
-              </div>
-
-              <br></br>
-
-              <div>
-                <button className="btn btn-primary" type="button" onClick={saveDevice}>
-                  Save
-                </button>
-              </div>
+              <button className="btn btn-primary" type="button" onClick={saveDevice}>
+                Save
+              </button>
             </div>
-            <div class="col-2"></div>
           </div>
+          <div class="col-2"></div>
         </div>
-        <div className="row">
-          <div className="col-md-12 text-center">
-            <div className="alert alert-success" role="alert" id="status">
-              {status}
-            </div>
+      </div>
+      <div className="row">
+        <div className="col-md-12 text-center">
+          <div className="alert alert-success" role="alert" id="status">
+            {status}
           </div>
         </div>
       </div>
-
-
     </>
   )
 }
