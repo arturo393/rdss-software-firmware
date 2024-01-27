@@ -11,6 +11,5 @@ export default async function (req, res) {
     .limit(1)
     .toArray()
 
-    console.log("MEMOID" ,device)
   res.json(device)
 }

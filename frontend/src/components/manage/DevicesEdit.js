@@ -132,7 +132,7 @@ const DevicesEdit = (props) => {
                       <input
                         type="text"
                         className="form-control"
-                        id={group.name+"|"+field.name} value={deviceData[group?.name + "|" + field?.name] || ""}
+                        id={group.name+"|"+field.name} value={deviceData[group?.name + "|" + field?.name] || field?.default_value}
                         onChange={handleChange}
                       />
                     </div>

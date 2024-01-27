@@ -6,7 +6,7 @@ import Schema from "../components/Schema"
 // import Status from "../components/common/Status"
 import Login from "../components/auth/Login"
 import { connect } from "react-redux"
-// CODIGO MEMO
+
 import { setConfig, setDevices, setMonitorDataEvent ,setdbDevicestype} from "../redux/actions/main"
 import DynamicComponent from "../components/DynamicComponent"
 

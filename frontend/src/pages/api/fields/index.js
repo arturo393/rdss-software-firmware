@@ -20,8 +20,10 @@ export default async function (req, res) {
             res.status(201).end("Field created successfully")
         } else if (req.method === "PUT") {
             const fieldId = req.query.id // Obtén el ID del campo de la consulta
+            const fieldname = req.query.name // Obtén el ID del campo de la consulta
             const updatedField = req.body // Obtén los datos actualizados del cuerpo de la solicitud
-            await db.collection(COLLECTION).updateOne({ _id: fieldId }, { $set: updatedField })
+            console.log("API PUT",updatedField)
+            await db.collection(COLLECTION).updateOne({ _id: ObjectId(fieldId), name: fieldname }, { $set: updatedField })
             res.status(200).end("Field updated successfully")
         } else if (req.method === "DELETE") {
             const fieldId = req.query.id // Obtén el ID del campo de la consulta

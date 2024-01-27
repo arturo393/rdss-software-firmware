@@ -5,7 +5,7 @@ export const SET_NAME_ROL = "SET_NAME_ROL"
 export const SET_NAME_USER = "SET_NAME_USER"
 
 export const SET_CONFIG = "SET_CONFIG"
-// codigo MEMO
+
 export const SET_CONFIGTYPE = "SET_CONFIGTYPE"
 
 export const SET_MONITOR_DATA_EVENT = "SET_MONITOR_DATA_EVENT"
