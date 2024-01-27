@@ -17,6 +17,10 @@ const FieldsEdit = (props) => {
         setGroups(fields_group.data)
       }
 
+    console.log("GROUPS", groups)
+    console.log("FIELDS", fields)
+    console.log("SELECTED GROUP", selectedGroup)
+
     useEffect(() => {
         getFieldsData()
         document.getElementById("status").style.display = "none"
@@ -39,17 +43,15 @@ const FieldsEdit = (props) => {
         if (!formData?.new_group_name) {
             setStatus("Group name cannot be empty")
         } else {
-            const maxId = Math.max(...groups.filter(obj => typeof obj === 'object').map(obj => obj.id));
             try {
-                const res = await axios.post(`${url}/api/fields_group`, {id: maxId+1, name:formData.new_group_name})
-                setStatus(JSON.stringify(res.data))
-                
+                const res = await axios.post(`${url}/api/fields_group`, {name:formData.new_group_name})
+                setStatus(res.data.message)
+                getFieldsData()
+                setSelectedGroup(res.data.group.insertedId)    
             } catch (e) {
                 setStatus("ERROR")
             }
-            setGroups([...groups,{id: maxId+1,name:formData.new_group_name}])
-            getFieldsData()
-            setSelectedGroup(maxId+1)
+            
             document.getElementById("new_group_name").value=""
         }
         document.getElementById("status").style.display = "block"
@@ -63,14 +65,11 @@ const FieldsEdit = (props) => {
         try {
             const newField =  {
                 name: formData.new_field_name,
-                field_group_id: parseInt(selectedGroup,10),
+                group_id: selectedGroup,
                 required: true, type: "string"
             }
             const res = await axios.post(`${url}/api/fields`, newField)
-            // setFields([
-            //     ...fields,
-            //     newField
-            // ])
+
             getFieldsData()
             setStatus(JSON.stringify(res.data))
         } catch (e) {
@@ -82,7 +81,7 @@ const FieldsEdit = (props) => {
     }
 
     const removeField = async (name) => {
-        const field = fields.find(field => field.field_group_id == parseInt(selectedGroup,10) && field.name == name)
+        const field = fields.find(field => field.group_id == selectedGroup && field.name == name)
         try {
             const id  = field._id
             const res = await axios.delete(`${url}/api/fields?id=${id}`)
@@ -96,15 +95,13 @@ const FieldsEdit = (props) => {
         document.getElementById("status").style.display = "block"
     }
 
-    console.log("GROUPS", groups)
-    console.log("FIELDs", fields)
     const removeGroup = async (e) => {
         e.preventDefault()
 
         console.log("DEL GROUP", selectedGroup)
-        const groupHasFields = fields.some(field => field.field_group_id === parseInt(selectedGroup,10));
+        const groupHasFields = fields.some(field => field.group_id === selectedGroup);
         if (!groupHasFields && selectedGroup) {
-            const group = groups.find(group => group.id === parseInt(selectedGroup,10))
+            const group = groups.find(group => group._id === selectedGroup)
             const id = group?._id
 
             const res = await axios.delete(`${url}/api/fields_group?id=${id}`)
@@ -138,7 +135,7 @@ const FieldsEdit = (props) => {
                         <option value={0}>=== Select a Group ===</option>
                         {groups.map((group) => {
                             return (
-                            <option value={group.id} selected={group.id === selectedGroup}>
+                            <option value={group._id} selected={group._id === selectedGroup}>
                                 {group.name} 
                             </option>
                             )
@@ -159,7 +156,7 @@ const FieldsEdit = (props) => {
                     </div>
                     
                     
-                        {selectedGroup && fields && fields.filter((field) => field.field_group_id === parseInt(selectedGroup,10)).map(field => (
+                        {selectedGroup && fields && fields.filter((field) => field.group_id === selectedGroup).map(field => (
                             <>
                             <div className="input-group mb-3">
                                 <span className="input-group-text text-wrap w-50">{field.name}</span>

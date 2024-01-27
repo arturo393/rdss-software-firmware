@@ -125,7 +125,7 @@ const DevicesEdit = (props) => {
                 {fields_group && fields_group.map(group => (
                   <div className="input-group mb-5">
                   <span className="input-group-text w-100 bg-dark text-light">{group.name}</span>
-                    {fields && fields.filter((field) => field.field_group_id === group.id).map(field => (
+                    {fields && fields.filter((field) => field.group_id === group._id).map(field => (
                       <div className="input-group mb-1">
 
                       <span className="input-group-text w-25 text-wrap">{field.name}</span>

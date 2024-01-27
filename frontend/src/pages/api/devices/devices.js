@@ -14,7 +14,6 @@ export default async function (req, res) {
  // res.json(devices)
   const type = await db.collection("type").find({type: 'sniffer'}).toArray()
   const devices = await db.collection("devices").find({type: 'sniffer'}).toArray()
-  console.log("Disposii:Type",devices)
 //  console.log("Disposii:",type)
 // const devices2 = Object.assign({}, type, devices);
   res.json(devices)

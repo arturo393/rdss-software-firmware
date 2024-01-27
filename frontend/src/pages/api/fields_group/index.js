@@ -16,8 +16,8 @@ export default async function (req, res) {
             res.status(200).json(fields)
         } else if (req.method === "POST") {
             const field = req.body // Obtén los datos del cuerpo de la solicitud
-            await db.collection(COLLECTION).insertOne(field)
-            res.status(201).end("Group created successfully")
+            const group = await db.collection(COLLECTION).insertOne(field)
+            res.status(201).json({message: "Group created successfully", group})
         } else if (req.method === "PUT") {
             const fieldId = req.query.id // Obtén el ID del campo de la consulta
             const updatedField = req.body // Obtén los datos actualizados del cuerpo de la solicitud
