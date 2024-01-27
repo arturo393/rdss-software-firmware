@@ -27,11 +27,13 @@ const FieldsEdit = (props) => {
             ...formData,
             [e.target.id]: e.target.value,
         })
+        document.getElementById("status").style.display = "none"
       }
     
     const handleGroupSelected = (e) => {
         e.preventDefault()
         setSelectedGroup(e.target.value)
+        document.getElementById("status").style.display = "none"
     }
     const addGroup = async (e) => {
         e.preventDefault()
@@ -167,17 +169,18 @@ const FieldsEdit = (props) => {
                     {/* <button className="btn btn-primary w-50 mt-10" type="button" onClick={saveFieldsAndGroup}>
                         Save Changes
                     </button>  */}
-                </div>
-                <div class="col-2"></div>
-            </div>
-            
-            <div className="row">
+                    <div className="row">
                 <div className="col-md-12 text-center">
                     <div className="alert alert-info" role="alert" id="status">
                         {status}
                     </div>
                 </div>
             </div>
+                </div>
+                <div class="col-2"></div>
+            </div>
+            
+            
         </div>
      
     )
