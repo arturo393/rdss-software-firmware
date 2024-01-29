@@ -1,204 +1,332 @@
-import axios from "axios"
-import { useState, useEffect } from "react"
+import axios from "axios";
+import React, { useState, useEffect } from "react";
 
 const FieldsEdit = (props) => {
-    const [status, setStatus] = useState()
-    const [formData, setFormData] = useState()
-    const [selectedGroup, setSelectedGroup] = useState()
-    const [groups, setGroups] = useState([])
-    const [fields, setFields] = useState([])
+  const [status, setStatus] = useState("");
+  const [displayStatus, setDisplayStatus] = useState("none");
+  const [formData, setFormData] = useState({});
+  const [selectedGroup, setSelectedGroup] = useState("");
+  const [groups, setGroups] = useState([]);
+  const [fields, setFields] = useState([]);
 
-    const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`
+  const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`;
 
-    const getFieldsData  = async() => {
-        const fields = await axios.get(`${url}/api/fields`)
-        const fields_group = await axios.get(`${url}/api/fields_group`)
-        setFields(fields.data)
-        setGroups(fields_group.data)
+  const fetchData = async () => {
+    try {
+      const fieldsResponse = await axios.get(`${url}/api/fields`);
+      const groupsResponse = await axios.get(`${url}/api/fields_group`);
+      
+      setFields(fieldsResponse.data);
+      setGroups(groupsResponse.data);
+
+      // Assuming each field has a unique identifier like _id
+      const initialFormData = {};
+      fieldsResponse.data.forEach((field) => {
+        initialFormData[field._id] = {
+          default_value: field.default_value,
+          visible: field.visible,
+          editable: field.editable,
+        };
+      });
+      setFormData(initialFormData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+    setDisplayStatus("none");
+  }, []);
+
+  const handleCheckboxChange = (fieldId, checkboxType, checked) => {
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [fieldId]: {
+        ...prevFormData[fieldId],
+        [checkboxType]: checked,
+      },
+    }));
+  };
+
+  const handleFieldChange = (fieldId, key, value) => {
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [fieldId]: {
+        ...prevFormData[fieldId],
+        [key]: value,
+      },
+    }));
+  };
+
+  const handleGroupSelected = (e) => {
+    e.preventDefault();
+    setSelectedGroup(e.target.value);
+    setDisplayStatus("none");
+    fetchData();
+  };
+
+  const addGroup = async (e) => {
+    e.preventDefault();
+
+    if (!formData.new_group_name) {
+      setStatus("Group name cannot be empty");
+    } else {
+      try {
+        const res = await axios.post(`${url}/api/fields_group`, { name: formData.new_group_name });
+        setStatus(res.data.message);
+        fetchData();
+        setSelectedGroup(res.data.group.insertedId);
+      } catch (error) {
+        console.error("Error adding group:", error);
+        setStatus("ERROR");
       }
 
-    useEffect(() => {
-        getFieldsData()
-        document.getElementById("status").style.display = "none"
-      }, [])
+      setFormData((prevFormData) => ({ ...prevFormData, new_group_name: "" }));
+    }
+    setDisplayStatus("block");
+  };
 
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.id]: e.target.value,
-        })
-        document.getElementById("status").style.display = "none"
-      }
+  const addField = async (e) => {
+    e.preventDefault();
+
+    try {
+      const newField = {
+        name: formData.new_field_name,
+        group_id: selectedGroup,
+        required: true,
+        type: "string",
+      };
+      const res = await axios.post(`${url}/api/fields`, newField);
+
+      fetchData();
+      setStatus(JSON.stringify(res.data));
+    } catch (error) {
+      console.error("Error adding field:", error);
+      setStatus("ERROR");
+    }
+
+    setDisplayStatus("block");
+    // setFormData((prevFormData) => ({new_field_name, ...prevFormData }));
+    setFormData((prevFormData) => ({
+        ...prevFormData,
+        [selectedGroup]: {
+          ...prevFormData[selectedGroup],
+          new_field_name: "",
+        },
+      }));
     
-    const handleGroupSelected = (e) => {
-        e.preventDefault()
-        setSelectedGroup(e.target.value)
-        document.getElementById("status").style.display = "none"
+  };
+
+  const deleteField = async (id) => {
+    try {
+      const res = await axios.delete(`${url}/api/fields?id=${id}`);
+      fetchData();
+      setStatus(res.data);
+    } catch (error) {
+      console.error("Error deleting field:", error);
+      setStatus("ERROR");
     }
-    const addGroup = async (e) => {
-        e.preventDefault()
+    setDisplayStatus("block");
+  };
 
-        if (!formData?.new_group_name) {
-            setStatus("Group name cannot be empty")
-        } else {
-            try {
-                const res = await axios.post(`${url}/api/fields_group`, {name:formData.new_group_name})
-                setStatus(res.data.message)
-                getFieldsData()
-                setSelectedGroup(res.data.group.insertedId)    
-            } catch (e) {
-                setStatus("ERROR")
-            }
-            
-            document.getElementById("new_group_name").value=""
-        }
-        document.getElementById("status").style.display = "block"
+  const removeGroup = async (e) => {
+    e.preventDefault();
 
-        
+    const groupHasFields = fields.some((field) => field.group_id === selectedGroup);
+    if (!groupHasFields && selectedGroup) {
+      try {
+        const group = groups.find((group) => group._id === selectedGroup);
+        const id = group?._id;
+
+        const res = await axios.delete(`${url}/api/fields_group?id=${id}`);
+        fetchData();
+        setStatus(res.data);
+        setSelectedGroup()
+      } catch (error) {
+        console.error("Error removing group:", error);
+        setStatus("ERROR");
+      }
+    } else {
+      setStatus("You cannot delete this group, is not empty");
     }
+    setDisplayStatus("block");
 
-    const addField = async (e) => {
-        e.preventDefault()
+  };
 
-        try {
-            const newField =  {
-                name: formData.new_field_name,
-                group_id: selectedGroup,
-                required: true, type: "string"
-            }
-            const res = await axios.post(`${url}/api/fields`, newField)
+  const handleChange = (e) => {   
+    setFormData({[e.target.id]: e.target.value});
+    setDisplayStatus("none");
+  };
 
-            getFieldsData()
-            setStatus(JSON.stringify(res.data))
-        } catch (e) {
-            setStatus("ERROR")
-        }
-        
-        document.getElementById("new_field_name").value=""
-        document.getElementById("status").style.display = "block"
-    }
-
-    const removeField = async (name) => {
-        const field = fields.find(field => field.group_id == selectedGroup && field.name == name)
-        try {
-            const id  = field._id
-            const res = await axios.delete(`${url}/api/fields?id=${id}`)
-            getFieldsData()
-            setStatus(res.data)
-        } catch (e) {
-            console.log(e)
-            setStatus("ERROR")
-        }
-        document.getElementById("new_field_name").value=""
-        document.getElementById("status").style.display = "block"
-    }
-
-    const removeGroup = async (e) => {
-        e.preventDefault()
-
-        const groupHasFields = fields.some(field => field.group_id === selectedGroup);
-        if (!groupHasFields && selectedGroup) {
-            const group = groups.find(group => group._id === selectedGroup)
-            const id = group?._id
-
-            const res = await axios.delete(`${url}/api/fields_group?id=${id}`)
-            getFieldsData()
-            setStatus(res.data)
-        } else {
-            setStatus("You cannot delete this group")
-        }
-        document.getElementById("status").style.display = "block"
-        
-    }
-
-    const handleFieldDefaultValue = async (name) => {   
-        const field = fields.find(field => field.group_id === selectedGroup  && field.name === name )
-        const res = await axios.put(`${url}/api/fields?id=${field._id}&name=${field.name}`, {default_value: formData?.new_field_default_value || ""})
-        getFieldsData()
-        setStatus(res.data)
-        
-        document.getElementById("status").style.display = "block"
-    }
-
-    console.log("FIELDS", fields)
-    return (
-        <div className="container-fluid">
-            <div className="text-center mt-2 mb-2">
-                <h5>Groups and Fields Admin</h5>
-            </div>
-            <div class="row text-center">
-                <div class="col-2"></div>
-                <div class="col-7">
-                    <div className="input-group mb-5">
-                        {/* <span className="input-group-text">Fields Group</span> */}
-                        <input type="text" required className="form-control" id="new_group_name" onChange={handleChange} />
-                        <button className="btn btn-primary" type="button" onClick={addGroup}>
-                            Add Group
-                        </button>
-                    </div>
-                    <div className="input-group mb-3">
-                        <span className="input-group-text text-light bg-dark">Group Name</span>
-                        <select className="form-control" id="selectedGroup" onChange={handleGroupSelected}>
-                        <option value={0}>=== Select a Group ===</option>
-                        {groups.map((group) => {
-                            return (
-                            <option value={group._id} selected={group._id === selectedGroup}>
-                                {group.name} 
-                            </option>
-                            )
-                        })}
-                        </select>
-                        <button className="btn btn-primary" type="button" onClick={removeGroup}>
-                                Del
-                            </button>
-
-                        
-                    </div>
-                    <div className="input-group mb-3">
-                        <span className="input-group-text text-light bg-dark">Field Name</span>
-                        <input type="text" className="form-control" id="new_field_name" onChange={handleChange} />
-                            <button className="btn btn-primary" type="button" onClick={addField}>
-                                Add
-                            </button>
-                    </div>
-                    
-                        {selectedGroup && fields && fields.filter((field) => field.group_id === selectedGroup).map(field => (
-                            <>
-                            <div className="input-group d-flex bd-highlight mb-1">
-                                <span className="input-group-text text-wrap flex-grow-1 bd-highlight">{field.name} <br/>{field.default_value && (<span className="badge bg-dark text-light"> default value: {field.default_value}</span>)}</span>
-                                <input type="text" className="form-control" id="new_field_default_value"  onChange={handleChange} />
-
-                                <button className="btn btn-secondary btn-sm bd-highlight" type="button" onClick={() => handleFieldDefaultValue(field.name)}>
-                                    Set Default Value
-                                </button> 
-                                <button className="btn btn-warning btn-sm   bd-highlight mx-1" type="button" onClick={() => removeField(field.name)}>
-                                    Remove Field
-                                </button> 
-                                </div>  
-                            </>
-                        ))}
-                        
-                    
-                    
-                
-                    {/* <button className="btn btn-primary w-50 mt-10" type="button" onClick={saveFieldsAndGroup}>
-                        Save Changes
-                    </button>  */}
-                    <div className="row">
-                <div className="col-md-12 text-center">
-                    <div className="alert alert-info" role="alert" id="status">
-                        {status}
-                    </div>
-                </div>
-            </div>
-                </div>
-                <div class="col-2"></div>
-            </div>
-            
-            
-        </div>
-     
-    )
-}
-  export default FieldsEdit
+  const saveField = async (id) => {
+    try {
+      const field = fields.find((field) => field._id === id);
+      const newValues = {
+        default_value: formData[id]?.default_value || "",
+        visible: formData[id]?.visible || false,
+        editable: formData[id]?.editable || false,
+      };
   
+      const res = await axios.put(`${url}/api/fields?id=${id}&name=${field.name}`, newValues);
+      fetchData();
+      setStatus(res.data);
+      setFormData((prevFormData) => ({ ...prevFormData, [id]: {} }));
+    } catch (error) {
+      console.error("Error saving field:", error);
+      setStatus("ERROR");
+    }
+  
+    setDisplayStatus("block");
+  };
+
+
+  return (
+    <div className="container-fluid" style={{ minHeight: "100vh" }}>
+      <div className="text-center mt-2 mb-2">
+        <h5>Devices fields definitions</h5>
+      </div>
+      <div className="row">
+        <div className="col-2"></div>
+
+        <div className="col-7">
+          {/* ADD GROUP */}
+          <div className="input-group mb-5">
+            <input
+              type="text"
+              required
+              className="form-control"
+              id="new_group_name"
+              onChange={(e) => handleChange(e)}
+              placeholder="New Group Name"
+              value={formData.new_group_name || ""}
+            />
+            <button className="btn btn-success" type="button" onClick={addGroup}>
+              Add New Fields Group
+            </button>
+          </div>
+          {/* END ADD GROUP */}
+
+          {/* LIST OF GROUPS */}
+          <div className="input-group mb-3">
+            <span className="input-group-text text-light bg-dark">Group Name</span>
+            <select className="form-control" id="selectedGroup" onChange={handleGroupSelected}>
+              <option value={""}>=== Select a Group ===</option>
+              {groups.map((group) => (
+                <option key={group._id} value={group._id} selected={group._id === selectedGroup}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
+
+            <button className="btn btn-primary" type="button" onClick={removeGroup} disabled={!selectedGroup}>
+              Delete this group
+            </button>
+          </div>
+          {/* END LIST OF GROUPS */}
+
+          
+
+          {/* ADD FIELD */}
+          {selectedGroup && (
+            <div className="input-group mb-3">
+              <span className="input-group-text text-light bg-dark">Field Name</span>
+              <input
+                type="text"
+                className="form-control"
+                id="new_field_name"
+                onChange={(e) => handleChange(e)}
+                value={formData.new_field_name || ""}
+                required
+              />
+              <button className="btn btn-success" type="button" onClick={addField}>
+                Add new field to this group
+              </button>
+            </div>
+          )}
+          {/* END ADD FIELD */}
+
+          {selectedGroup &&
+            fields &&
+            fields
+              .filter((field) => field.group_id === selectedGroup)
+              .map((field) => (
+              
+                <React.Fragment key={field._id}>
+                  <div className="card mb-3">
+                    <div className="card-header">
+                      <h5>{field.name}</h5>
+                    </div>
+                    <div className="card-body bg-light">
+                      <div className="input-group">
+                        <span className="input-group-text text-dark w-25 text-wrap">Default Value</span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            data-field-id={field._id}
+                            id={`default-value`}
+                            onChange={(e) => handleFieldChange(field._id, "default_value", e.target.value)}
+                            value={formData[field._id]?.default_value !== undefined ? formData[field._id].default_value : field.default_value}
+                            />
+                      </div>
+                      <div className="input-group d-flex justify-content-between">
+                        <span className="input-group-text text-dark w-25 text-wrap">Alerts Panel Options</span>
+                        <label htmlFor={`visible`} className="checkbox-inline mt-2">
+                            <input
+                                className="m-2"
+                                type="checkbox"
+                                data-field-id={field._id}
+                                id={`visible`}
+                                checked={formData[field._id]?.visible !== undefined ? formData[field._id].visible : field.visible}
+                                onChange={(e) => handleCheckboxChange(field._id, "visible", e.target.checked)}
+                            />
+                            visible
+                        </label>
+                        <label htmlFor={`editable`} className="checkbox-inline mt-2">
+                            <input
+                                className="m-2"
+                                type="checkbox"
+                                data-field-id={field._id}
+                                id={`editable`}
+                                checked={formData[field._id]?.editable !== undefined ? formData[field._id].editable : field.editable}
+                                onChange={(e) => handleCheckboxChange(field._id, "editable", e.target.checked)}
+                            />
+                            editable
+                        </label>
+                       
+                      </div>
+                    </div>
+                    <div className="card-footer d-flex justify-content-end">
+                      <button
+                        className="btn btn-success m-2"
+                        id={`save-${field._id}`}
+                        onClick={() => saveField(field._id)}
+                        
+                      >
+                        Save
+                      </button>
+                      <button className="btn btn-warning m-2" id={`del-${field._id}`} onClick={() => deleteField(field._id)}>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </React.Fragment>
+              ))}
+        </div>
+
+        <div className="col-2"></div>
+      </div>
+      
+      <div className="row fixed-bottom mb-2">
+        <div className="col-md-12 text-center">
+          <div className="alert alert-warning alert-dismissible fade show" role="alert" style={{ display: displayStatus }}>
+            {status}
+            <button type="button" className="btn-close" aria-label="Close" onClick={()=> setDisplayStatus("none")}></button>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+export default FieldsEdit
