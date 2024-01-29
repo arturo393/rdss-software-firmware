@@ -84,7 +84,6 @@ const DevicesEdit = (props) => {
         fields_values: deviceData.fields_values
       }
     
-    console.log("STUCTURED DATA", structuredData)
     axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/device/save", structuredData).then(
       (result) => {
         document.getElementById("status").style.display = "block"
@@ -101,15 +100,7 @@ const DevicesEdit = (props) => {
       }
     )
   }
- 
 
-  console.log("DEVICE DATA", deviceData)
-  // const handleChange = (e) => {
-  //   setDeviceData({
-  //     ...deviceData,
-  //     [e.target.id]: e.target.value,
-  //   })
-  // }
   const handleChange = (e) => {
     const { id, value } = e.target;
   
