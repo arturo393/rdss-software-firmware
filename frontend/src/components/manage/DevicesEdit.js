@@ -19,15 +19,19 @@ const DevicesEdit = (props) => {
 
   const [selectedFieldGroup, setSelectedFieldGroup] = useState(null);
 
-  const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`
+  const [selectedGroup, setSelectedGroup] = useState()
+  const  [groups, setGroups] =  useState([])
 
+  const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`
 
   useEffect(() => {
     const getFieldsData  = async() => {
       const fields = await axios.get(`${url}/api/fields`)
       const fields_group = await axios.get(`${url}/api/fields_group`)
+      const groups = await axios.get(`${url}/api/devices_group`)
       setFields(fields.data)
       setFields_group(fields_group.data)
+      setGroups(groups.data)
     }
     getFieldsData()
     document.getElementById("status").style.display = "none"
@@ -70,13 +74,24 @@ const DevicesEdit = (props) => {
   const saveDevice = (e) => {
     e.preventDefault()
 
-    axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/device/save", deviceData).then(
+    const structuredData = {
+        _id:deviceData._id,
+        id:deviceData.id,
+        name:deviceData.name,
+        group_id:deviceData.group_id,
+        status: deviceData.status,
+        type: deviceData.type,
+        fields_values: deviceData.fields_values
+      }
+    
+    console.log("STUCTURED DATA", structuredData)
+    axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/device/save", structuredData).then(
       (result) => {
         document.getElementById("status").style.display = "block"
         result ? setStatus("Device attributes updated successfully") : setStatus("Error when try to save device data")
         const objIndex = newDevices.findIndex((d) => d.id == parseInt(deviceData.id))
         let dev = devices.find((d) => d.id == parseInt(deviceData.id))
-        dev = { ...dev, ...deviceData }
+        dev = { ...dev, group_id:deviceData?.group_id, ...deviceData }
         let newDevicesList = devices
         newDevicesList[objIndex] = dev
         setNewDevices(newDevicesList)
@@ -86,13 +101,44 @@ const DevicesEdit = (props) => {
       }
     )
   }
+ 
 
+  console.log("DEVICE DATA", deviceData)
+  // const handleChange = (e) => {
+  //   setDeviceData({
+  //     ...deviceData,
+  //     [e.target.id]: e.target.value,
+  //   })
+  // }
   const handleChange = (e) => {
-    setDeviceData({
-      ...deviceData,
-      [e.target.id]: e.target.value,
-    })
-  }
+    const { id, value } = e.target;
+  
+    // If the id is from a field input, update the fields_values in deviceData
+    if (fields.some(field => field._id === id)) {
+      setDeviceData((prevDeviceData) => {
+        const updatedFieldsValues = [...prevDeviceData.fields_values];
+        const index = updatedFieldsValues.findIndex(fv => fv.field_id === id);
+  
+        if (index !== -1) {
+          // Update existing field value
+          updatedFieldsValues[index].value = value;
+        } else {
+          // Add new field value
+          updatedFieldsValues.push({ field_id: id, value });
+        }
+  
+        return { ...prevDeviceData, fields_values: updatedFieldsValues };
+      });
+    } else {
+      // If the id is from a non-field input, update directly
+      setDeviceData({
+        ...deviceData,
+        [id]: value,
+      });
+    }
+  };
+  
+
 
   return (
     <>
@@ -121,8 +167,22 @@ const DevicesEdit = (props) => {
                 {/* <span className="input-group-text">Type</span> */}
                 <input type="hidden" className="form-control" id="type" value={deviceData?.type} onChange={handleChange} />
               </div>
+              {/* LIST OF GROUPS */}
+            <div className="input-group mb-3">
+              <span className="input-group-text text-light bg-dark w-25">Group Name</span>
+              <select className="form-control" id="group_id" onChange={handleChange} value={selectedGroup || deviceData?.group_id}>
+                <option value={""}>=== Select a Group ===</option>
+                {groups.map((group) => (
+                  <option key={group._id} value={group._id}>
+                    {group.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* END LIST OF GROUPS */}
+
               
-                {fields_group && fields_group.map(group => (
+                {/* {fields_group && fields_group.map(group => (
                   <div className="input-group mb-5">
                   <span className="input-group-text w-100 bg-dark text-light">{group.name}</span>
                     {fields && fields.filter((field) => field.group_id === group._id).map(field => (
@@ -132,13 +192,32 @@ const DevicesEdit = (props) => {
                       <input
                         type="text"
                         className="form-control"
-                        id={group.name+"|"+field.name} value={deviceData[group?.name + "|" + field?.name] || field?.default_value}
+                        id={field.id} value={deviceData[field?.id] || field?.default_value}
                         onChange={handleChange}
                       />
                     </div>
                     ))}              
                   </div>
-                ))}
+                ))} */}
+                {fields_group && fields_group.map(group => (
+  <div className="input-group mb-5" key={group._id}>
+    <span className="input-group-text w-100 bg-dark text-light">{group.name}</span>
+    {fields && fields.filter((field) => field.group_id === group._id).map(field => (
+      
+      <div className="input-group mb-1" key={field.id}>
+        <span className="input-group-text w-25 text-wrap">{field.name}</span>
+        <input
+          type="text"
+          className="form-control"
+          id={field._id}
+          value={deviceData.fields_values?.find(fv => fv.field_id === field._id)?.value || field.default_value}
+          onChange={handleChange}
+        />
+      </div>
+    ))}
+  </div>
+))}
+
 
               <button className="btn btn-primary w-100" type="button" onClick={saveDevice}>
                 Save
