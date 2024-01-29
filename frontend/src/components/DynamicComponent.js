@@ -12,6 +12,7 @@ import Login from "./auth/Login"
 import UsersAdmin from "./manage/users/Users"
 import DevicesEdit from "./manage/DevicesEdit"
 import FieldsEdit from "./manage/fields/FieldsEdit"
+import GroupsEdit from "./manage/groups/GroupsEdit"
 
 const DynamicComponent = (props) => {
   const { activeComponent } = props
@@ -26,7 +27,8 @@ const DynamicComponent = (props) => {
     map: Schema,
     contact: Contact,
     devicesEdit: DevicesEdit,
-    fieldsEdit: FieldsEdit
+    fieldsEdit: FieldsEdit,
+    groupsEdit: GroupsEdit
   }
   const SelectComponent = components[activeComponent ? activeComponent : "map"]
   return <SelectComponent />
