@@ -9,16 +9,16 @@
   - name: Clean artifact path
     file:
       state: absent
-      path: /tmp/rdss2
+      path: "{{ temp_dir }}"
   - name: "Cloning RDSSv2 repo"
     git:
-      repo: https://{{gitlabuser | urlencode}}:{{gitlabpassword | urlencode}}@gitlab.com/sigma-telecom/rdss-software.git
-      dest: /tmp/rdss2
+      repo: https://{{gitlabuser | urlencode}}:{{gitlabpassword | urlencode}}@gitlab.com/sigma-telecom/sniffer-software.git
+      dest: "{{ temp_dir }}"
       # single_branch: yes
-      version: development
+      version: fmejias
       accept_hostkey: yes
   - name: "Create installation directory"
     file:
-      path: /opt/rdss
+      path: "{{ base_dir }}"
       state: directory
       mode: '0755'

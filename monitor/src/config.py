@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-BASE_PATH = "/opt/rdss/monitor/"
+BASE_PATH = "C:\\Users\\sigmadev\\Desktop\\sniffer\\sniffer-software\\monitor\\src\\"
+#BASE_PATH = "/opt/sniffer/monitor/"
 FORMAT = 'utf-8'
 POLLING_SLEEP = 2
 LOGGING_FILE = "monitor.log"
@@ -21,7 +22,7 @@ log = {
 }
 
 db = {
-    "host": "database",
+    "host": "192.168.60.76",
     "user": "admin",
     "passwd": "Admin123",
     "dbname": "rdss",
@@ -35,6 +36,7 @@ serial = {
     "parity": "N",
     "stopbits": 1,
     "bytesize": 8,
-    "timeout": 3,
-    "write_timeout": 10
+    "timeout": 1.8,
+    "write_timeout": 12,
+    "inter_byte_timeout": 0.1
 }

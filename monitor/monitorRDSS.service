@@ -8,7 +8,7 @@ Type=simple
 Restart=always
 RestartSec=1
 User=root
-WorkingDirectory=/opt/rdss/monitor
+WorkingDirectory=/opt/sniffer/monitor
 ExecStart=/usr/bin/env python3 monitor.py 
 
 [Install]
