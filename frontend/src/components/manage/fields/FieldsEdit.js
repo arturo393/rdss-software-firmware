@@ -24,8 +24,8 @@ const FieldsEdit = (props) => {
       fieldsResponse.data.forEach((field) => {
         initialFormData[field._id] = {
           default_value: field.default_value,
-          visible: field.visible,
-          editable: field.editable,
+          readable: field.readable,
+          writable: field.writable,
           plottable: field.plottable,
         };
       });
@@ -165,8 +165,8 @@ const FieldsEdit = (props) => {
       const field = fields.find((field) => field._id === id);
       const newValues = {
         default_value: formData[id]?.default_value || "",
-        visible: formData[id]?.visible || false,
-        editable: formData[id]?.editable || false,
+        readable: formData[id]?.readable || false,
+        writable: formData[id]?.writable || false,
         plottable: formData[id]?.plottable || false,
       };
   
@@ -273,27 +273,27 @@ const FieldsEdit = (props) => {
                       </div>
                       <div className="input-group d-flex justify-content-between">
                         <span className="input-group-text text-dark w-25 text-wrap">Field Options</span>
-                        <label htmlFor={`visible`} className="checkbox-inline mt-2">
+                        <label htmlFor={`readable`} className="checkbox-inline mt-2">
                             <input
                                 className="m-2"
                                 type="checkbox"
                                 data-field-id={field._id}
-                                id={`visible`}
-                                checked={formData[field._id]?.visible !== undefined ? formData[field._id].visible : field.visible}
-                                onChange={(e) => handleCheckboxChange(field._id, "visible", e.target.checked)}
+                                id={`readable`}
+                                checked={formData[field._id]?.readable !== undefined ? formData[field._id].readable : field.readable}
+                                onChange={(e) => handleCheckboxChange(field._id, "readable", e.target.checked)}
                             />
-                            visible in alerts
+                            Readable
                         </label>
-                        <label htmlFor={`editable`} className="checkbox-inline mt-2">
+                        <label htmlFor={`writable`} className="checkbox-inline mt-2">
                             <input
                                 className="m-2"
                                 type="checkbox"
                                 data-field-id={field._id}
-                                id={`editable`}
-                                checked={formData[field._id]?.editable !== undefined ? formData[field._id].editable : field.editable}
-                                onChange={(e) => handleCheckboxChange(field._id, "editable", e.target.checked)}
+                                id={`writable`}
+                                checked={formData[field._id]?.writable !== undefined ? formData[field._id].writable : field.writable}
+                                onChange={(e) => handleCheckboxChange(field._id, "writable", e.target.checked)}
                             />
-                            editable in alerts
+                            Writable
                         </label>
                         <label htmlFor={`plottable`} className="checkbox-inline mt-2 mr-2">
                             <input

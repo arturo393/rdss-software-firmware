@@ -38,7 +38,7 @@ const Alerts = (props) => {
       const res = await axios.get(`${url}/api/fields_group`);
       setFieldsGroups(res.data)
     }
-    //nos interesan los field.visibles o field.editable
+    //nos interesan los field.readable o field.writable
     getFieldsData()
     getFieldsGroups()
   },[])
