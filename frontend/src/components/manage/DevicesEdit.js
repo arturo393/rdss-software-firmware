@@ -195,8 +195,14 @@ const DevicesEdit = (props) => {
     <span className="input-group-text w-100 bg-dark text-light">{group.name}</span>
     {fields && fields.filter((field) => field.group_id === group._id).map(field => (
       
-      <div className="input-group mb-1" key={field.id}>
-        <span className="input-group-text w-25 text-wrap">{field.name}</span>
+      <div className="input-group mb-1 d-flex bd-highlight" key={field.id}>
+        <span className="input-group-text w-25 text-wrap flex-grow-1 bd-highlight">{field.name}</span>
+        <div className="bd-highligh w-25">
+          <span className="badge bg-primary mx-1">{field?.visible?"visible":null}</span>
+          <span className="badge bg-success mx-1">{field?.editable?"editable":null}</span>
+          <span className="badge bg-info mx-1">{field?.plottable?"plottable":null}</span>
+        </div>
+        
         <input
           type="text"
           className="form-control"

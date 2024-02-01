@@ -26,6 +26,7 @@ const FieldsEdit = (props) => {
           default_value: field.default_value,
           visible: field.visible,
           editable: field.editable,
+          plottable: field.plottable,
         };
       });
       setFormData(initialFormData);
@@ -166,6 +167,7 @@ const FieldsEdit = (props) => {
         default_value: formData[id]?.default_value || "",
         visible: formData[id]?.visible || false,
         editable: formData[id]?.editable || false,
+        plottable: formData[id]?.plottable || false,
       };
   
       const res = await axios.put(`${url}/api/fields?id=${id}&name=${field.name}`, newValues);
@@ -270,7 +272,7 @@ const FieldsEdit = (props) => {
                             />
                       </div>
                       <div className="input-group d-flex justify-content-between">
-                        <span className="input-group-text text-dark w-25 text-wrap">Alerts Panel Options</span>
+                        <span className="input-group-text text-dark w-25 text-wrap">Field Options</span>
                         <label htmlFor={`visible`} className="checkbox-inline mt-2">
                             <input
                                 className="m-2"
@@ -280,7 +282,7 @@ const FieldsEdit = (props) => {
                                 checked={formData[field._id]?.visible !== undefined ? formData[field._id].visible : field.visible}
                                 onChange={(e) => handleCheckboxChange(field._id, "visible", e.target.checked)}
                             />
-                            visible
+                            visible in alerts
                         </label>
                         <label htmlFor={`editable`} className="checkbox-inline mt-2">
                             <input
@@ -291,7 +293,18 @@ const FieldsEdit = (props) => {
                                 checked={formData[field._id]?.editable !== undefined ? formData[field._id].editable : field.editable}
                                 onChange={(e) => handleCheckboxChange(field._id, "editable", e.target.checked)}
                             />
-                            editable
+                            editable in alerts
+                        </label>
+                        <label htmlFor={`plottable`} className="checkbox-inline mt-2 mr-2">
+                            <input
+                                className="m-2"
+                                type="checkbox"
+                                data-field-id={field._id}
+                                id={`plottable`}
+                                checked={formData[field._id]?.plottable !== undefined ? formData[field._id].plottable : field.plottable}
+                                onChange={(e) => handleCheckboxChange(field._id, "plottable", e.target.checked)}
+                            />
+                            plottable in rtData
                         </label>
                        
                       </div>

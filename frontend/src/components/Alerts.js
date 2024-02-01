@@ -20,7 +20,41 @@ let a_attenuation
 const Alerts = (props) => {
   const [alerts, setAlerts] = useState([])
   const [deviceData, setDeviceData] = useState({})
+  const [fields,setFields] = useState([])
+  const [fields_groups,setFieldsGroups] = useState([])
+  const [devices_groups,setDevicesGroups] = useState([])
+
+  const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`;
+
   const { monitorData } = props
+
+  // Leyendo los fields provisionados al cargar el componente
+  useEffect(() => {
+    const getFieldsData = async () => {
+      const res = await axios.get(`${url}/api/fields`);
+      setFields(res.data)
+    }
+    const getFieldsGroups = async () => {
+      const res = await axios.get(`${url}/api/fields_group`);
+      setFieldsGroups(res.data)
+    }
+    //nos interesan los field.visibles o field.editable
+    getFieldsData()
+    getFieldsGroups()
+  },[])
+
+  console.log("monitorData",monitorData)
+  /**
+   * MonitorData
+   *  [{
+   *    id,
+   *    name,
+   *    connected,
+   *    rtData,
+   *    alerts,
+   *  }]
+   */
+
   useEffect(() => {
     let currentAlerts = []
     monitorData?.map((monitor) => {
@@ -44,10 +78,14 @@ const Alerts = (props) => {
       }
 
       const device = {
+        // valores generales
         id: data.id,
         name: data.name,
         type: data.type,
         connected: a_connected,
+        group_id: data.group_id,
+        
+        // valores de los campos/atributos
         voltage: a_voltage,
         current: a_current,
         gupl: a_agcup,
@@ -59,12 +97,17 @@ const Alerts = (props) => {
       }
       currentAlerts.push(device)
     })
+
+    // alerts  contiene los  datos de cada device
     setAlerts(currentAlerts)
+
   }, [monitorData])
 
   const handleChange = (e) => {
     e.preventDefault()
   }
+
+
   const saveDevice = (e) => {
     e.preventDefault()
     let new_attenuation = e.target.attenuation.value || -1
@@ -103,9 +146,11 @@ const Alerts = (props) => {
                       })
 
   }
+
   return (
     <>
       <h5 className="text-center">Devices Status</h5>
+
       <div className="container table-responsive text-center ">
         {/* CONTENIDO */}
         <div className="row">
@@ -118,31 +163,6 @@ const Alerts = (props) => {
                 <th>
                   <h6>Connection</h6>
                 </th>
-                <th>
-                  <h6>Voltage</h6>
-                </th>
-                <th>
-                  <h6>Current</h6>
-                </th>
-                <th>
-                  <h6>AGC Uplink</h6>
-                </th>
-                <th>
-                  <h6>AGC Downlink</h6>
-                </th>
-                <th>
-                  <h6>Downlink Power</h6>
-                </th>
-                <th>
-                  <h6>Smart Tune</h6>
-                </th>
-                <th>
-                  <h6>Reverse</h6>
-                </th>
-                <th>
-                  <h6>Attenuation [dB]</h6>
-                </th>
-                
               </tr>
             </thead>
             <tbody>
@@ -150,9 +170,8 @@ const Alerts = (props) => {
                 return (
                   <tr>
                     <td>{data.name + "(" + data.type + "-" + data.id + ")"}</td>
-                    <td>
-                      <img alt="" src={data.connected} width={20} height={20} />
-                    </td>
+                    <td><img alt="" src={data.connected} width={20} height={20} /></td>
+                    {/* LOOP DE VISIBLES*/}
                     <td>
                       <img alt="" src={data.voltage} width={20} height={20} />
                     </td>
@@ -175,6 +194,7 @@ const Alerts = (props) => {
                     <img alt="" src={data.reverse} width={20} height={20} />
                     </td>
                     <td width={200}>
+                      {/* LOOP DE EDITABLES*/}
                       <form onSubmit={saveDevice}>
                         <div className="input-group col">
                           <span className="input-group-text">{data?.attenuation}</span>
