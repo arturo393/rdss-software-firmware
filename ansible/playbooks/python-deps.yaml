@@ -3,6 +3,8 @@
 - name: Install Monitor Python Dependencies
   hosts: all
   become: true
+  vars_files:
+    - ../vars.yaml
   tasks:
   - name: "Install pip"
     apt:
