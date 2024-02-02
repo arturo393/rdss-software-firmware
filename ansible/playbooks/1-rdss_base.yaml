@@ -15,7 +15,7 @@
       repo: https://{{gitlabuser | urlencode}}:{{gitlabpassword | urlencode}}@gitlab.com/sigma-telecom/sniffer-software.git
       dest: "{{ temp_dir }}"
       # single_branch: yes
-      version: fmejias
+      version: development
       accept_hostkey: yes
   - name: "Create installation directory"
     file:
