@@ -35,12 +35,12 @@
 
   - name: Add .vimrc template
     copy:
-      src: "{{ temp_dir }}"/custom/.vimrc"
+      src: "{{ temp_dir }}/custom/.vimrc"
       dest: /home/sigmadev/
       remote_src: yes
   - name: Add .vimrc template
     copy:
-      src: { { temp_dir } }/custom/.vimrc"
+      src: "{{ temp_dir }}/custom/.vimrc"
       dest: /root/
       remote_src: yes
 
