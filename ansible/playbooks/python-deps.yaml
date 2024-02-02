@@ -35,17 +35,6 @@
         state: present
     register: output
 
-  - name: Add .vimrc template
-    copy:
-      src: "{{ temp_dir }}/custom/.vimrc"
-      dest: /home/sigmadev/
-      remote_src: yes
-  - name: Add .vimrc template
-    copy:
-      src: "{{ temp_dir }}/custom/.vimrc"
-      dest: /root/
-      remote_src: yes
-
   - name: Install zsh-autosuggestions plugin for all users
     git:
       repo: "https://github.com/zsh-users/zsh-autosuggestions"

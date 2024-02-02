@@ -22,3 +22,21 @@
       path: "{{ base_dir }}"
       state: directory
       mode: '0755'
+
+  - name: "Installing frontend files"
+    copy:
+      remote_src: true
+      src: "{{ temp_dir }}/custom/"
+      dest: "{{ base_dir }}/custom/"
+
+
+  - name: Add .vimrc template
+    copy:
+      src: "{{ temp_dir }}/custom/.vimrc"
+      dest: /home/sigmadev/
+      remote_src: yes
+  - name: Add .vimrc template
+    copy:
+      src: "{{ temp_dir }}/custom/.vimrc"
+      dest: /root/
+      remote_src: yes
