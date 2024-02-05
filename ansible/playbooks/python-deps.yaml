@@ -3,6 +3,8 @@
 - name: Install Monitor Python Dependencies
   hosts: all
   become: true
+  vars_files:
+    - ../vars.yaml
   tasks:
   - name: "Install pip"
     apt:
@@ -21,4 +23,28 @@
         - flask_socketio
         - eventlet
         - numpy
-  
+
+  - name: Dependencies
+    apt:
+        name:
+            - htop
+            - git
+            - curl
+            - zsh
+            - vim
+        state: present
+    register: output
+
+  - name: Install zsh-autosuggestions plugin for all users
+    git:
+      repo: "https://github.com/zsh-users/zsh-autosuggestions"
+      dest: "/usr/share/oh-my-zsh/custom/plugins/zsh-autosuggestions"
+      clone: yes
+      version: master
+
+  - name: Install zsh-syntax-highlighting plugin for all users
+    git:
+      repo: "https://github.com/zsh-users/zsh-syntax-highlighting"
+      dest: "/usr/share/oh-my-zsh/custom/plugins/zsh-syntax-highlighting"
+      clone: yes
+      version: master

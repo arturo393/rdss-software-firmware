@@ -1,0 +1,112 @@
+{
+  "_id": {
+    "$oid": "6578aa53639ebf8f1685efda"
+  },
+  "id": 10,
+  "status": {
+    "provisioned": false,
+    "connected": false,
+    "x": 100,
+    "y": 100
+  },
+  "type": "sniffer",
+  "attenuation": null,
+  "changed": true,
+  "switchSerial": false,
+  "name": "24",
+  "data": {
+    "aIn_1_10V": {
+      "tipo": "ain",
+      "name": "temperatura",
+      "unit": "°C",
+      "minimumanalog": 100,
+      "maximumanalog": 4095,
+      "maximumconverted": 100,
+      "minimumconverted": 1000,
+      "maximumalert": 70,
+      "minimumalert": 0,
+      "display": false
+    },
+    "aIn_x_20mA": {
+      "tipo": "ain",
+      "name": "temperatura",
+      "unit": "°C",
+      "minimumanalog": 100,
+      "maximumanalog": 4095,
+      "maximumconverted": 100,
+      "minimumconverted": 1000,
+      "maximumalert": 70,
+      "minimumalert": 0,
+      "display": false
+    
+    },
+    "aOut_1_10V": {
+      "tipo": "aout",
+      "name": "ventilador",
+      "minimumanalog": 20,
+      "maximumanalog": 20,
+      "maximumconverted": 100,
+      "minimumconverted": 1000,
+      "display": false,
+      "value": 0
+    },
+    "aOut_x_20mA": {
+      "tipo": "aout",
+      "name": "ventilador",
+      "minimumanalog": 20,
+      "maximumanalog": 20,
+      "maximumconverted": 100,
+      "minimumconverted": 1000,
+      "display": false,      
+      "value": 0
+    },
+    "dIn1": {
+      "tipo": "din",
+      "name": "ventilador",
+      "stateon": "encendido",
+      "stateoff": "apagado",
+      "display": false
+    },
+    "dIn2": {
+      "tipo": "din",
+      "name": "ventilador",
+      "stateon": "encendido",
+      "stateoff": "apagado",
+      "display": false
+    },
+    "dOut1": {
+      "tipo": "dout",
+      "name": "ventilador",
+      "stateon": "encendido",
+      "stateoff": "apagado",
+      "display": false,
+      "value": false
+    },
+    "dOut2": {
+      "tipo": "dout",
+      "name": "ventilador",
+      "stateon": "encendido",
+      "stateoff": "apagado",
+      "display": false,
+      "value": false
+    },
+
+    "swSerial": {
+      "tipo": "din",
+      "name": "ventilador",
+      "stateon": "encendido",
+      "stateoff": "apagado",
+      "value": false
+    },
+
+    "modbus": {
+      "tipo": "modbus",
+      "name": "circuito",
+      "query": "0000129aA4",
+      "startindex": 4,
+      "datalength": 9,
+      "minimumalert": 34,
+      "maximumalert": 44
+    }
+  }
+}
