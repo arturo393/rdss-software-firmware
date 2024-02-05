@@ -24,8 +24,8 @@ const FieldsEdit = (props) => {
       fieldsResponse.data.forEach((field) => {
         initialFormData[field._id] = {
           default_value: field.default_value,
-          readable: field.readable,
-          writable: field.writable,
+          query: field.query,
+          set: field.set,
           plottable: field.plottable,
         };
       });
@@ -165,9 +165,13 @@ const FieldsEdit = (props) => {
       const field = fields.find((field) => field._id === id);
       const newValues = {
         default_value: formData[id]?.default_value || "",
-        readable: formData[id]?.readable || false,
-        writable: formData[id]?.writable || false,
+        query: formData[id]?.query || false,
+        set: formData[id]?.set || false,
         plottable: formData[id]?.plottable || false,
+        conv_min: formData[id]?.conv_min || "",
+        conv_max: formData[id]?.conv_max || "",
+        alert_min: formData[id]?.alert_min || "",
+        alert_max: formData[id]?.alert_max || "",
       };
   
       const res = await axios.put(`${url}/api/fields?id=${id}&name=${field.name}`, newValues);
@@ -271,29 +275,70 @@ const FieldsEdit = (props) => {
                             value={formData[field._id]?.default_value !== undefined ? formData[field._id].default_value : field.default_value}
                             />
                       </div>
+                      <div className="input-group">
+                        <span className="input-group-text text-dark w-25 text-wrap">Conv. Min.</span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            data-field-id={field._id}
+                            id={`conv-min`}
+                            onChange={(e) => handleFieldChange(field._id, "conv_min", e.target.value)}
+                            value={formData[field._id]?.conv_min !== undefined ? formData[field._id].conv_min : field.conv_min}
+                            />
+                        <span className="input-group-text text-dark w-25 text-wrap">Conv. Max.</span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            data-field-id={field._id}
+                            id={`conv-max`}
+                            onChange={(e) => handleFieldChange(field._id, "conv_max", e.target.value)}
+                            value={formData[field._id]?.conv_max !== undefined ? formData[field._id].conv_max : field.conv_max}
+                            />
+                      </div>
+                      <div className="input-group">
+                        <span className="input-group-text text-dark w-25 text-wrap">Alert Min.</span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            data-field-id={field._id}
+                            id={`alert-min`}
+                            onChange={(e) => handleFieldChange(field._id, "alert_min", e.target.value)}
+                            value={formData[field._id]?.alert_min !== undefined ? formData[field._id].alert_min : field.alert_min}
+                            />
+                        <span className="input-group-text text-dark w-25 text-wrap">Alert Max.</span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            data-field-id={field._id}
+                            id={`alert-max`}
+                            onChange={(e) => handleFieldChange(field._id, "alert_max", e.target.value)}
+                            value={formData[field._id]?.alert_max !== undefined ? formData[field._id].alert_max : field.alert_max}
+                            />
+                      </div>
+                      
                       <div className="input-group d-flex justify-content-between">
                         <span className="input-group-text text-dark w-25 text-wrap">Field Options</span>
-                        <label htmlFor={`readable`} className="checkbox-inline mt-2">
+                        <label htmlFor={`query`} className="checkbox-inline mt-2">
                             <input
                                 className="m-2"
                                 type="checkbox"
                                 data-field-id={field._id}
-                                id={`readable`}
-                                checked={formData[field._id]?.readable !== undefined ? formData[field._id].readable : field.readable}
-                                onChange={(e) => handleCheckboxChange(field._id, "readable", e.target.checked)}
+                                id={`query`}
+                                checked={formData[field._id]?.query !== undefined ? formData[field._id].query : field.query}
+                                onChange={(e) => handleCheckboxChange(field._id, "query", e.target.checked)}
                             />
-                            Readable
+                            Query
                         </label>
-                        <label htmlFor={`writable`} className="checkbox-inline mt-2">
+                        <label htmlFor={`set`} className="checkbox-inline mt-2">
                             <input
                                 className="m-2"
                                 type="checkbox"
                                 data-field-id={field._id}
-                                id={`writable`}
-                                checked={formData[field._id]?.writable !== undefined ? formData[field._id].writable : field.writable}
-                                onChange={(e) => handleCheckboxChange(field._id, "writable", e.target.checked)}
+                                id={`set`}
+                                checked={formData[field._id]?.set !== undefined ? formData[field._id].set : field.set}
+                                onChange={(e) => handleCheckboxChange(field._id, "set", e.target.checked)}
                             />
-                            Writable
+                            Set
                         </label>
                         <label htmlFor={`plottable`} className="checkbox-inline mt-2 mr-2">
                             <input
@@ -304,7 +349,7 @@ const FieldsEdit = (props) => {
                                 checked={formData[field._id]?.plottable !== undefined ? formData[field._id].plottable : field.plottable}
                                 onChange={(e) => handleCheckboxChange(field._id, "plottable", e.target.checked)}
                             />
-                            plottable in rtData
+                            Plottable
                         </label>
                        
                       </div>

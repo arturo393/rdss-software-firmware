@@ -168,7 +168,7 @@ const GroupsEdit = (props) => {
           {/* LIST OF DEVICES */}
           
           <div className="input-group mb-3">
-    <span className="input-group-text text-light bg-dark w-25">Devices available</span>
+    <span className="input-group-text text-light bg-dark w-25">Devices</span>
     <select className="form-control" id="selectedDevice" onChange={handleDeviceSelected}>
       <option value={""}>=== Select a Device ===</option>
       {devices.map((device) => {
@@ -176,7 +176,7 @@ const GroupsEdit = (props) => {
         return (
           <option key={device._id} value={device._id} selected={device._id === selectedDevice}>
             {device.name} ({device.type}-{device.id})
-            {isValidGroup && ` - Associated to group: ${groups.find(group => group._id === device.group_id)?.name}`}
+            {isValidGroup && ` - In Group: ${groups.find(group => group._id === device.group_id)?.name}`}
           </option>
         );
       })}
