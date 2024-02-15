@@ -23,11 +23,12 @@ from flask_socketio import SocketIO
 from flask import Flask
 import eventlet
 
+
 # ---SERIAL COMMUNICATION PORTS---
 
-# USBPORTTX = "COM4"
-# USBPORTRX = "COM7"
-# USBPORTAUX = "COM6"
+#USBPORTTX = "COM7"
+#USBPORTRX = "COM6"
+#USBPORTAUX = "COM4"
 
 USBPORTTX = "/dev/ttyUSB0"
 USBPORTRX = "/dev/ttyUSB1"
@@ -171,18 +172,17 @@ def getFieldsDefinitions():
     try:
         collection_name = database["fields"]
         fields = list(collection_name.find(
-            {"$or": [{"writable": True, "readable": True}]},
+            {"$or": [{"writable": True}, {"readable": True}]},
             {"_id": 1, "name": 1, "group_id": 1, "default_value": 1, "readable": 1, "writable": 1}))
         return fields
     except Exception as e:
         logging.exception(e)
 
 
-def getFielsdGroup():
+def getFieldsGroup():
     try:
         collection_name = database["fields_group"]
-        fields_group = list(collection_name.find(
-            {"_id": 1, "name": 1}))
+        fields_group = list(collection_name.find())
         return fields_group
     except Exception as e:
         logging.exception(e)
@@ -334,16 +334,16 @@ def evaluateAlerts(response):
 
     params = getConfigParams()[0]
 
-    if (response["voltage"] < float(params["minVoltage"])) or (response["voltage"] > float(params["maxVoltage"])):
-        alerts["voltage"] = True
-    if (response["current"] < float(params["minCurrent"])) or (response["current"] > float(params["maxCurrent"])):
-        alerts["current"] = True
-    if (response["gupl"] < float(params["minUplink"])) or (response["gupl"] > float(params["maxUplink"])):
-        alerts["gupl"] = True
-    if (response["gdwl"] < float(params["minDownlink"])) or (response["gdwl"] > float(params["maxDownlink"])):
-        alerts["gdwl"] = True
-    if (response["power"] < float(params["minDownlinkOut"])) or (response["power"] > float(params["maxDownlinkOut"])):
-        alerts["power"] = True
+    #    if (response["voltage"] < float(params["minVoltage"])) or (response["voltage"] > float(params["maxVoltage"])):
+    #        alerts["voltage"] = True
+    #    if (response["current"] < float(params["minCurrent"])) or (response["current"] > float(params["maxCurrent"])):
+    #        alerts["current"] = True
+    #    if (response["gupl"] < float(params["minUplink"])) or (response["gupl"] > float(params["maxUplink"])):
+    #        alerts["gupl"] = True
+    #    if (response["gdwl"] < float(params["minDownlink"])) or (response["gdwl"] > float(params["maxDownlink"])):
+    #        alerts["gdwl"] = True
+    #    if (response["power"] < float(params["minDownlinkOut"])) or (response["power"] > float(params["maxDownlinkOut"])):
+    #        alerts["power"] = True
     return alerts
 
 
@@ -432,7 +432,7 @@ def setAttenuation(serTx, serRx, device, attenuation):
     return True
 
 
-def getSnifferStatus(serTx, serRx, id, fieldsArr, fieldsGroupArr):
+def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
     """
     Sends request to sniffer to obtain values of analog and digital i/o
     Args:
@@ -475,11 +475,11 @@ def getSnifferStatus(serTx, serRx, id, fieldsArr, fieldsGroupArr):
     # })
 
     # ---- Build segment
-    id = hex(id)
-    if (len(id) == 3):
-        id_string = f'{SNIFFER:02x}' + '0' + id[2:3] + f'{STATUS_QUERY:02x}' + '0000'
+    device_id = hex(int(device["id"]))
+    if (len(device_id) == 3):
+        id_string = f'{SNIFFER:02x}' + '0' + device_id[2:3] + f'{STATUS_QUERY:02x}' + '0000'
     else:
-        id_string = f'{SNIFFER:02x}' + '0' + id[2:3] + f'{STATUS_QUERY:02x}' + '0000'
+        id_string = f'{SNIFFER:02x}' + '0' + device_id[2:3] + f'{STATUS_QUERY:02x}' + '0000'
     checksum = getChecksum(id_string)
     command = f"{SEGMENT_START:02x}" + id_string + checksum + f"{SEGMENT_END:02x}"
 
@@ -514,8 +514,8 @@ def getSnifferStatus(serTx, serRx, id, fieldsArr, fieldsGroupArr):
         if (hexResponse[0] != SEGMENT_START or hexResponse[SEGMENT_LEN - 1] != SEGMENT_END):
             logging.debug("Query reception failed: " + "Incorrect start or end byte")
             return False
-        if (hexResponse[ID_INDEX] != int(id, 16)):
-            logging.debug("Query reception failed: " + "Incorrect ID received: " + str(int(id, 16)))
+        if (hexResponse[ID_INDEX] != int(device_id, 16)):
+            logging.debug("Query reception failed: " + "Incorrect ID received: " + str(int(device_id, 16)))
             return False
         if (hexResponse[COMMAND_INDEX] != STATUS_QUERY):
             logging.debug("Query reception failed: " + "Incorrect command received: " + str(hexResponse[COMMAND_INDEX]))
@@ -558,7 +558,7 @@ def getSnifferStatus(serTx, serRx, id, fieldsArr, fieldsGroupArr):
         # ---- Linear mapping
         aIn_1_10V_linear = round(arduino_map(aIn_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
         aOut_1_10V_linear = round(arduino_map(aOut_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
-        if (swIn_x_20mA == swOut_x_20mA == "ON"):
+        if swIn_x_20mA == swOut_x_20mA == "ON":
             # 4-20mA
             aIn_x_20mA_linear = round(arduino_map(aIn_x_20mA, 0, MAX_2BYTE, 0, I_MAX), 2)
             aOut_x_20mA_linear = round(arduino_map(aOut_x_20mA, 0, MAX_2BYTE, 0, I_MAX), 2)
@@ -576,39 +576,31 @@ def getSnifferStatus(serTx, serRx, id, fieldsArr, fieldsGroupArr):
         SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
 
-        for field in fieldsArr:
-            finalData[field['name']] = aIn_1_10V_linear
+        data = {
+            "aIn_1_10V": aIn_1_10V_linear,
+            "aOut_1_10V": aOut_1_10V_linear,
+            "aIn_x_20mA": aIn_x_20mA_linear,
+            "aOut_x_20mA": aOut_x_20mA_linear,
+            "swIn_x_20mA": swIn_x_20mA,
+            "swOut_x_20mA": swOut_x_20mA,
+            "dIn1": dIn1,
+            "dIn2": dIn2,
+            "dOut1": dOut1,
+            "dOut2": dOut2,
+            "swSerial": swSerial
+        }
+        finalData = dict()
+        # Como asocio solo un field_groups a un device ? si no  busca en todos los fields_groups?
+        for field_group in fieldsGroupArr:
+            for field in fieldsArr:
+                if str(field_group['_id']) == field['group_id']:
+                    if field['readable']:
+                        finalData[str(field['_id'])] = {
+                            "value": data.get(field["name"], field["default_value"]),
+                            "alert": True
+                        }
 
         # ---- Package received data in json for DB
-        finalData = {
-            "aIn_1_10V": {
-                "value": aIn_1_10V_linear
-            },
-            "aOut_1_10V": {
-                "value": aOut_1_10V_linear
-            },
-            "aIn_x_20mA": {
-                "value": aIn_x_20mA_linear
-            },
-            "aOut_x_20mA": {
-                "value": aOut_x_20mA_linear
-            },
-            "dIn1": {
-                "value": dIn1
-            },
-            "dIn2": {
-                "value": dIn2
-            },
-            "dOut1": {
-                "value": dOut1
-            },
-            "dOut2": {
-                "value": dOut2
-            },
-            "swSerial": {
-                "value": swSerial
-            }
-        }
 
         # finalData = {
         #    "sampleTime": timeNow,
@@ -629,7 +621,7 @@ def getSnifferStatus(serTx, serRx, id, fieldsArr, fieldsGroupArr):
         sys.exit()
 
     logging.debug("Query reception succesful")
-    return {finalData}
+    return finalData
 
 
 def arduino_map(value, in_min, in_max, out_min, out_max):
@@ -1125,7 +1117,7 @@ def run_monitor():
     rtData = []
     provisionedDevicesArr = getProvisionedDevices()
     fieldsArr = getFieldsDefinitions()
-    fieldsGroupArr = getFielsdGroup()
+    fieldsGroupArr = getFieldsGroup()
 
     connectedDevices = 0
     times = 3
@@ -1133,44 +1125,25 @@ def run_monitor():
     timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
     showBanner(provisionedDevicesArr, timeNow)
 
-    if (len(provisionedDevicesArr) > 0):
+    if len(provisionedDevicesArr) > 0:
         for device in provisionedDevicesArr:
-            device_data = {"rtData": {}}
-
-            device_data["id"] = int(device.get('id',"0"))
-            device_data["type"] = device.get('type', '')
-            device_data["name"] = device.get('name', '')
-            logging.debug(f"ID:{device_data['id']} name:{device_data['name']}")
+            device["rtData"] = {}
+            logging.debug(f"ID:{device['id']} name:{device['name']}")
 
             SNIFFERID = 8
-            response = getSnifferStatus(serTx, serRx, SNIFFERID, fieldsArr, fieldsGroupArr)
+            response = getSnifferStatus(serTx, serRx,device, fieldsArr, fieldsGroupArr)
             # response es el json que luego se deberia subir a la base de datos
 
             if response:
                 connectedDevices += 1
-                device_data["connected"] = True
-                device_data["rtData"] = response
+                device["connected"] = True
+                device["rtData"] = response
                 alerts = evaluateAlerts(response)
-                device_data["rtData"]["alerts"] = alerts
-                device_data["alerts"] = alerts
-                updateDeviceConnectionStatus( device_data["id"], True)
+                #device["rtData"]["alerts"] = alerts
+                #device["alerts"] = alerts
+                updateDeviceConnectionStatus(device["id"], True)
 
-                if device_data["type"] == "sniffer":
-                    aout1 = 2048
-                    aout2 = 1024
-                    dout1 = 0
-                    dout2 = 0
-
-                    # Invertir los bytes de aout1
-                    aout1 = ((aout1 >> 8) & 0xFF) | ((aout1 << 8) & 0xFF00)
-
-                    # Invertir los bytes de aout2
-                    aout2 = ((aout2 >> 8) & 0xFF) | ((aout2 << 8) & 0xFF00)
-
-                    data = f"{aout1:04X}{aout2:04X}{dout1:02X}{dout2:02X}"
-                    setSnifferData(serTx,  device_data["id"], data)
-
-                elif device_data["type"] == "vlad":
+                if device["type"] == "sniffer":
                     aOut1_0_10V = 1000
                     aOut2_x_20mA = 500
                     dOut1 = 0
@@ -1213,18 +1186,12 @@ def run_monitor():
 
             else:
                 logging.debug("No response from device")
-                device_data["connected"] = False
-                device_data["rtData"]["sampleTime"] = {"$date": SampleTime}
-                device_data["rtData"]["alerts"] = {"connection": True}
-                updateDeviceConnectionStatus( device_data["id"], False)
+                device["connected"] = False
+                device["rtData"]["sampleTime"] = {"$date": SampleTime}
+                device["rtData"]["alerts"] = {"connection": True}
+                updateDeviceConnectionStatus(int(device["id"]), False)
 
-            rtData.append(json.dumps(device_data, default=defaultJSONconverter))
-            rtData.append(json.dumps(device_data))
-
-            # END FOR X
-        logging.debug("Connected devices: %s", connectedDevices)
-        insertDevicesDataIntoDB(rtData)
-        sendStatusToFrontEnd(rtData)
+            rtData.append(json.dumps(device, default=defaultJSONconverter))
 
         # END FOR X
         logging.debug("Connected devices: %s", connectedDevices)
@@ -1242,11 +1209,11 @@ def listen():
     while True:
         if database is None:
             dbConnect()
-        if (serTx is None):
+        if serTx is None:
             try:
                 logging.debug("Opening ports...")
                 setMasterPorts()
-            except:
+            finally:
                 openSerialPort(USBPORTAUX)
 
         run_monitor()
