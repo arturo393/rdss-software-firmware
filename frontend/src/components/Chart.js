@@ -100,18 +100,29 @@ function Chart(props) {
 
       monitorData?.map((monitor) => {
         const data = JSON.parse(monitor)
-        console.log("MONITOR DATA", data)
 
         if (data.id == deviceId) {
           currentDeviceData = data
         }
       })
-      console.log("plotData",plotData)
+
+      
+
 
       if (Object.entries(plotData).length !== 0) {
         let data = plotData
 
-        const alertStatus = getPointText(currentDeviceData?.rtData?.alerts)
+
+        console.log("currentDeviceData",currentDeviceData)
+        const currData = currentDeviceData?.field_values?.[filter]
+        const alertStatus = getPointText(currentDeviceData?.field_values?.[filter].alert)
+        data.y.push(currentDeviceData?.field_values?.[filter] || data.y[data.y.length - 1])
+        const currentIndex = data.y.length - 1
+        let tmpTS = ""
+        let TS = {}
+        if (currentDeviceData.sampleTime !== undefined) tmpTS = JSON.stringify(currentDeviceData.sampleTime).replace("$date", "date").replace("T", " ").replace("Z", "")
+        if (tmpTS) TS = JSON.parse(tmpTS)
+        data.x[currentIndex] = TS
 
         // //Fixes power tolerane
         // // if (filter == "power" && currentDeviceData.rtData[filter] < -5) currentDeviceData.rtData[filter] = -5
@@ -128,16 +139,17 @@ function Chart(props) {
         // data.x[currentIndex] = TS
         // // data.x[currentIndex] = currentDeviceData.rtData.sampleTime
 
-        // if (!data.text[currentIndex]) {
-        //   data.text[currentIndex] = alertStatus.text
-        //   data.marker.color[currentIndex] = alertStatus.status ? "red" : color
-        // }
+        if (!data.text[currentIndex]) {
+          data.text[currentIndex] = alertStatus.text
+          data.marker.color[currentIndex] = alertStatus.status ? "red" : color
+        }
         setRevision(currentIndex + deviceId + Math.floor(Math.random() * 100 + 1))
         setPlotData(data)
       }
     }
   }, [monitorData])
 
+  console.log("PLOT DATA", plotData)
   const renderPlot = () => {
     if (Object.entries(plotData).length !== 0 && autoArrange) {
       let d = plotData
@@ -203,6 +215,7 @@ function Chart(props) {
       layout={plot.layout}
       debug={true}
       config={plot.config}
+      className="w-100"
     />
   )
 }

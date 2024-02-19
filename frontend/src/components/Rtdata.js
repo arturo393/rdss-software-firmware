@@ -137,7 +137,8 @@ const Rtdata = (props) => {
 ]
        */
       
-    console.log("RES DATA", res.data)
+    console.log("RTDATA RES DATA", res.data)
+    console.log("RTDATA FIELDS", fields)
 
     fields.map((field) => {
       rtd[field._id] = []
@@ -181,11 +182,14 @@ const Rtdata = (props) => {
         // rtd.current = current || []
         // rtd.power = power || []
 
-        setRtData({ x, rtd, marker, text })
-        hiddeSpinner()
+        
       })
+
+      setRtData({ x, rtd, marker, text })
+      hiddeSpinner()
     }
   }
+  
 
   const getDateTime = (obj) => {
     let dateString = obj.year
@@ -286,9 +290,11 @@ const Rtdata = (props) => {
               <div className="text-center mt-2 mb-2">
                 <h5>RT-Data: {deviceName}</h5>
               </div>
-              {fields && fields.map(field => (
+              {fields && fields.filter(field => field.plottable).map(field => (
                 // rtData = { x, rtd, marker, text }
-                <Chart deviceId={device} rtData={rtData} label={field.name} filter={field._id} color={field.color || "lightblue"} />
+                <div>
+                <Chart deviceId={device}  rtData={rtData} label={field.name} filter={field._id} color={field.color || "lightblue"} />
+                </div>
               ))}
               {/* <Chart deviceId={device} rtData={rtData} label={"Voltage"} filter="voltage" color="lightblue" />
               <br />
