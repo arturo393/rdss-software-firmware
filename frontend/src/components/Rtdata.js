@@ -30,21 +30,35 @@ const Rtdata = (props) => {
   const [deviceData, setDeviceData] = useState({})
   const [deviceName, setDeviceName] = useState("=== Select a Device ===")
 
+  const [fields,setFields] = useState([])
+
   const [dateFrom, handleDateFromChange] = useState(new Date(Date.now() - 3600 * 1000 * 6))
   const [dateTo, handleDateToChange] = useState(new Date())
   const [rtData, setRtData] = useState({})
+
+  const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`;
+
 
   useEffect(() => {
     // axios.get(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/devices").then((res) => {
     //   const devices = res.data
     //   setDevices(devices)
     // })
+
+    const getFieldsData = async () => {
+      const res = await axios.get(`${url}/api/fields`);
+      setFields(res.data.filter(field => field.plottable ))
+    }
+
     if (activeDeviceId) {
       document.getElementById("device").value = activeDeviceId
       setDevice(activeDeviceId)
     }
+    getFieldsData()
     hiddeSpinner()
   }, [])
+
+  console.log("fields",fields)
 
   useEffect(() => {
     document.getElementById("device").value = activeDeviceId
@@ -65,7 +79,8 @@ const Rtdata = (props) => {
     }
   }, [device, dateFrom, dateTo])
 
-  const getDeviceRTData = (device = 0) => {
+
+  const getDeviceRTData = async (device = 0) => {
     if (device) {
       console.log("Getting device data, ID=" + device)
       let x = []
@@ -78,49 +93,41 @@ const Rtdata = (props) => {
       let marker = {}
       marker.color = []
 
-      let tempData = []
       const deviceReq = { id: parseInt(device), dateFrom: dateFrom, dateTo: dateTo }
 
-      tempData = axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/deviceId", deviceReq).then((res) => {
-        return res.data
-      })
-
+      const res = await axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/deviceId", deviceReq)
+      console.log("RES", res.data)
+      /**
+      [{
+        "_id": {
+          "device": 8,
+          "year": 2024,
+          "month": 2,
+          "day": 15,
+          "hour": 16,
+          "minute": 16
+        },
+        "connected": true,
+        "field_values": {
+          "65bcf79d2719f33d5846cef7": {
+            "value": 2.44,
+            "alert": true
+          },
+          "65bcf7a72719f33d5846cef9": {
+            "value": 5.95,
+            "alert": true
+          }
+        }
+      }]
+       */
       tempData.then((data) => {
-        let lastValues = { voltage: 0, current: 0, power: 0 }
-
         data.map((d) => {
+          console.log("D",d)
+          
           const datetime = getDateTime(d._id)
           x.push(datetime)
-
-          // Fix numberDecimal issue
-          const tmp = JSON.stringify(d).replace(/\$numberDecimal/g, "numberDecimal")
-          d.voltage = parseFloat(JSON.parse(tmp).voltage?.numberDecimal)
-          d.current = parseFloat(JSON.parse(tmp).current?.numberDecimal)
-          d.power = parseFloat(JSON.parse(tmp).power?.numberDecimal)
-
-          voltage.push(d.voltage?.toFixed(2) || lastValues.voltage)
-          current.push(d.current?.toFixed(2) || lastValues.current)
-          //Fixes POWER tolerance
-          //if (d.power?.toFixed(2) <= -5) d.power = -5
-          power.push(d.power?.toFixed(2) || lastValues.power)
-          lastValues.voltage = voltage.at(-1)
-          lastValues.current = current.at(-1)
-          lastValues.power = power.at(-1)
-
-          let connectionAlert = false
-          let voltageAlert = false
-          let currentAlert = false
-          let powerAlert = false
-          let guplAlert = false
-          let gdwlAlert = false
-          d.alerts?.map((alert) => {
-            connectionAlert |= alert.connection
-            voltageAlert |= alert.voltage
-            currentAlert |= alert.current
-            powerAlert |= alert.power
-            guplAlert |= alert.gupl
-            gdwlAlert |= alert.gdwl
-          })
+          
+          
           let t = "<b>Device: " + device + "</b><br>\n"
           if (connectionAlert) t += " * Disconnect<br>\n"
           if (voltageAlert) t += " * Voltage Out of Limits<br>\n"
@@ -191,6 +198,8 @@ const Rtdata = (props) => {
     }
   }
 
+  console.log("rtData",rtData)
+
   return (
     <div className="containers text-center">
       <span className="spinnerContainer" id="spinnerContainer">
@@ -241,11 +250,16 @@ const Rtdata = (props) => {
               <div className="text-center mt-2 mb-2">
                 <h5>RT-Data: {deviceName}</h5>
               </div>
-              <Chart deviceId={device} rtData={rtData} label={"Voltage"} filter="voltage" color="lightblue" />
+              {fields && fields.map(field => (
+                // rtData = { x, rtd, marker, text }
+                <h1>aaa</h1>
+                // <Chart deviceId={device} rtData={rtData} label={field.name} filter={field._id} color={field.color || "lightblue"} />
+              ))}
+              {/* <Chart deviceId={device} rtData={rtData} label={"Voltage"} filter="voltage" color="lightblue" />
               <br />
               <Chart deviceId={device} rtData={rtData} label={"Current"} filter="current" color="green" />
               <br />
-              <Chart deviceId={device} rtData={rtData} label={"Downlink Power"} filter="power" color="orange" />
+              <Chart deviceId={device} rtData={rtData} label={"Downlink Power"} filter="power" color="orange" /> */}
             </>
           )}
         </div>

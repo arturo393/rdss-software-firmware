@@ -4,22 +4,19 @@ import { DateTime } from "luxon"
 export default async function (req, res, next) {
   const { db } = await connectToDatabase()
 
-  const dateFrom = DateTime.fromISO(req.body.dateFrom).toFormat("yyyy-LL-dd HH:mm:ss")
-  const dateTo = DateTime.fromISO(req.body.dateTo).toFormat("yyyy-LL-dd HH:mm:ss")
+  var start = DateTime.fromISO(req.body.dateFrom)
+  var end = DateTime.fromISO(req.body.dateTo)
 
-  var end = DateTime.fromISO(req.body.dateFrom)
-  var start = DateTime.fromISO(req.body.dateTo)
+  var diffInDays = end.diff(start, "days").as("days")
 
-  var diffInDays = start.diff(end, "days").as("days")
+  console.log("diffInDays",diffInDays)
 
   let dynId = {
     device: "$id",
     year: "$year",
     month: "$month",
     day: "$day",
-    // hour: "$hour",
-    // minute: "$minute",
-    // second: "$second",
+
   }
 
   if (diffInDays > 4 && diffInDays <= 31) {
@@ -33,155 +30,248 @@ export default async function (req, res, next) {
     dynId.second = "$second"
   }
 
-  // const pipeline = [
-  //   {
-  //     $match: {
-  //       id: req.body.id,
-  //     },
-  //   },
-  //   {
-  //     $project: {
-  //       rtData: {
-  //         $filter: {
-  //           input: "$rtData",
-  //           as: "item",
-  //           cond: {
-  //             $and: [
-  //               {
-  //                 $gte: ["$$item.sampleTime", dateFrom],
-  //               },
-  //               {
-  //                 $lte: ["$$item.sampleTime", dateTo],
-  //               },
-  //             ],
-  //           },
-  //         },
-  //       },
-  //       id: 1,
-  //       status: 1,
-  //       type: 1,
-  //     },
-  //   },
-  //   {
-  //     $unwind: {
-  //       path: "$rtData",
-  //     },
-  //   },
-  //   {
-  //     $project: {
-  //       year: {
-  //         $year: {
-  //           $dateFromString: {
-  //             dateString: "$rtData.sampleTime",
-  //           },
-  //         },
-  //       },
-  //       month: {
-  //         $month: {
-  //           $dateFromString: {
-  //             dateString: "$rtData.sampleTime",
-  //           },
-  //         },
-  //       },
-  //       day: {
-  //         $dayOfMonth: {
-  //           $dateFromString: {
-  //             dateString: "$rtData.sampleTime",
-  //           },
-  //         },
-  //       },
-  //       hour: {
-  //         $hour: {
-  //           $dateFromString: {
-  //             dateString: "$rtData.sampleTime",
-  //           },
-  //         },
-  //       },
-  //       minute: {
-  //         $minute: {
-  //           $dateFromString: {
-  //             dateString: "$rtData.sampleTime",
-  //           },
-  //         },
-  //       },
-  //       second: {
-  //         $second: {
-  //           $dateFromString: {
-  //             dateString: "$rtData.sampleTime",
-  //           },
-  //         },
-  //       },
-  //       voltage: "$rtData.voltage",
-  //       current: "$rtData.current",
-  //       power: "$rtData.power",
-  //       alerts: "$rtData.alerts",
-  //       id: "$id",
-  //     },
-  //   },
-  //   {
-  //     $group: {
-  //       _id: dynId,
-  //       voltage: {
-  //         $avg: "$voltage",
-  //       },
-  //       current: {
-  //         $avg: "$current",
-  //       },
-  //       power: {
-  //         $avg: "$power",
-  //       },
-  //       alerts: {
-  //         $push: "$alerts",
-  //       },
-  //     },
-  //   },
-  //   {
-  //     $sort: {
-  //       _id: 1,
-  //     },
-  //   },
-  // ]
 
   const pipeline = [
     {
       $match: {
-        $and: [{ "metaData.deviceId": req.body.id }, { sampleTime: { $gte: new Date(end) } }, { sampleTime: { $lte: new Date(start) } }],
+        $and: [
+          {
+            id: req.body.id ,
+          },
+          {
+            sampleTime: {
+              $gte: new Date(start).toISOString(),
+            },
+          },
+          {
+            sampleTime: {
+              $lte: new Date(end).toISOString(),
+            },
+          },
+        ],
       },
     },
     {
       $project: {
         id: "$id",
-        year: { $year: "$sampleTime" },
-        month: { $month: "$sampleTime" },
-        day: { $dayOfMonth: "$sampleTime" },
-        hour: { $hour: "$sampleTime" },
-        minute: { $minute: "$sampleTime" },
-        seconds: { $second: "$sampleTime" },
-        voltage: { $toDecimal: "$voltage" },
-        current: { $toDecimal: "$current" },
-        power: { $toDecimal: "$power" },
-        alerts: "$alerts",
+        year: {
+          $year: {
+            $toDate: "$sampleTime",
+          },
+        },
+        month: {
+          $month: {
+            $toDate: "$sampleTime",
+          },
+        },
+        day: {
+          $dayOfMonth: {
+            $toDate: "$sampleTime",
+          },
+        },
+        hour: {
+          $hour: {
+            $toDate: "$sampleTime",
+          },
+        },
+        minute: {
+          $minute: {
+            $toDate: "$sampleTime",
+          },
+        },
+        seconds: {
+          $second: {
+            $toDate: "$sampleTime",
+          },
+        },
+        connected: "$connected",
+        field_values_array: {
+          $objectToArray: "$field_values",
+        },
+      },
+    },
+    {
+      $unwind: "$field_values_array",
+    },
+    {
+      $addFields: {
+        field_values_array: {
+          k: {
+            $toObjectId: "$field_values_array.k",
+          },
+          v: "$field_values_array.v",
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: "fields",
+        localField: "field_values_array.k",
+        foreignField: "_id",
+        as: "field_info",
+      },
+    },
+    {
+      $unwind: "$field_info",
+    },
+    {
+      $match: {
+        "field_info.plottable": true,
       },
     },
     {
       $group: {
-        _id: dynId,
-        voltage: { $avg: "$voltage" },
-        current: { $avg: "$current" },
-        power: { $avg: "$power" },
-        alerts: { $push: "$alerts" },
+        _id: {...dynId, connected: {$and: "$connected"}, field: "$field_values_array.k"},
+        averageValue: { $avg: "$field_values_array.v.value" },
+        alerts: { $push: "$field_values_array.v.alert" },
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        connected: {
+          $ifNull: ["$connected", false]
+        },
+        field_values: {
+          k: {$toString: "$_id.field"},
+          v: {
+            value: "$averageValue",
+            alert: {
+              $reduce: {
+                input: "$alerts",
+                initialValue: true,
+                in: { $and: ["$$value", "$$this"] },
+              },
+            },
+          },
+        },
+      },
+    },
+    {
+      $group: {
+        _id: {
+          device: "$_id.device",
+          year: "$_id.year",
+          month: "$_id.month",
+          day: "$_id.day",
+          hour: {
+            $cond: {
+              if: "$_id.hour",  // Check if dynId.hour exists
+              then: "$_id.hour",  // Include dynId.hour if it exists
+              else: null  // Otherwise, set it to null or omit it
+            }
+          },
+          minute: {
+            $cond: {
+              if: "$_id.minute",  // Check if dynId.hour exists
+              then: "$_id.minute",  // Include dynId.hour if it exists
+              else: null  // Otherwise, set it to null or omit it
+            }
+          },
+          second: {
+            $cond: {
+              if: "$_id.second",  // Check if dynId.hour exists
+              then: "$_id.second",  // Include dynId.hour if it exists
+              else: null  // Otherwise, set it to null or omit it
+            }
+          },
+        },
+        connected: {$last: "$connected"},
+        field_values: { $push: "$field_values" },
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        connected: 1,
+        field_values: {
+          $arrayToObject: "$field_values",
+        },
       },
     },
     {
       $sort: {
-        _id: 1,
+        "_id": 1,
       },
-    },
+    }
   ]
 
-  // console.log(JSON.stringify(pipeline))
+
+  console.log(JSON.stringify(pipeline))
 
   const devices = await db.collection("rtData").aggregate(pipeline).toArray()
 
   res.json(devices)
 }
+
+/**
+ * 
+ [
+  {
+    $match: {
+      $and: [
+        { id: 8 },
+        {
+          sampleTime: {
+            $gte: "2021-02-18T21:20:00.000Z",
+          },
+        },
+        {
+          sampleTime: {
+            $lte: "2024-02-18T22:39:39.488Z",
+          },
+        },
+      ],
+    },
+  },
+  {
+    $project: {
+      id: "$id",
+      year: { $year: { $toDate: "$sampleTime" } },
+      month: {
+        $month: { $toDate: "$sampleTime" },
+      },
+      day: {
+        $dayOfMonth: { $toDate: "$sampleTime" },
+      },
+      hour: { $hour: { $toDate: "$sampleTime" } },
+      minute: {
+        $minute: { $toDate: "$sampleTime" },
+      },
+      seconds: {
+        $second: { $toDate: "$sampleTime" },
+      },
+      connected: 1,
+      field_values_array: {
+        $objectToArray: "$field_values",
+      },
+    },
+  },
+  { $unwind: "$field_values_array" },
+  {
+      $addFields: {
+        field_values_array: {
+          k: { $toObjectId: "$field_values_array.k" },
+          v: "$field_values_array.v"
+        }
+      }
+  },
+  {
+    $lookup: {
+      from: "fields",
+      localField: "field_values_array.k",
+      foreignField: "_id",
+      as: "field_info",
+    },
+  },
+  {
+    $unwind: "$field_info"
+  },
+  {
+    $match: {
+      "field_info.plottable": true
+    }
+  },
+]
+ * 
+ */

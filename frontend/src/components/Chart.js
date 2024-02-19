@@ -105,7 +105,7 @@ function Chart(props) {
       if (Object.entries(plotData).length !== 0) {
         let data = plotData
 
-        const alertStatus = getPointText(currentDeviceData.rtData.alerts)
+        const alertStatus = getPointText(currentDeviceData?.rtData?.alerts)
 
         //Fixes power tolerane
         // if (filter == "power" && currentDeviceData.rtData[filter] < -5) currentDeviceData.rtData[filter] = -5
