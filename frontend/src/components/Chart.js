@@ -115,8 +115,8 @@ function Chart(props) {
 
         console.log("currentDeviceData",currentDeviceData)
         const currData = currentDeviceData?.field_values?.[filter]
-        const alertStatus = getPointText(currentDeviceData?.field_values?.[filter].alert)
-        data.y.push(currentDeviceData?.field_values?.[filter] || data.y[data.y.length - 1])
+        const alertStatus = getPointText(currentDeviceData?.field_values?.[filter]?.alert)
+        data.y.push((typeof currentDeviceData?.field_values?.[filter]?.value) === 'string'? parseFloat(currentDeviceData?.field_values?.[filter]?.value):currentDeviceData?.field_values?.[filter]?.value || data.y[data.y.length - 1])
         const currentIndex = data.y.length - 1
         let tmpTS = ""
         let TS = {}

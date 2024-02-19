@@ -84,10 +84,6 @@ const Rtdata = (props) => {
       console.log("Getting device data, ID=" + device)
       let x = []
       let rtd = {}
-      let voltage = []
-      let current = []
-      let power = []
-
       let text = []
       let marker = {}
       marker.color = []
