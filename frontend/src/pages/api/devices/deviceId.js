@@ -196,82 +196,10 @@ export default async function (req, res, next) {
     }
   ]
 
-
-  console.log(JSON.stringify(pipeline))
+  // console.log(JSON.stringify(pipeline))
 
   const devices = await db.collection("rtData").aggregate(pipeline).toArray()
 
   res.json(devices)
 }
 
-/**
- * 
- [
-  {
-    $match: {
-      $and: [
-        { id: 8 },
-        {
-          sampleTime: {
-            $gte: "2021-02-18T21:20:00.000Z",
-          },
-        },
-        {
-          sampleTime: {
-            $lte: "2024-02-18T22:39:39.488Z",
-          },
-        },
-      ],
-    },
-  },
-  {
-    $project: {
-      id: "$id",
-      year: { $year: { $toDate: "$sampleTime" } },
-      month: {
-        $month: { $toDate: "$sampleTime" },
-      },
-      day: {
-        $dayOfMonth: { $toDate: "$sampleTime" },
-      },
-      hour: { $hour: { $toDate: "$sampleTime" } },
-      minute: {
-        $minute: { $toDate: "$sampleTime" },
-      },
-      seconds: {
-        $second: { $toDate: "$sampleTime" },
-      },
-      connected: 1,
-      field_values_array: {
-        $objectToArray: "$field_values",
-      },
-    },
-  },
-  { $unwind: "$field_values_array" },
-  {
-      $addFields: {
-        field_values_array: {
-          k: { $toObjectId: "$field_values_array.k" },
-          v: "$field_values_array.v"
-        }
-      }
-  },
-  {
-    $lookup: {
-      from: "fields",
-      localField: "field_values_array.k",
-      foreignField: "_id",
-      as: "field_info",
-    },
-  },
-  {
-    $unwind: "$field_info"
-  },
-  {
-    $match: {
-      "field_info.plottable": true
-    }
-  },
-]
- * 
- */
