@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from dataclasses import field
 
 from pymongo import MongoClient
 import logging
@@ -172,8 +173,8 @@ def getFieldsDefinitions():
     try:
         collection_name = database["fields"]
         fields = list(collection_name.find(
-            {"$or": [{"writable": True}, {"readable": True}]},
-            {"_id": 1, "name": 1, "group_id": 1, "default_value": 1, "readable": 1, "writable": 1}))
+            {"$or": [{"set": True}, {"query": True}]},
+            {"_id": 1, "name": 1, "group_id": 1, "default_value": 1, "query": 1, "set": 1}))
         return fields
     except Exception as e:
         logging.exception(e)
@@ -238,31 +239,12 @@ def insertDevicesDataIntoDB(rtData):
     """
     for device in rtData:
         d = json.loads(device)
-        if "rtData" in d:
-            logging.debug("Data written to DB: {}".format(d))
+        logging.debug("Data written to DB: {}".format(d))
+        try:
+            database.rtData.insert_one(d)
 
-            # Patches
-            if "voltage" in d["rtData"]:
-                if (d["rtData"]["voltage"] > cfg.MAX_VOLTAGE):
-                    d["rtData"]["voltage"] = cfg.MAX_VOLTAGE
-
-            try:
-                if "alerts" in d:
-                    database.devices.update_one(
-                        {"id": d["id"]}, {"$set": {"alerts": d["alerts"]}})
-
-                # DELETEME
-                # database.devices.update_one(
-                #     {"id": d["id"]}, {"$addToSet": {"rtData": d["rtData"]}})
-                # END OF DELETEME
-
-                d["rtData"]["metaData"] = {"deviceId": d["id"]}
-                d["rtData"]["sampleTime"] = datetime.datetime.now().replace(
-                    microsecond=0)
-                database.rtData.insert_one(d["rtData"])
-
-            except Exception as e:
-                logging.exception(e)
+        except Exception as e:
+            logging.exception(e)
 
 
 def openSerialPort(port="", function=""):
@@ -445,10 +427,11 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
 
     trama = ""
 
-    for field_group in fieldsGroupArr:
-        for field in fieldsArr:
-            if field_group['_id'] == field['group_id']:
-                trama[field_group['name']] += field['default_value']
+    # for field_group in fieldsGroupArr:
+    #     for field in fieldsArr:
+    #         if field_group['_id'] == field['group_id'] and field_group['name'] == 'Status':
+    #             trama[field_group['name']] += field['default_value']
+
 
     SEGMENT_START = 126
     SEGMENT_END = 127
@@ -466,15 +449,6 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
     haveData = False
     finalData = {}
 
-    # return({
-    #     "voltage": 12,
-    #     "current": 50,
-    #     "gupl": 23,
-    #     "gdwl": 70,
-    #     "power": 100
-    # })
-
-    # ---- Build segment
     device_id = hex(int(device["id"]))
     if (len(device_id) == 3):
         id_string = f'{SNIFFER:02x}' + '0' + device_id[2:3] + f'{STATUS_QUERY:02x}' + '0000'
@@ -589,28 +563,8 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
             "dOut2": dOut2,
             "swSerial": swSerial
         }
-        finalData = dict()
-        # Como asocio solo un field_groups a un device ? si no  busca en todos los fields_groups?
-        for field_group in fieldsGroupArr:
-            for field in fieldsArr:
-                if str(field_group['_id']) == field['group_id']:
-                    if field['readable']:
-                        finalData[str(field['_id'])] = {
-                            "value": data.get(field["name"], field["default_value"]),
-                            "alert": True
-                        }
-
-        # ---- Package received data in json for DB
-
-        # finalData = {
-        #    "sampleTime": timeNow,
-        #    "voltage": lineVoltageConverted,
-        #    "current": unitCurrentConverted,
-        #    "gupl": uplinkAgcValueConverted,
-        #    "gdwl": downlinkAgcValueConverted,
-        #    "power": downlinkOutputPowerAvg
-        # }
-        # -----------------------------------------------------
+        #TODO: evaluate alerts
+        finalData = associate_field_groups(fieldsGroupArr,fieldsArr,data)
         serTx.flushInput()
         serTx.flushOutput()
         serRx.flushInput()
@@ -623,6 +577,44 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
     logging.debug("Query reception succesful")
     return finalData
 
+
+def associate_field_groups(fields_group_arr: list[dict], fields_arr: list[dict], data: dict) -> dict:
+    """
+    Associates field groups to fields and adds them to a dictionary.
+
+    Args:
+        fields_group_arr: List of field group dictionaries.
+        fields_arr: List of field dictionaries.
+        data: Dictionary containing field values.
+
+    Returns:
+        A dictionary with field_id as keys and values as dictionaries containing
+        "value" and "alert" information.
+    """
+
+    final_data: dict = {}
+
+    for field_group in fields_group_arr:
+        if not field_group:
+            logging.error("Empty field group encountered.")
+            continue
+
+        matched_field: dict | None = None
+        for field in fields_arr:
+            if str(field_group["_id"]) == field["group_id"]:
+                if field["query"]:
+                    matched_field = field
+                    break
+
+        if matched_field:
+            final_data[str(field_group["_id"])] = {
+                "value": data.get(matched_field["name"], matched_field["default_value"]),
+                "alert": True,
+            }
+        else:
+            logging.error("No matching field found for field group: %s", field_group)
+
+    return final_data
 
 def arduino_map(value, in_min, in_max, out_min, out_max):
     return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
@@ -1127,79 +1119,78 @@ def run_monitor():
 
     if len(provisionedDevicesArr) > 0:
         for device in provisionedDevicesArr:
-            device["rtData"] = {}
+            device_data = dict()
             logging.debug(f"ID:{device['id']} name:{device['name']}")
 
             SNIFFERID = 8
-            response = getSnifferStatus(serTx, serRx,device, fieldsArr, fieldsGroupArr)
-            # response es el json que luego se deberia subir a la base de datos
-
+            response = getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr)
             if response:
                 connectedDevices += 1
-                device["connected"] = True
-                device["rtData"] = response
-                alerts = evaluateAlerts(response)
-                #device["rtData"]["alerts"] = alerts
-                #device["alerts"] = alerts
+                device_data["id"] = device["id"]
+                device_data["name"] = device["name"]
+                device_data["connected"] = True
+                device_data["sampleTime"] = datetime.datetime.now().replace(microsecond=0)
+                device_data["field_values"] = response
                 updateDeviceConnectionStatus(device["id"], True)
-
                 if device["type"] == "sniffer":
-                    aOut1_0_10V = 1000
-                    aOut2_x_20mA = 500
-                    dOut1 = 0
-                    dOut2 = 0
-                    # serialSW = 0 #seteaer a rs232
-                    serialSW = 1  # setear a rs485
-
-                    # Invertir los bytes de aout1
-                    aout1 = ((aOut1_0_10V >> 8) & 0xFF) | ((aOut1_0_10V << 8) & 0xFF00)
-
-                    # Invertir los bytes de aout2
-                    aout2 = ((aOut2_x_20mA >> 8) & 0xFF) | ((aOut2_x_20mA << 8) & 0xFF00)
-
-                    data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}{serialSW:02X}"
-                    ### SET DATA ###
-                    # data = getRealValues(device)
+                    data = packet_sniffer_output()
                     setSnifferData(serTx, serRx, SNIFFERID, data)
-
-                    ### MODBUS TEST ###
-                    uart_cmd = "14"  # comando para que el sniffer envie el paquete via serial
-                    sniffer_add = "08"
-                    data = ""
-                    MAXDATA = 255
-                    global contador
-
-                    i = 1
-                    if contador * 5 < MAXDATA - 10 - 1 - 5:
-                        while i <= contador * 5:
-                            if i == 127:
-                                data = f"{data}{0:02x}"
-                            else:
-                                data = f"{data}{i:02X}"
-                            i += 1
-                        data = data + "FF"
-                    else:
-                        contador = 0
+                    data, uart_cmd = get_example_variable_frame(data)
                     sendModbus(uart_cmd, f"{SNIFFERID:02x}", data, serTx, serRx)
-                    contador += 1
-                    ### END TEST ###
 
             else:
                 logging.debug("No response from device")
-                device["connected"] = False
-                device["rtData"]["sampleTime"] = {"$date": SampleTime}
-                device["rtData"]["alerts"] = {"connection": True}
+                device_data["id"] = device["id"]
+                device_data["name"] = device["name"]
+                device_data["connected"] = False
+                device_data["sampleTime"] = datetime.datetime.now().replace(microsecond=0)
+                device_data["field_values"] = {}
                 updateDeviceConnectionStatus(int(device["id"]), False)
 
-            rtData.append(json.dumps(device, default=defaultJSONconverter))
+            rtData.append(json.dumps(device_data, default=defaultJSONconverter))
 
-        # END FOR X
         logging.debug("Connected devices: %s", connectedDevices)
         insertDevicesDataIntoDB(rtData)
+        logging.debug("Inserted")
         sendStatusToFrontEnd(rtData)
     else:
         # sendStatusToFrontEnd([])
         logging.debug("No provisioned devices found in the DB")
+
+
+def get_example_variable_frame(data):
+    uart_cmd = "14"  # comando para que el sniffer envie el paquete via serial
+    sniffer_add = "08"
+    data = ""
+    MAXDATA = 255
+    contador = 20
+    i = 1
+    if contador * 5 < MAXDATA - 10 - 1 - 5:
+        while i <= contador * 5:
+            if i == 127:
+                data = f"{data}{0:02x}"
+            else:
+                data = f"{data}{i:02X}"
+            i += 1
+        data = data + "FF"
+    else:
+        contador = 0
+    return data, uart_cmd
+
+
+def packet_sniffer_output():
+    aOut1_0_10V = 1000
+    aOut2_x_20mA = 500
+    dOut1 = 0
+    dOut2 = 0
+    # serialSW = 0 #seteaer a rs232
+    serialSW = 1  # setear a rs485
+    # Invertir los bytes de aout1
+    aout1 = ((aOut1_0_10V >> 8) & 0xFF) | ((aOut1_0_10V << 8) & 0xFF00)
+    # Invertir los bytes de aout2
+    aout2 = ((aOut2_x_20mA >> 8) & 0xFF) | ((aOut2_x_20mA << 8) & 0xFF00)
+    data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}{serialSW:02X}"
+    return data
 
 
 def listen():
