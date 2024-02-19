@@ -73,7 +73,8 @@ const Schema = (props) => {
     monitorData?.map((monitor) => {
       const mdevice = JSON.parse(monitor)
       let fill = mdevice.connected ? "green" : "red"
-      if (mdevice.connected && Object.entries(mdevice.alerts).length != 0) {
+
+      if (mdevice.connected && Object.values(mdevice.field_values || {}).some(fieldValue => fieldValue.alert)) {
         fill = "yellow"
       }
 

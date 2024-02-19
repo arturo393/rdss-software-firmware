@@ -30,9 +30,14 @@ const Status = (props) => {
     monitorData?.map((monitor) => {
       const data = JSON.parse(monitor)
       data.connected ? connected++ : alerted++
-      if (data.connected && Object.entries(data.alerts).length != 0) {
+      
+      if (data.connected && Object.values(data.field_values || {}).some(fieldValue => fieldValue.alert)) {
         alerted++
       }
+
+      // if (data.connected && Object.entries(data.alerts).length != 0) {
+      //   alerted++
+      // }
 
       setStatus({
         connected: connected,

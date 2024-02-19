@@ -58,7 +58,6 @@ const Rtdata = (props) => {
     hiddeSpinner()
   }, [])
 
-  console.log("fields",fields)
 
   useEffect(() => {
     document.getElementById("device").value = activeDeviceId
@@ -96,54 +95,91 @@ const Rtdata = (props) => {
       const deviceReq = { id: parseInt(device), dateFrom: dateFrom, dateTo: dateTo }
 
       const res = await axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/deviceId", deviceReq)
-      console.log("RES", res.data)
       /**
-      [{
+       * 
+       [
+    {
         "_id": {
-          "device": 8,
-          "year": 2024,
-          "month": 2,
-          "day": 15,
-          "hour": 16,
-          "minute": 16
+            "device": 8,
+            "year": 2024,
+            "month": 2,
+            "day": 15,
+            "hour": 16,
+            "minute": null,
+            "second": null
         },
-        "connected": true,
+        "connected": false,
         "field_values": {
-          "65bcf79d2719f33d5846cef7": {
-            "value": 2.44,
-            "alert": true
-          },
-          "65bcf7a72719f33d5846cef9": {
-            "value": 5.95,
-            "alert": true
-          }
+            "65d1474507a3be0013ede784": {
+                "value": 6.666666666666667,
+                "alert": true
+            }
         }
-      }]
+    },
+    {
+        "_id": {
+            "device": 8,
+            "year": 2024,
+            "month": 2,
+            "day": 18,
+            "hour": 21,
+            "minute": null,
+            "second": null
+        },
+        "connected": false,
+        "field_values": {
+            "65d1474507a3be0013ede784": {
+                "value": 7.333333333333333,
+                "alert": false
+            }
+        }
+    }
+]
        */
-      tempData.then((data) => {
-        data.map((d) => {
-          console.log("D",d)
-          
-          const datetime = getDateTime(d._id)
-          x.push(datetime)
-          
-          
-          let t = "<b>Device: " + device + "</b><br>\n"
-          if (connectionAlert) t += " * Disconnect<br>\n"
-          if (voltageAlert) t += " * Voltage Out of Limits<br>\n"
-          if (currentAlert) t += " * Current Out of Limits<br>\n"
-          if (powerAlert) t += " * Downlink Power Out of Limits<br>\n"
-          if (guplAlert) t += " * AGC Uplink Out of Limits<br>\n"
-          if (gdwlAlert) t += " * AGC Downlink Out of Limits<br>\n"
-          if (connectionAlert || voltageAlert || currentAlert || powerAlert || guplAlert || gdwlAlert) marker.color.push("red")
-          else marker.color.push("lightblue") //default color
+      
+    console.log("RES DATA", res.data)
 
-          text.push(t)
-        })
+    fields.map((field) => {
+      rtd[field._id] = []
+    })
 
-        rtd.voltage = voltage || []
-        rtd.current = current || []
-        rtd.power = power || []
+    res.data.map((data) => {
+      const datetime = getDateTime(data?._id)
+      x.push(datetime)
+      Object.keys(data?.field_values).map((key) => {
+        rtd[key].push(data?.field_values[key].value)
+        marker.color.push(data?.field_values[key].alert?"red":"lightblue")
+        let text_content = `<b>Device: ${data._id.device}</b><br>\n`
+        text_content = data?.connected?"":"Disconnect"
+        text_content += data?.field_values[key].alert?fields.find(f => key === f._id).name+" Out of Limits":"no alerts"
+        text.push(text_content)
+      })
+  
+      
+
+        // data.map((d) => {
+        //   console.log("D",d)
+          
+        //   const datetime = getDateTime(d._id)
+        //   x.push(datetime)
+          
+          
+        //   let t = "<b>Device: " + device + "</b><br>\n"
+        //   if (connectionAlert) t += " * Disconnect<br>\n"
+        //   if (voltageAlert) t += " * Voltage Out of Limits<br>\n"
+        //   if (currentAlert) t += " * Current Out of Limits<br>\n"
+        //   if (powerAlert) t += " * Downlink Power Out of Limits<br>\n"
+        //   if (guplAlert) t += " * AGC Uplink Out of Limits<br>\n"
+        //   if (gdwlAlert) t += " * AGC Downlink Out of Limits<br>\n"
+        //   if (connectionAlert || voltageAlert || currentAlert || powerAlert || guplAlert || gdwlAlert) marker.color.push("red")
+        //   else marker.color.push("lightblue") //default color
+
+        //   text.push(t)
+        // })
+
+        // rtd.voltage = voltage || []
+        // rtd.current = current || []
+        // rtd.power = power || []
 
         setRtData({ x, rtd, marker, text })
         hiddeSpinner()
@@ -198,7 +234,7 @@ const Rtdata = (props) => {
     }
   }
 
-  console.log("rtData",rtData)
+  console.log("RTDATA rtData",rtData)
 
   return (
     <div className="containers text-center">
@@ -252,8 +288,7 @@ const Rtdata = (props) => {
               </div>
               {fields && fields.map(field => (
                 // rtData = { x, rtd, marker, text }
-                <h1>aaa</h1>
-                // <Chart deviceId={device} rtData={rtData} label={field.name} filter={field._id} color={field.color || "lightblue"} />
+                <Chart deviceId={device} rtData={rtData} label={field.name} filter={field._id} color={field.color || "lightblue"} />
               ))}
               {/* <Chart deviceId={device} rtData={rtData} label={"Voltage"} filter="voltage" color="lightblue" />
               <br />
