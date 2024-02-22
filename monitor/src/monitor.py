@@ -78,77 +78,6 @@ client = None
 serTx = None
 f_agc_convert = None
 
-
-class CircularBuffer:
-    def __init__(self, size):
-        self.size = size
-        self.buffer = [0] * size
-        self.index = 0
-        self.is_full = False
-
-    def add(self, value):
-        self.buffer[self.index] = value
-        self.index = (self.index + 1) % self.size
-        if not self.is_full and self.index == 0:
-            self.is_full = True
-
-    def get(self):
-        if self.is_full:
-            return self.buffer
-        else:
-            return self.buffer[:self.index]
-
-    def __str__(self):
-        return str(self.buffer)
-
-
-window_size = 5  # Number of samples to consider for the moving average
-downlinkPowerOutputSamples = CircularBuffer(window_size)
-
-
-def getCsvData(data):
-    x_vals = []
-    y_vals = []
-
-    try:
-        with open(data) as file:
-            reader = csv.reader(file)
-            next(reader)  # saltar la fila de encabezado
-            for row in reader:
-                a = row[0]
-                x_vals.append(float(row[0]))
-                y_vals.append(float(row[1]))
-
-        # Convertir los datos a arrays de valores de x y y
-        x = np.array(x_vals)
-        y = np.array(y_vals)
-
-    except Exception as e:
-        logging.exception(e)
-
-    return x, y
-
-
-x, y = getCsvData(cfg.AGC_DATA)
-coeffs = np.polyfit(x, y, 8)
-f_agc_convert = np.poly1d(coeffs)
-x, y = getCsvData(cfg.POWER_DATA)
-coeffs = np.polyfit(x, y, 8)
-f_power_convert = np.poly1d(coeffs)
-x, y = getCsvData(cfg.VOLTAGE_DATA)
-coeffs = np.polyfit(x, y, 8)
-f_voltage_convert = np.poly1d(coeffs)
-x, y = getCsvData(cfg.CURRENT_DATA)
-coeffs = np.polyfit(x, y, 8)
-f_current_convert = np.poly1d(coeffs)
-
-
-def moving_average(new_sample, buffer):
-    buffer.add(new_sample)
-    samples = buffer.get()
-    return sum(samples) / len(samples)
-
-
 def dbConnect():
     """
     Connects to DB
@@ -433,18 +362,38 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
     #             trama[field_group['name']] += field['default_value']
 
 
+    frame = dict()
+    for field_group in fieldsGroupArr:
+        if not field_group:
+            logging.error("Empty field group encountered.")
+            continue
+
+    for field_group in fieldsGroupArr:
+        for field in fieldsArr:
+            if str(field_group['_id']) == field['group_id'] and field_group['name'] == 'status_query':
+                frame[field['name']] = field['default_value']
+
+    trama2 = f"{frame['device_function']}{int(device['id']):02x}{frame['command']}{frame['blank']}"
+
+    checksum = getChecksum(trama2)
+    trama2 = f"{frame['start_byte']}{trama2}{checksum}{frame['end_byte']}"
+
     SEGMENT_START = 126
     SEGMENT_END = 127
     SEGMENT_LEN = 24
+    SNIFFER = 10
+    STATUS_QUERY = 17
+
     DATA_START_INDEX = 6
     DATA_END_INDEX = 21
+
+    ID_INDEX = 2
+    COMMAND_INDEX = 3
+
     MAX_2BYTE = 4095
     I_MAX = 20
     V_MAX = 10
-    STATUS_QUERY = 17
-    ID_INDEX = 2
-    COMMAND_INDEX = 3
-    SNIFFER = 10
+
 
     haveData = False
     finalData = {}
@@ -564,7 +513,7 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
             "swSerial": swSerial
         }
         #TODO: evaluate alerts
-        finalData = associate_field_groups(fieldsGroupArr,fieldsArr,data)
+        finalData = associate_field_groups(fieldsGroupArr, "status", fieldsArr, data)
         serTx.flushInput()
         serTx.flushOutput()
         serRx.flushInput()
@@ -578,7 +527,7 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
     return finalData
 
 
-def associate_field_groups(fields_group_arr: list[dict], fields_arr: list[dict], data: dict) -> dict:
+def associate_field_groups(fields_group_arr: list[dict],field_group_name, fields_arr: list[dict], data: dict) -> dict:
     """
     Associates field groups to fields and adds them to a dictionary.
 
@@ -599,20 +548,14 @@ def associate_field_groups(fields_group_arr: list[dict], fields_arr: list[dict],
             logging.error("Empty field group encountered.")
             continue
 
-        matched_field: dict | None = None
+    for field_group in fields_group_arr:
         for field in fields_arr:
-            if str(field_group["_id"]) == field["group_id"]:
-                if field["query"]:
-                    matched_field = field
-                    break
-
-        if matched_field:
-            final_data[str(field_group["_id"])] = {
-                "value": data.get(matched_field["name"], matched_field["default_value"]),
-                "alert": True,
-            }
-        else:
-            logging.error("No matching field found for field group: %s", field_group)
+            if str(field_group['_id']) == field['group_id'] and field_group['name'] == field_group_name:
+                if field['query']:
+                    final_data[str(field['_id'])] = {
+                        "value": data.get(field["name"], field["default_value"]),
+                        "alert": True
+                    }
 
     return final_data
 
@@ -1094,9 +1037,6 @@ def setMasterPorts():
         logging.debug("Unrecognized lora mode")
 
 
-contador = 0
-
-
 def run_monitor():
     """
     run_monitor(): Main process
@@ -1134,10 +1074,9 @@ def run_monitor():
                 updateDeviceConnectionStatus(device["id"], True)
                 if device["type"] == "sniffer":
                     data = packet_sniffer_output()
-                    setSnifferData(serTx, serRx, SNIFFERID, data)
+                    setSnifferData(serTx, serRx, int(device["id"]), data)
                     data, uart_cmd = get_example_variable_frame(data)
                     sendModbus(uart_cmd, f"{SNIFFERID:02x}", data, serTx, serRx)
-
             else:
                 logging.debug("No response from device")
                 device_data["id"] = device["id"]
