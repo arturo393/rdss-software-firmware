@@ -232,6 +232,24 @@ const DevicesEdit = (props) => {
                                 </div>
                               </span>
 
+                              {/* FIELD NAME */}
+                              <div class="form-floating">
+                                <input
+                                  type="text"
+                                  className="form-control"
+                                  name="field_name"
+                                  id={`${field._id}|field_name`}
+                                  key={`${field._id}|field_name`}
+                                  value={deviceData?.fields_values?.[field._id]?.field_name || field?.field_name || ""}
+                                  onChange={handleChange}
+                                  placeholder="Field Name"
+                                  disabled={!selectedDevice}
+                                />
+                                <label htmlFor="field_name" className="text-sm">
+                                  Field name
+                                </label>
+                              </div>
+
                               {/* DEFAULT VALUE */}
                               <div class="form-floating">
                                 <input

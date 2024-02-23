@@ -50,40 +50,17 @@ function Chart(props) {
   }, [revision])
 
   const getPointText = (alerts = {}) => {
-    const connectionAlert = alerts?.connection ? true : false
-    const voltageAlert = alerts?.voltage ? true : false
-    const currentAlert = alerts?.current ? true : false
-    const powerAlert = alerts?.power ? true : false
-    const guplAlert = alerts?.gupl ? true : false
-    const gdwlAlert = alerts?.gdwl ? true : false
 
     let alerted = false
 
     let t = "<b>Device: " + deviceId + "</b><br><br>\n"
-    if (connectionAlert) {
-      t += " * Disconnect<br>\n"
+    if (!alerts?.connected) {
+      t += " * Disconnected<br>\n"
       alerted = true
     }
-    if (voltageAlert) {
-      t += " * Voltage Out of Limits<br>\n"
-      alerted = true
-    }
-    if (currentAlert) {
-      t += " * Current Out of Limits<br>\n"
-      alerted = true
-    }
-    if (powerAlert) {
-      t += " * Downlink Power Out of Limits<br>\n"
-      alerted = true
-    }
-    if (guplAlert) {
-      t += " * AGC Downlink Out of Limits<br>\n"
-      alerted = true
-    }
-    if (gdwlAlert) {
-      t += " * AGC Uplink Out of Limits\n"
-      alerted = true
-    }
+    t += (alerts.alert)?"Value Out of Limits":"<br>\n"
+
+  
 
     return { text: t, status: alerted }
   }
@@ -115,9 +92,9 @@ function Chart(props) {
 
         console.log("currentDeviceData",currentDeviceData)
         const currData = currentDeviceData?.field_values?.[filter]
-        const alertStatus = getPointText(currentDeviceData?.field_values?.[filter]?.alert)
-        data.y.push((typeof currentDeviceData?.field_values?.[filter]?.value) === 'string'? parseFloat(currentDeviceData?.field_values?.[filter]?.value):currentDeviceData?.field_values?.[filter]?.value || data.y[data.y.length - 1])
-        const currentIndex = data.y.length - 1
+        const alertStatus = getPointText({connected: currentDeviceData?.field_values?.[filter]?.connected, alert: currentDeviceData?.field_values?.[filter]?.alert})
+        data?.y?.push((typeof currentDeviceData?.field_values?.[filter]?.value) === 'string'? parseFloat(currentDeviceData?.field_values?.[filter]?.value):currentDeviceData?.field_values?.[filter]?.value || data.y[data.y.length - 1])
+        const currentIndex = data?.y?.length - 1
         let tmpTS = ""
         let TS = {}
         if (currentDeviceData.sampleTime !== undefined) tmpTS = JSON.stringify(currentDeviceData.sampleTime).replace("$date", "date").replace("T", " ").replace("Z", "")
@@ -215,7 +192,7 @@ function Chart(props) {
       layout={plot.layout}
       debug={true}
       config={plot.config}
-      className="w-100"
+      // className="w-75"
     />
   )
 }

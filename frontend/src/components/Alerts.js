@@ -273,6 +273,7 @@ const Alerts = (props) => {
   };
 
 
+
   return (
     <>
       <h5 className="text-center">Devices Status</h5>
@@ -288,9 +289,9 @@ const Alerts = (props) => {
                 <div className="d-flex w-100">
                   <span className="input-group-text text-dark bg-light w-25"><img alt="" className="m-2" src={device?.connected?green.src:red.src} width={20} height={20} /> ({device?.id}) {device?.name} {!device?.connected && "(not connected)"} </span>
                   {/* QUERIES */}
-                  <div className="input-group-text text-dark bg-light w-50 mx-0 d-flex justify-content-start">
-                  {device?.rtData &&
-                        Object.entries(device?.rtData).map(([fieldId, fieldValue]) => {
+                  <div className="input-group-text text-dark bg-light w-25 mx-0 d-flex justify-content-start flex-column">
+                  {device?.field_values &&
+                        Object.entries(device?.field_values).map(([fieldId, fieldValue]) => {
                           const field = fields.find((f) => f._id === fieldId);
                           const fieldGroup = fields_groups.find((fg) => fg._id === field?.group_id);
                           
@@ -299,9 +300,11 @@ const Alerts = (props) => {
                               // <div key={fieldId} >
                               //   <span className="text-dark"><img alt="" src={device.connected?(!fieldValue.alert?green.src:red.src):gray.src} width={20} height={20} /> {fieldGroup?.name}/{field?.name} <span className="badge bg-secondary">{fieldValue.value}</span> </span>
                               // </div>
-                              <div key={fieldId} className="d-flex m-0 p-0  mx-1">
+                              <div key={fieldId} className="d-flex m-0 p-0  mx-1 w-100">
                                     <span className="input-group-text m-0 p-0"><img alt="" src={device.connected?(!fieldValue.alert?green.src:red.src):gray.src} width={20} height={20} /></span>
-                                    <span className="input-group-text text-dark bg-light">{fieldGroup?.name}/{field?.name}</span>
+                                    
+                                    {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-50">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-50">{fieldGroup?.name}/{field?.name}</span>)}
+                                    
                                     <span className="input-group-text">{fieldValue.value}</span>
                               </div>
                             );
@@ -315,8 +318,8 @@ const Alerts = (props) => {
                   </div>
                   {/* SETTERS */}
                   <div className="w-25">
-                  {device?.rtData &&
-                        Object.entries(device?.rtData).map(([fieldId, fieldValue]) => {
+                  {device?.field_values &&
+                        Object.entries(device?.field_values).map(([fieldId, fieldValue]) => {
                           const field = fields.find((f) => f._id === fieldId);
                           const fieldGroup = fields_groups.find((fg) => fg._id === field?.group_id);
                           
@@ -327,7 +330,8 @@ const Alerts = (props) => {
                               <div key={fieldId}>
                                 <form onSubmit={saveDevice}>
                                   <div className="input-group col">
-                                    <span className="input-group-text w-50">{fieldGroup?.name}/{field?.name}</span>
+                                    {fieldValue?.name?(<span className="input-group-text w-50">{fieldValue?.name}</span>):(<span className="input-group-text w-50">{fieldGroup?.name}/{field?.name}</span>)}
+                                    
                                     <input className="form-control" name="field" id={field?._id} onChange={handleChange} />
                                     <button className="btn btn-primary" type="submit">Save</button>
                                     <input type="hidden" name="id" id="id" value={device.id}/>
