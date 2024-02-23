@@ -287,28 +287,58 @@ const Alerts = (props) => {
               {/* DEVICE ID/NAME LOOP */}
               {data && data.map(device => (
                 <div className="d-flex w-100">
-                  <span className="input-group-text text-dark bg-light w-25"><img alt="" className="m-2" src={device?.connected?green.src:red.src} width={20} height={20} /> ({device?.id}) {device?.name} {!device?.connected && "(not connected)"} </span>
+                  <span className="input-group-text text-dark bg-light w-25">
+                    <img alt="" className="m-2" src={device?.connected?green.src:red.src} width={20} height={20} /> ({device?.id}) {device?.name} {!device?.connected && "(not connected)"}
+                  </span>
                   {/* QUERIES */}
-                  <div className="input-group-text text-dark bg-light w-25 mx-0 d-flex justify-content-start flex-column">
+                  <div className="input-group-text text-dark bg-light w-100 mx-0 d-flex justify-content-start flex-column">
                   {device?.field_values &&
                         Object.entries(device?.field_values).map(([fieldId, fieldValue]) => {
                           const field = fields.find((f) => f._id === fieldId);
                           const fieldGroup = fields_groups.find((fg) => fg._id === field?.group_id);
-                          
+
+                          if (field?.set) {
+                            return (
+                              <form onSubmit={saveDevice} key={fieldId} className="d-flex m-0 p-0  mx-0 w-100">
+                                {/* <div key={fieldId} className="d-flex m-0 p-0  mx-1 w-100"> */}
+                                  <span className="input-group-text m-0 p-0"><img alt="" src={device.connected?(!fieldValue.alert?green.src:red.src):gray.src} width={20} height={20} /></span>
+                                    
+                                  {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-75">{fieldGroup?.name}/{field?.name}</span>)}
+                                  
+                                  
+                                  
+                                  <div className="input-group-text w-25 m-0 p-0 ">
+                                    <input className="form-control text-info input-group-text bg-light w-75 text-start" name="field" id={field?._id} onChange={handleChange} defaultValue={fieldValue?.value}/>
+                                    <button className="btn btn-primary w-25" type="submit">Save</button>
+                                    <input type="hidden" name="id" id="id" value={device.id}/>
+                                    <div className="row">
+                                      <div className="col-md-12 text-center">
+                                        <div className="alert alert-info hidden" role="alert" id={device.id+"status"}>OK
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                {/* </div> */}
+                              </form>
+                            )
+                          }
+
                           if (field?.query) {
                             return (
                               // <div key={fieldId} >
                               //   <span className="text-dark"><img alt="" src={device.connected?(!fieldValue.alert?green.src:red.src):gray.src} width={20} height={20} /> {fieldGroup?.name}/{field?.name} <span className="badge bg-secondary">{fieldValue.value}</span> </span>
                               // </div>
                               <div key={fieldId} className="d-flex m-0 p-0  mx-1 w-100">
-                                    <span className="input-group-text m-0 p-0"><img alt="" src={device.connected?(!fieldValue.alert?green.src:red.src):gray.src} width={20} height={20} /></span>
-                                    
-                                    {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-50">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-50">{fieldGroup?.name}/{field?.name}</span>)}
-                                    
-                                    <span className="input-group-text">{fieldValue.value}</span>
+                                  <span className="input-group-text m-0 p-0"><img alt="" src={device.connected?(!fieldValue.alert?green.src:red.src):gray.src} width={20} height={20} /></span>
+                                  
+                                  {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-75">{fieldGroup?.name}/{field?.name}</span>)}
+                                  
+                                  <span className="input-group-text w-25">{fieldValue.value}</span>
                               </div>
                             );
                           } 
+                          
                           
                           
                           return null
@@ -316,8 +346,8 @@ const Alerts = (props) => {
                           
                         })}
                   </div>
-                  {/* SETTERS */}
-                  <div className="w-25">
+                  {/* SETTERS
+                  <div className="w-50 align-content-start bg-light">
                   {device?.field_values &&
                         Object.entries(device?.field_values).map(([fieldId, fieldValue]) => {
                           const field = fields.find((f) => f._id === fieldId);
@@ -332,7 +362,7 @@ const Alerts = (props) => {
                                   <div className="input-group col">
                                     {fieldValue?.name?(<span className="input-group-text w-50">{fieldValue?.name}</span>):(<span className="input-group-text w-50">{fieldGroup?.name}/{field?.name}</span>)}
                                     
-                                    <input className="form-control" name="field" id={field?._id} onChange={handleChange} />
+                                    <input className="form-control text-info" name="field" id={field?._id} onChange={handleChange} defaultValue={fieldValue?.value}/>
                                     <button className="btn btn-primary" type="submit">Save</button>
                                     <input type="hidden" name="id" id="id" value={device.id}/>
                                   </div>
@@ -352,7 +382,7 @@ const Alerts = (props) => {
                           
                         })}
         
-                  </div>
+                  </div> */}
                 </div>
               ))}
             </div>
