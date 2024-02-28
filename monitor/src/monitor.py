@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from dataclasses import field
 
 from pymongo import MongoClient
 import logging
@@ -23,12 +24,11 @@ from flask_socketio import SocketIO
 from flask import Flask
 import eventlet
 
-
 # ---SERIAL COMMUNICATION PORTS---
 
-#USBPORTTX = "COM7"
-#USBPORTRX = "COM6"
-#USBPORTAUX = "COM4"
+# USBPORTTX = "COM10"
+# USBPORTRX = "COM9"
+# USBPORTAUX = "COM4"
 
 USBPORTTX = "/dev/ttyUSB0"
 USBPORTRX = "/dev/ttyUSB1"
@@ -37,26 +37,6 @@ USBPORTAUX = "/dev/ttyUSB3"
 # ------
 
 logging.basicConfig(filename=cfg.LOGGING_FILE, level=logging.DEBUG)
-
-
-class VladModule:
-    def __init__(self):
-        self.toneLevel = 0
-        self.baseCurrent = 0
-        self.agc152m = 0
-        self.agc172m = 0
-        self.level152m = 0
-        self.level172m = 0
-        self.ref152m = 0
-        self.ref172m = 0
-        self.ucTemperature = 0
-        self.v_5v = 0.0
-        self.inputVoltage = 0.0
-        self.current = 0
-        self.isRemoteAttenuation = False
-        self.isSmartTune = False
-        self.isReverse = False
-        self.attenuation = 0
 
 
 class MasterModule:
@@ -75,77 +55,8 @@ socket = SocketIO(app, cors_allowed_origins='*')
 database = None
 client = None
 serTx = None
+serRx = None
 f_agc_convert = None
-
-
-class CircularBuffer:
-    def __init__(self, size):
-        self.size = size
-        self.buffer = [0] * size
-        self.index = 0
-        self.is_full = False
-
-    def add(self, value):
-        self.buffer[self.index] = value
-        self.index = (self.index + 1) % self.size
-        if not self.is_full and self.index == 0:
-            self.is_full = True
-
-    def get(self):
-        if self.is_full:
-            return self.buffer
-        else:
-            return self.buffer[:self.index]
-
-    def __str__(self):
-        return str(self.buffer)
-
-
-window_size = 5  # Number of samples to consider for the moving average
-downlinkPowerOutputSamples = CircularBuffer(window_size)
-
-
-def getCsvData(data):
-    x_vals = []
-    y_vals = []
-
-    try:
-        with open(data) as file:
-            reader = csv.reader(file)
-            next(reader)  # saltar la fila de encabezado
-            for row in reader:
-                a = row[0]
-                x_vals.append(float(row[0]))
-                y_vals.append(float(row[1]))
-
-        # Convertir los datos a arrays de valores de x y y
-        x = np.array(x_vals)
-        y = np.array(y_vals)
-
-    except Exception as e:
-        logging.exception(e)
-
-    return x, y
-
-
-x, y = getCsvData(cfg.AGC_DATA)
-coeffs = np.polyfit(x, y, 8)
-f_agc_convert = np.poly1d(coeffs)
-x, y = getCsvData(cfg.POWER_DATA)
-coeffs = np.polyfit(x, y, 8)
-f_power_convert = np.poly1d(coeffs)
-x, y = getCsvData(cfg.VOLTAGE_DATA)
-coeffs = np.polyfit(x, y, 8)
-f_voltage_convert = np.poly1d(coeffs)
-x, y = getCsvData(cfg.CURRENT_DATA)
-coeffs = np.polyfit(x, y, 8)
-f_current_convert = np.poly1d(coeffs)
-
-
-def moving_average(new_sample, buffer):
-    buffer.add(new_sample)
-    samples = buffer.get()
-    return sum(samples) / len(samples)
 
 
 def dbConnect():
@@ -172,8 +83,9 @@ def getFieldsDefinitions():
     try:
         collection_name = database["fields"]
         fields = list(collection_name.find(
-            {"$or": [{"writable": True}, {"readable": True}]},
-            {"_id": 1, "name": 1, "group_id": 1, "default_value": 1, "readable": 1, "writable": 1}))
+            #            {"$or": [{"set": True}, {"query": True}]},
+            {},
+            {"_id": 1, "name": 1, "group_id": 1, "default_value": 1, "query": 1, "set": 1}))
         return fields
     except Exception as e:
         logging.exception(e)
@@ -238,31 +150,12 @@ def insertDevicesDataIntoDB(rtData):
     """
     for device in rtData:
         d = json.loads(device)
-        if "rtData" in d:
-            logging.debug("Data written to DB: {}".format(d))
+        logging.debug("Data written to DB: {}".format(d))
+        try:
+            database.rtData.insert_one(d)
 
-            # Patches
-            if "voltage" in d["rtData"]:
-                if (d["rtData"]["voltage"] > cfg.MAX_VOLTAGE):
-                    d["rtData"]["voltage"] = cfg.MAX_VOLTAGE
-
-            try:
-                if "alerts" in d:
-                    database.devices.update_one(
-                        {"id": d["id"]}, {"$set": {"alerts": d["alerts"]}})
-
-                # DELETEME
-                # database.devices.update_one(
-                #     {"id": d["id"]}, {"$addToSet": {"rtData": d["rtData"]}})
-                # END OF DELETEME
-
-                d["rtData"]["metaData"] = {"deviceId": d["id"]}
-                d["rtData"]["sampleTime"] = datetime.datetime.now().replace(
-                    microsecond=0)
-                database.rtData.insert_one(d["rtData"])
-
-            except Exception as e:
-                logging.exception(e)
+        except Exception as e:
+            logging.exception(e)
 
 
 def openSerialPort(port="", function=""):
@@ -347,89 +240,49 @@ def evaluateAlerts(response):
     return alerts
 
 
-def setAttenuation(serTx, serRx, device, attenuation):
-    """Sets device downlink attenuation
+def get_field_group_data(fields_group_arr, fields_arr, target_field_group_name):
+    """Retrieves field group data from the specified arrays."""
 
-    Args:
-        ser: serial port
-        device: device ID
-        attenuation: integer between 0 and 32
+    frame = {}
+    try:
+        for field_group in fields_group_arr:
+            if field_group["name"] == target_field_group_name:
+                for field in fields_arr:
+                    if field_group["_id"] == field["group_id"]:
+                        frame[field["name"]] = field["default_value"]
+                return frame  # Exit the function as soon as data is found
 
-    Returns:
-        boolean: if changed was applied or error
-    """
-    # 7e 05 05 12 01 17 f6e3 7f#
+        logging.warning("Field group not found: %s", target_field_group_name)
+        return {}  # Return an empty frame if the field group is not found
 
-    # Convert the integer to a hexadecimal string
-    hex_string = hex(attenuation)[2:]
-    # Pad the hexadecimal string with zeros to ensure it has at least two digits
-    hex_string_padded = hex_string.zfill(2)
-    hex_attenuation = hex_string_padded
-    cmd = hex(device)
-    if (len(cmd) == 3):
-        cmd_string = '05' + '0' + cmd[2:3] + '1201' + hex_attenuation
-    else:
-        cmd_string = '05' + cmd[2:4] + '1201' + hex_attenuation
+    except Exception as e:
+        logging.error("Error retrieving field group data: %s", e)
+        return {}
 
-    checksum = getChecksum(cmd_string)
-    command = '7E' + cmd_string + checksum + '7F'
 
-    logging.debug("Attenuation:" + str(attenuation))
-    logging.debug("SENT: " + command)
-
-    cmd_bytes = bytearray.fromhex(command)
-    hex_byte = ''
+def construct_sniffer_query_status_frame(device_id, frame):
+    """Constructs a sniffer query status frame."""
 
     try:
-        for cmd_byte in cmd_bytes:
-            hex_byte = ("{0:02x}".format(cmd_byte))
-            serTx.write(bytes.fromhex(hex_byte))
+        if not frame:
+            logging.error("Empty frame packet")
+            return {}
 
-        # ---- Read from serial
-        hexResponse = serRx.read(100)
-
-        logging.debug("GET: " + hexResponse.hex('-'))
-
-        # ---- Validations
-        if ((
-                (len(hexResponse) > 21)
-                or (len(hexResponse) < 21)
-                or hexResponse == None
-                or hexResponse == ""
-                or hexResponse == " "
-        ) or (
-                hexResponse[0] != 126
-                and hexResponse[20] != 127
-        ) or (
-                (hexResponse[3] != 17)
-        ) or (
-                (hexResponse[4] == 2 or hexResponse[4]
-                 == 3 or hexResponse[4] == 4)
-        )):
-            return False
-        # ------------------------
-
-        data = list()
-
-        for i in range(0, 21):
-            if (6 <= i < 18):
-                data.append(hexResponse[i])
-
-        vladRev23Id = 0xff
-        if (data[0] == vladRev23Id):
-            data0 = data[0]
-
-        serTx.flushInput()
-        serTx.flushOutput()
-        serRx.flushInput()
-        serRx.flushOutput()
+        base_frame_data = (
+                frame["device_function"]
+                + f"{device_id:02x}"
+                + frame["command"]
+                + frame["blank"]
+        )
+        checksum = getChecksum(base_frame_data)
+        sniffer_query_status_frame = (
+                frame["start_byte"] + base_frame_data + checksum + frame["end_byte"]
+        )
+        return sniffer_query_status_frame
 
     except Exception as e:
         logging.error(e)
-        sys.exit()
-
-    logging.debug("changing attenuation")
-    return True
+        return {}
 
 
 def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
@@ -445,49 +298,40 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
 
     trama = ""
 
-    for field_group in fieldsGroupArr:
-        for field in fieldsArr:
-            if field_group['_id'] == field['group_id']:
-                trama[field_group['name']] += field['default_value']
+    # for field_group in fieldsGroupArr:
+    #     for field in fieldsArr:
+    #         if field_group['_id'] == field['group_id'] and field_group['name'] == 'Status':
+    #             trama[field_group['name']] += field['default_value']
 
-    SEGMENT_START = 126
-    SEGMENT_END = 127
-    SEGMENT_LEN = 24
+    # Verificar si 'status' está en el diccionario
+    if not any(item.get('name') == 'status' for item in fieldsGroupArr):
+        logging.error("not status group")
+        return {}
+
+    # Verificar si 'status_query' está en el diccionario
+    if not any(item.get('name') == 'status_query' for item in fieldsGroupArr):
+        logging.error("no status_query group created")
+        return {}
+    device_id = int(device['id'])
+
+    frame = get_field_group_data(fieldsGroupArr, fieldsArr, "status_query")
+
+    query = construct_sniffer_query_status_frame(device_id, frame)
+
     DATA_START_INDEX = 6
     DATA_END_INDEX = 21
+    ID_INDEX = 2
+    COMMAND_INDEX = 3
+
     MAX_2BYTE = 4095
     I_MAX = 20
     V_MAX = 10
-    STATUS_QUERY = 17
-    ID_INDEX = 2
-    COMMAND_INDEX = 3
-    SNIFFER = 10
 
     haveData = False
     finalData = {}
-
-    # return({
-    #     "voltage": 12,
-    #     "current": 50,
-    #     "gupl": 23,
-    #     "gdwl": 70,
-    #     "power": 100
-    # })
-
-    # ---- Build segment
-    device_id = hex(int(device["id"]))
-    if (len(device_id) == 3):
-        id_string = f'{SNIFFER:02x}' + '0' + device_id[2:3] + f'{STATUS_QUERY:02x}' + '0000'
-    else:
-        id_string = f'{SNIFFER:02x}' + '0' + device_id[2:3] + f'{STATUS_QUERY:02x}' + '0000'
-    checksum = getChecksum(id_string)
-    command = f"{SEGMENT_START:02x}" + id_string + checksum + f"{SEGMENT_END:02x}"
-
-    logging.debug("SENT: " + command)
-
-    cmd_bytes = bytearray.fromhex(command)
+    logging.debug("SENT: " + query)
+    cmd_bytes = bytearray.fromhex(query)
     hex_byte = ''
-
     startTime = time.time()
 
     try:
@@ -496,8 +340,9 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
             hex_byte = ("{0:02x}".format(cmd_byte))
             serTx.write(bytes.fromhex(hex_byte))
 
+        read_length = int(frame['read_length'])
         # ---- Read from serial
-        hexResponse = serRx.read(SEGMENT_LEN)
+        hexResponse = serRx.read(read_length)
 
         responseTime = str(time.time() - startTime)
         logging.debug("Response time: " + responseTime)
@@ -508,23 +353,23 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
         if (hexResponse == None or hexResponse == "" or hexResponse == " " or len(hexResponse) == 0):
             logging.debug("Query reception failed: " + "Response empty")
             return False
-        if ((len(hexResponse) > SEGMENT_LEN) or (len(hexResponse) < SEGMENT_LEN)):
+        if ((len(hexResponse) > read_length) or (len(hexResponse) < read_length)):
             logging.debug("Query reception failed: " + "Incorrect response length: " + str(len(hexResponse)))
             return False
-        if (hexResponse[0] != SEGMENT_START or hexResponse[SEGMENT_LEN - 1] != SEGMENT_END):
+        if (hexResponse[0] != read_length or hexResponse[read_length - 1] != read_length):
             logging.debug("Query reception failed: " + "Incorrect start or end byte")
             return False
-        if (hexResponse[ID_INDEX] != int(device_id, 16)):
-            logging.debug("Query reception failed: " + "Incorrect ID received: " + str(int(device_id, 16)))
+        if (hexResponse[ID_INDEX] != int(device["id"], 16)):
+            logging.debug("Query reception failed: " + "Incorrect ID received: " + str(int(device["id"], 16)))
             return False
-        if (hexResponse[COMMAND_INDEX] != STATUS_QUERY):
+        if (hexResponse[COMMAND_INDEX] != frame["command"]):
             logging.debug("Query reception failed: " + "Incorrect command received: " + str(hexResponse[COMMAND_INDEX]))
             return False
         # ------------------------
 
         data = list()
 
-        for i in range(0, SEGMENT_LEN):  # DATALEN
+        for i in range(0, read_length):  # DATALEN
             if (DATA_START_INDEX <= i < DATA_END_INDEX):
                 data.append(hexResponse[i])
 
@@ -589,28 +434,8 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
             "dOut2": dOut2,
             "swSerial": swSerial
         }
-        finalData = dict()
-        # Como asocio solo un field_groups a un device ? si no  busca en todos los fields_groups?
-        for field_group in fieldsGroupArr:
-            for field in fieldsArr:
-                if str(field_group['_id']) == field['group_id']:
-                    if field['readable']:
-                        finalData[str(field['_id'])] = {
-                            "value": data.get(field["name"], field["default_value"]),
-                            "alert": True
-                        }
-
-        # ---- Package received data in json for DB
-
-        # finalData = {
-        #    "sampleTime": timeNow,
-        #    "voltage": lineVoltageConverted,
-        #    "current": unitCurrentConverted,
-        #    "gupl": uplinkAgcValueConverted,
-        #    "gdwl": downlinkAgcValueConverted,
-        #    "power": downlinkOutputPowerAvg
-        # }
-        # -----------------------------------------------------
+        # TODO: evaluate alerts
+        finalData = associate_field_groups(fieldsGroupArr, "status", fieldsArr, data)
         serTx.flushInput()
         serTx.flushOutput()
         serRx.flushInput()
@@ -622,6 +447,40 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
 
     logging.debug("Query reception succesful")
     return finalData
+
+
+def associate_field_groups(fields_group_arr, field_group_name, fields_arr, data):
+    """
+    Associates field groups to fields and adds them to a dictionary.
+
+    Args:
+        fields_group_arr: List of field group dictionaries.
+        fields_arr: List of field dictionaries.
+        data: Dictionary containing field values.
+
+    Returns:
+        A dictionary with field_id as keys and values as dictionaries containing
+        "value" and "alert" information.
+    """
+
+    final_data: dict = {}
+
+    for field_group in fields_group_arr:
+        if not field_group:
+            logging.error("Empty field group encountered.")
+            continue
+
+    for field_group in fields_group_arr:
+        for field in fields_arr:
+            if str(field_group['_id']) == field['group_id'] and field_group['name'] == field_group_name:
+                if field['query']:
+                    final_data[str(field['_id'])] = {
+                        "value": data.get(field["name"], field["default_value"]),
+                        "alert": True
+                        # name: device["name"]
+                    }
+
+    return final_data
 
 
 def arduino_map(value, in_min, in_max, out_min, out_max):
@@ -1102,9 +961,6 @@ def setMasterPorts():
         logging.debug("Unrecognized lora mode")
 
 
-contador = 0
-
-
 def run_monitor():
     """
     run_monitor(): Main process
@@ -1127,79 +983,77 @@ def run_monitor():
 
     if len(provisionedDevicesArr) > 0:
         for device in provisionedDevicesArr:
-            device["rtData"] = {}
+            device_data = dict()
             logging.debug(f"ID:{device['id']} name:{device['name']}")
 
             SNIFFERID = 8
-            response = getSnifferStatus(serTx, serRx,device, fieldsArr, fieldsGroupArr)
-            # response es el json que luego se deberia subir a la base de datos
-
+            response = getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr)
             if response:
                 connectedDevices += 1
-                device["connected"] = True
-                device["rtData"] = response
-                alerts = evaluateAlerts(response)
-                #device["rtData"]["alerts"] = alerts
-                #device["alerts"] = alerts
+                device_data["id"] = device["id"]
+                device_data["name"] = device["name"]
+                device_data["connected"] = True
+                device_data["sampleTime"] = datetime.datetime.now().replace(microsecond=0)
+                device_data["field_values"] = response
                 updateDeviceConnectionStatus(device["id"], True)
-
                 if device["type"] == "sniffer":
-                    aOut1_0_10V = 1000
-                    aOut2_x_20mA = 500
-                    dOut1 = 0
-                    dOut2 = 0
-                    # serialSW = 0 #seteaer a rs232
-                    serialSW = 1  # setear a rs485
-
-                    # Invertir los bytes de aout1
-                    aout1 = ((aOut1_0_10V >> 8) & 0xFF) | ((aOut1_0_10V << 8) & 0xFF00)
-
-                    # Invertir los bytes de aout2
-                    aout2 = ((aOut2_x_20mA >> 8) & 0xFF) | ((aOut2_x_20mA << 8) & 0xFF00)
-
-                    data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}{serialSW:02X}"
-                    ### SET DATA ###
-                    # data = getRealValues(device)
-                    setSnifferData(serTx, serRx, SNIFFERID, data)
-
-                    ### MODBUS TEST ###
-                    uart_cmd = "14"  # comando para que el sniffer envie el paquete via serial
-                    sniffer_add = "08"
-                    data = ""
-                    MAXDATA = 255
-                    global contador
-
-                    i = 1
-                    if contador * 5 < MAXDATA - 10 - 1 - 5:
-                        while i <= contador * 5:
-                            if i == 127:
-                                data = f"{data}{0:02x}"
-                            else:
-                                data = f"{data}{i:02X}"
-                            i += 1
-                        data = data + "FF"
-                    else:
-                        contador = 0
+                    data = packet_sniffer_output()
+                    setSnifferData(serTx, serRx, int(device["id"]), data)
+                    data, uart_cmd = get_example_variable_frame(data)
                     sendModbus(uart_cmd, f"{SNIFFERID:02x}", data, serTx, serRx)
-                    contador += 1
-                    ### END TEST ###
-
             else:
                 logging.debug("No response from device")
-                device["connected"] = False
-                device["rtData"]["sampleTime"] = {"$date": SampleTime}
-                device["rtData"]["alerts"] = {"connection": True}
+                device_data["id"] = device["id"]
+                device_data["name"] = device["name"]
+                device_data["connected"] = False
+                device_data["sampleTime"] = datetime.datetime.now().replace(microsecond=0)
+                device_data["field_values"] = {}
                 updateDeviceConnectionStatus(int(device["id"]), False)
 
-            rtData.append(json.dumps(device, default=defaultJSONconverter))
+            rtData.append(json.dumps(device_data, default=defaultJSONconverter))
 
-        # END FOR X
         logging.debug("Connected devices: %s", connectedDevices)
         insertDevicesDataIntoDB(rtData)
+        logging.debug("Inserted")
         sendStatusToFrontEnd(rtData)
     else:
         # sendStatusToFrontEnd([])
         logging.debug("No provisioned devices found in the DB")
+
+
+def get_example_variable_frame(data):
+    uart_cmd = "14"  # comando para que el sniffer envie el paquete via serial
+    sniffer_add = "08"
+    data = ""
+    MAXDATA = 255
+    contador = 20
+    i = 1
+    if contador * 5 < MAXDATA - 10 - 1 - 5:
+        while i <= contador * 5:
+            if i == 127:
+                data = f"{data}{0:02x}"
+            else:
+                data = f"{data}{i:02X}"
+            i += 1
+        data = data + "FF"
+    else:
+        contador = 0
+    return data, uart_cmd
+
+
+def packet_sniffer_output():
+    aOut1_0_10V = 1000
+    aOut2_x_20mA = 500
+    dOut1 = 0
+    dOut2 = 0
+    # serialSW = 0 #seteaer a rs232
+    serialSW = 1  # setear a rs485
+    # Invertir los bytes de aout1
+    aout1 = ((aOut1_0_10V >> 8) & 0xFF) | ((aOut1_0_10V << 8) & 0xFF00)
+    # Invertir los bytes de aout2
+    aout2 = ((aOut2_x_20mA >> 8) & 0xFF) | ((aOut2_x_20mA << 8) & 0xFF00)
+    data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}{serialSW:02X}"
+    return data
 
 
 def listen():
