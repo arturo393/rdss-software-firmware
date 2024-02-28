@@ -248,7 +248,7 @@ def get_field_group_data(fields_group_arr, fields_arr, target_field_group_name):
         for field_group in fields_group_arr:
             if field_group["name"] == target_field_group_name:
                 for field in fields_arr:
-                    if field_group["_id"] == field["group_id"]:
+                    if str(field_group["_id"]) == field["group_id"]:
                         frame[field["name"]] = field["default_value"]
                 return frame  # Exit the function as soon as data is found
 
@@ -267,7 +267,6 @@ def construct_sniffer_query_status_frame(device_id, frame):
         if not frame:
             logging.error("Empty frame packet")
             return {}
-
         base_frame_data = (
                 frame["device_function"]
                 + f"{device_id:02x}"
@@ -285,6 +284,106 @@ def construct_sniffer_query_status_frame(device_id, frame):
         return {}
 
 
+def response_validate(hex_response, device_id, frame):
+    response_size = int(frame['response_size'], 16)
+    command = int(frame['command'], 16)
+    start_byte = int(frame['start_byte'], 16)
+    end_byte = int(frame['end_byte'], 16)
+    data_start_index = 6
+    data_end_index = 21
+    id_index = 2
+    command_index = 3
+
+    # Validations
+    if not hex_response.strip():
+        logging.debug("Query reception failed: Response empty")
+        return False
+
+    if len(hex_response) != response_size:
+        logging.debug("Query reception failed: Incorrect response length: {}".format(len(hex_response)))
+        return False
+
+    if hex_response[0] != start_byte or hex_response[-1] != end_byte:
+        logging.debug("Query reception failed: Incorrect start or end byte")
+        return False
+
+    if hex_response[id_index] != device_id:
+        logging.debug("Query reception failed: Incorrect ID received: {}".format(device_id))
+        return False
+
+    if hex_response[command_index] != command:
+        logging.debug("Query reception failed: Incorrect command received: {}".format(hex_response[command_index]))
+        return False
+
+
+def decode_data(data):
+    """Decodes received data from a byte array and returns a dictionary.
+
+  Args:
+      data: A byte array containing the received data.
+
+  Returns:
+      A dictionary containing the decoded values.
+  """
+    decoded_data = {
+        "aIn_1_10V": (data[0] | data[1] << 8),  # byte 1-2
+        "aOut_1_10V": (data[2] | data[3] << 8),  # byte 3-4
+        "aIn_x_20mA": (data[4] | data[5] << 8),  # byte 5-6
+        "aOut_x_20mA": (data[6] | data[7] << 8),  # byte 7-8
+        "swIn_x_20mA": data[8],  # byte 9 (more succinct)
+        "swOut_x_20mA":data[9],  # byte 10 (more succinct)
+        "dIn1": data[10],  # byte 11 (more succinct)
+        "dIn2":  data[11] ,  # byte 12 (more succinct)
+        "dOut1": data[12],  # byte 13 (more succinct)
+        "dOut2": data[13],  # byte 14 (more succinct)
+        "swSerial":  data[14]  # byte 15 (more succinct)
+    }
+    return decoded_data
+
+
+def linear_map(decoded_data: dict) -> dict:
+    """Performs linear mapping on decoded data from a byte array.
+
+    Args:
+        decoded_data: A dictionary containing decoded values from a byte array.
+
+    Returns:
+        A dictionary containing the decoded values with applied linear mapping.
+    """
+
+    # Constants used in mapping
+    MAX_2BYTE = 4095
+    I_MAX = 20
+    V_MAX = 10
+
+    # Linear mapping for analog values
+    a_in_1_10v_linear = round(arduino_map(decoded_data["aIn_1_10V"], 0, MAX_2BYTE, 0, V_MAX), 2)
+    a_out_1_10v_linear = round(arduino_map(decoded_data["aOut_1_10V"], 0, MAX_2BYTE, 0, V_MAX), 2)
+
+    # Determine current range based on switch states (assuming "ON" means 4-20mA)
+    current_range = (0, I_MAX) if decoded_data.get("swIn_x_20mA") == decoded_data.get("swOut_x_20mA") == "ON" else (4, I_MAX)
+
+    # Apply linear mapping for current values using the determined range
+    a_in_x_20mA_linear = round(arduino_map(decoded_data["aIn_x_20mA"], 0, MAX_2BYTE, *current_range), 2)
+    a_out_x_20mA_linear = round(arduino_map(decoded_data["aOut_x_20mA"], 0, MAX_2BYTE, *current_range), 2)
+
+    # Update dictionary with mapped values
+    mapped_data = {
+        "aIn_1_10V": a_in_1_10v_linear,
+        "aOut_1_10V": a_out_1_10v_linear,
+        "aIn_x_20mA": a_in_x_20mA_linear,
+        "aOut_x_20mA": a_out_x_20mA_linear,
+        "swIn_x_20mA": "ON" if decoded_data.get(8) else "OFF",
+        "swOut_x_20mA": "ON" if decoded_data.get(9) else "OFF",
+        "dIn1": "HIGH" if decoded_data.get(10) else "LOW",  # Assuming HIGH/LOW logic for inputs
+        "dIn2": "HIGH" if decoded_data.get(11) else "LOW",
+        "dOut1": "HIGH" if decoded_data.get(12) else "LOW",
+        "dOut2": "HIGH" if decoded_data.get(13) else "LOW",
+        "swSerial": "RS485" if decoded_data.get(14) else "RS232"
+    }
+    return mapped_data
+
+
 def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
     """
     Sends request to sniffer to obtain values of analog and digital i/o
@@ -298,34 +397,21 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
 
     trama = ""
 
-    # for field_group in fieldsGroupArr:
-    #     for field in fieldsArr:
-    #         if field_group['_id'] == field['group_id'] and field_group['name'] == 'Status':
-    #             trama[field_group['name']] += field['default_value']
-
-    # Verificar si 'status' está en el diccionario
-    if not any(item.get('name') == 'status' for item in fieldsGroupArr):
-        logging.error("not status group")
-        return {}
-
     # Verificar si 'status_query' está en el diccionario
     if not any(item.get('name') == 'status_query' for item in fieldsGroupArr):
         logging.error("no status_query group created")
         return {}
-    device_id = int(device['id'])
 
+    device_id = int(device['id'])
     frame = get_field_group_data(fieldsGroupArr, fieldsArr, "status_query")
 
+    if len(frame) == 0:
+        return {}
     query = construct_sniffer_query_status_frame(device_id, frame)
 
-    DATA_START_INDEX = 6
-    DATA_END_INDEX = 21
+
     ID_INDEX = 2
     COMMAND_INDEX = 3
-
-    MAX_2BYTE = 4095
-    I_MAX = 20
-    V_MAX = 10
 
     haveData = False
     finalData = {}
@@ -340,102 +426,40 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
             hex_byte = ("{0:02x}".format(cmd_byte))
             serTx.write(bytes.fromhex(hex_byte))
 
-        read_length = int(frame['read_length'])
+        response_size = int(frame['response_size'], 16)
         # ---- Read from serial
-        hexResponse = serRx.read(read_length)
+        hexResponse = serRx.read(response_size)
 
         responseTime = str(time.time() - startTime)
         logging.debug("Response time: " + responseTime)
-
         logging.debug("GET: " + hexResponse.hex('-'))
 
-        # ---- Validations
-        if (hexResponse == None or hexResponse == "" or hexResponse == " " or len(hexResponse) == 0):
-            logging.debug("Query reception failed: " + "Response empty")
+        if response_validate(hexResponse, device_id, frame) is False:
             return False
-        if ((len(hexResponse) > read_length) or (len(hexResponse) < read_length)):
-            logging.debug("Query reception failed: " + "Incorrect response length: " + str(len(hexResponse)))
-            return False
-        if (hexResponse[0] != read_length or hexResponse[read_length - 1] != read_length):
-            logging.debug("Query reception failed: " + "Incorrect start or end byte")
-            return False
-        if (hexResponse[ID_INDEX] != int(device["id"], 16)):
-            logging.debug("Query reception failed: " + "Incorrect ID received: " + str(int(device["id"], 16)))
-            return False
-        if (hexResponse[COMMAND_INDEX] != frame["command"]):
-            logging.debug("Query reception failed: " + "Incorrect command received: " + str(hexResponse[COMMAND_INDEX]))
-            return False
-        # ------------------------
 
         data = list()
 
-        for i in range(0, read_length):  # DATALEN
+        DATA_START_INDEX = 6
+        DATA_END_INDEX = 21
+        for i in range(0, response_size):  # DATALEN
             if (DATA_START_INDEX <= i < DATA_END_INDEX):
                 data.append(hexResponse[i])
 
-        # ---- Decode received data
-        aIn_1_10V = (data[0] | data[1] << 8)  # byte 1-2
-        aOut_1_10V = (data[2] | data[3] << 8)  # byte 3-4
-        aIn_x_20mA = (data[4] | data[5] << 8)  # byte 5-6
-        aOut_x_20mA = (data[6] | data[7] << 8)  # byte 7-8
-        swIn_x_20mA = "ON" if (bool(data[8]) == 0x01) else "OFF"  # byte 9
-        swOut_x_20mA = "ON" if (bool(data[9]) == 0x01) else "OFF"  # byte 10
-        dIn1 = "ON" if (bool(data[10]) == 0x01) else "OFF"  # byte 11
-        dIn2 = "ON" if (bool(data[11]) == 0x01) else "OFF"  # byte 12
-        dOut1 = "ON" if (bool(data[12]) == 0x01) else "OFF"  # byte 13
-        dOut2 = "ON" if (bool(data[13]) == 0x01) else "OFF"  # byte 14
-        swSerial = "RS485" if (bool(data[14]) == 0x01) else "RS232"  # byte 15 (default: 0/rs232)
+        decoded_data = decode_data(data)
+        logging.info(data)
 
-        # Editables
-        logging.debug(f"ain1: {aIn_1_10V}")
-        logging.debug(f"aout1: {aOut_1_10V}")
-        logging.debug(f"ain2: {aIn_x_20mA}")
-        logging.debug(f"aout2: {aOut_x_20mA}")
-        logging.debug(f"din1: {dIn1}")
-        logging.debug(f"din2: {dIn2}")
-        logging.debug(f"dout1: {dOut1}")
-        logging.debug(f"dout2: {dOut2}")
-        # No editables
-        logging.debug(f"din_sw: {swIn_x_20mA}")
-        logging.debug(f"dout_sw: {swOut_x_20mA}")
-        logging.debug(f"swSerial: {swSerial}")
+        mapped_data = linear_map(decoded_data)
+        logging.info(mapped_data)
 
-        # ---- Linear mapping
-        aIn_1_10V_linear = round(arduino_map(aIn_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
-        aOut_1_10V_linear = round(arduino_map(aOut_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
-        if swIn_x_20mA == swOut_x_20mA == "ON":
-            # 4-20mA
-            aIn_x_20mA_linear = round(arduino_map(aIn_x_20mA, 0, MAX_2BYTE, 0, I_MAX), 2)
-            aOut_x_20mA_linear = round(arduino_map(aOut_x_20mA, 0, MAX_2BYTE, 0, I_MAX), 2)
-        else:
-            # 0-20mA
-            aIn_x_20mA_linear = round(arduino_map(aIn_x_20mA, 0, MAX_2BYTE, 4, I_MAX), 2)
-            aOut_x_20mA_linear = round(arduino_map(aOut_x_20mA, 0, MAX_2BYTE, 4, I_MAX), 2)
 
-        logging.debug("Datos escalados: ")
-        logging.debug(f"Analog1 Input Voltage: {aIn_1_10V_linear} V")
-        logging.debug(f"Analog1 Output Voltage: {aOut_1_10V_linear} V")
-        logging.debug(f"Analog2 Input Current: {aIn_x_20mA_linear} mA")
-        logging.debug(f"Analog2 Output Current: {aOut_x_20mA_linear} mA")
-
-        SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-        timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
-
-        data = {
-            "aIn_1_10V": aIn_1_10V_linear,
-            "aOut_1_10V": aOut_1_10V_linear,
-            "aIn_x_20mA": aIn_x_20mA_linear,
-            "aOut_x_20mA": aOut_x_20mA_linear,
-            "swIn_x_20mA": swIn_x_20mA,
-            "swOut_x_20mA": swOut_x_20mA,
-            "dIn1": dIn1,
-            "dIn2": dIn2,
-            "dOut1": dOut1,
-            "dOut2": dOut2,
-            "swSerial": swSerial
-        }
         # TODO: evaluate alerts
-        finalData = associate_field_groups(fieldsGroupArr, "status", fieldsArr, data)
+
+        # Verificar si 'status' está en el diccionario
+        if not any(item.get('name') == 'status' for item in fieldsGroupArr):
+            logging.error("not status group")
+            return {}
+
+        finalData = associate_field_groups(fieldsGroupArr, "status", fieldsArr, mapped_data)
         serTx.flushInput()
         serTx.flushOutput()
         serRx.flushInput()
@@ -987,20 +1011,20 @@ def run_monitor():
             logging.debug(f"ID:{device['id']} name:{device['name']}")
 
             SNIFFERID = 8
+            SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
             response = getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr)
             if response:
                 connectedDevices += 1
                 device_data["id"] = device["id"]
                 device_data["name"] = device["name"]
                 device_data["connected"] = True
-                device_data["sampleTime"] = datetime.datetime.now().replace(microsecond=0)
+                device_data["sampleTime"] = SampleTime
                 device_data["field_values"] = response
                 updateDeviceConnectionStatus(device["id"], True)
-                if device["type"] == "sniffer":
-                    data = packet_sniffer_output()
-                    setSnifferData(serTx, serRx, int(device["id"]), data)
-                    data, uart_cmd = get_example_variable_frame(data)
-                    sendModbus(uart_cmd, f"{SNIFFERID:02x}", data, serTx, serRx)
+                # data = packet_sniffer_output()
+                # setSnifferData(serTx, serRx, int(device["id"]), data)
+                # data, uart_cmd = get_example_variable_frame(data)
+                # sendModbus(uart_cmd, f"{SNIFFERID:02x}", data, serTx, serRx)
             else:
                 logging.debug("No response from device")
                 device_data["id"] = device["id"]
