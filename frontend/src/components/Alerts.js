@@ -26,7 +26,6 @@ const Alerts = (props) => {
   const [data,setData] = useState([])
   const [displayDeviceFieldGroup, setDisplayDeviceFieldGroup] = useState([])
 
-  console.log("PROPS DEVICES", props.devices)
 
   const api_url = process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT
 
@@ -97,7 +96,6 @@ const Alerts = (props) => {
     getDevicesGroups()
   },[])
 
-  console.log("data",data)
 
   useEffect(() => {
     setData(monitorData?.map(monitor => JSON.parse(monitor)))
@@ -289,7 +287,6 @@ const Alerts = (props) => {
               {/* DEVICE ID/NAME LOOP */}
               {data && data.filter(d => (props.devices.some(deviceItem => deviceItem.id === d.id && deviceItem.group_id === device_group._id))).map(device => (
                 <>
-                
                 <div className="d-flex w-100">
                   
                   <span className="input-group-text text-dark bg-light w-25">
