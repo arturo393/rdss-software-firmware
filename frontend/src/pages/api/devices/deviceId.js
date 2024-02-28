@@ -103,6 +103,7 @@ export default async function (req, res, next) {
         },
       },
     },
+    
     {
       $lookup: {
         from: "fields",
@@ -115,7 +116,7 @@ export default async function (req, res, next) {
       $unwind: "$field_info",
     },
     {
-      $match: {
+      $match: {    
         "field_info.plottable": true,
       },
     },
@@ -158,21 +159,21 @@ export default async function (req, res, next) {
             $cond: {
               if: "$_id.hour",  // Check if dynId.hour exists
               then: "$_id.hour",  // Include dynId.hour if it exists
-              else: null  // Otherwise, set it to null or omit it
+              else: ''  // Otherwise, set it to null or omit it
             }
           },
           minute: {
             $cond: {
               if: "$_id.minute",  // Check if dynId.hour exists
               then: "$_id.minute",  // Include dynId.hour if it exists
-              else: null  // Otherwise, set it to null or omit it
+              else: ''  // Otherwise, set it to null or omit it
             }
           },
           second: {
             $cond: {
               if: "$_id.second",  // Check if dynId.hour exists
               then: "$_id.second",  // Include dynId.hour if it exists
-              else: null  // Otherwise, set it to null or omit it
+              else: ''  // Otherwise, set it to null or omit it
             }
           },
         },
@@ -187,7 +188,7 @@ export default async function (req, res, next) {
         field_values: {
           $arrayToObject: "$field_values",
         },
-      },
+      },  
     },
     {
       $sort: {
@@ -196,10 +197,15 @@ export default async function (req, res, next) {
     }
   ]
 
-  // console.log(JSON.stringify(pipeline))
+  console.log(JSON.stringify(pipeline))
+  
+  const  fields = await db.collection("fields").find({'plottable': true}).toArray()
 
-  const devices = await db.collection("rtData").aggregate(pipeline).toArray()
 
-  res.json(devices)
+  const rtData = await db.collection("rtData").aggregate(pipeline).toArray()
+
+
+  res.json(rtData)
 }
+
 

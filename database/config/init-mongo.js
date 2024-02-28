@@ -54,3 +54,6 @@ db.config.insert({
   // maxDownlinkOut: 100,
   image: '',
 });
+
+db.rtData.createIndex({ id: 1, sampleTime: 1 });
+db.fields.createIndex({ _id: 1 });
