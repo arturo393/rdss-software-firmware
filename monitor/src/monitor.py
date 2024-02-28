@@ -331,12 +331,12 @@ def decode_data(data):
         "aIn_x_20mA": (data[4] | data[5] << 8),  # byte 5-6
         "aOut_x_20mA": (data[6] | data[7] << 8),  # byte 7-8
         "swIn_x_20mA": data[8],  # byte 9 (more succinct)
-        "swOut_x_20mA":data[9],  # byte 10 (more succinct)
+        "swOut_x_20mA": data[9],  # byte 10 (more succinct)
         "dIn1": data[10],  # byte 11 (more succinct)
-        "dIn2":  data[11] ,  # byte 12 (more succinct)
+        "dIn2": data[11],  # byte 12 (more succinct)
         "dOut1": data[12],  # byte 13 (more succinct)
         "dOut2": data[13],  # byte 14 (more succinct)
-        "swSerial":  data[14]  # byte 15 (more succinct)
+        "swSerial": data[14]  # byte 15 (more succinct)
     }
     return decoded_data
 
@@ -361,7 +361,8 @@ def linear_map(decoded_data: dict) -> dict:
     a_out_1_10v_linear = round(arduino_map(decoded_data["aOut_1_10V"], 0, MAX_2BYTE, 0, V_MAX), 2)
 
     # Determine current range based on switch states (assuming "ON" means 4-20mA)
-    current_range = (0, I_MAX) if decoded_data.get("swIn_x_20mA") == decoded_data.get("swOut_x_20mA") == "ON" else (4, I_MAX)
+    current_range = (0, I_MAX) if decoded_data.get("swIn_x_20mA") == decoded_data.get("swOut_x_20mA") == "ON" else (
+        4, I_MAX)
 
     # Apply linear mapping for current values using the determined range
     a_in_x_20mA_linear = round(arduino_map(decoded_data["aIn_x_20mA"], 0, MAX_2BYTE, *current_range), 2)
@@ -373,15 +374,39 @@ def linear_map(decoded_data: dict) -> dict:
         "aOut_1_10V": a_out_1_10v_linear,
         "aIn_x_20mA": a_in_x_20mA_linear,
         "aOut_x_20mA": a_out_x_20mA_linear,
-        "swIn_x_20mA": "ON" if decoded_data.get(8) else "OFF",
-        "swOut_x_20mA": "ON" if decoded_data.get(9) else "OFF",
-        "dIn1": "HIGH" if decoded_data.get(10) else "LOW",  # Assuming HIGH/LOW logic for inputs
-        "dIn2": "HIGH" if decoded_data.get(11) else "LOW",
-        "dOut1": "HIGH" if decoded_data.get(12) else "LOW",
-        "dOut2": "HIGH" if decoded_data.get(13) else "LOW",
-        "swSerial": "RS485" if decoded_data.get(14) else "RS232"
+        "swIn_x_20mA": "ON" if decoded_data["swIn_x_20mA"] else "OFF",
+        "swOut_x_20mA": "ON" if decoded_data["swOut_x_20mA"] else "OFF",
+        "dIn1": "HIGH" if decoded_data["dIn1"] else "LOW",  # Assuming HIGH/LOW logic for inputs
+        "dIn2": "HIGH" if decoded_data["dIn2"] else "LOW",
+        "dOut1": "HIGH" if decoded_data["dOut1"] else "LOW",
+        "dOut2": "HIGH" if decoded_data["dOut2"] else "LOW",
+        "swSerial": "RS485" if decoded_data["swSerial"] else "RS232"
     }
     return mapped_data
+
+
+def extract_relevant_data(frame: dict, hex_response: str) -> list:
+    """
+    Extracts relevant data from the response based on frame indices.
+
+    Args:
+      frame: A dictionary containing frame information.
+      hex_response: The hexadecimal string representing the response data.
+
+    Returns:
+      A list containing the extracted relevant data.
+    """
+
+    response_size = int(frame['response_size'], 16)
+    data_start_index = int(frame['data_start_index'], 16)
+    data_end_index = int(frame['data_end_index'], 16)
+    extracted_data = []
+
+    for i in range(response_size):
+        if data_start_index <= i < data_end_index:
+            extracted_data.append(hex_response[i])
+
+    return extracted_data
 
 
 def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
@@ -409,48 +434,33 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
         return {}
     query = construct_sniffer_query_status_frame(device_id, frame)
 
-
-    ID_INDEX = 2
-    COMMAND_INDEX = 3
-
-    haveData = False
-    finalData = {}
-    logging.debug("SENT: " + query)
+    message = f"SENT: {query}"
     cmd_bytes = bytearray.fromhex(query)
-    hex_byte = ''
     startTime = time.time()
-
     try:
-        # ---- Send via serial
         for cmd_byte in cmd_bytes:
             hex_byte = ("{0:02x}".format(cmd_byte))
             serTx.write(bytes.fromhex(hex_byte))
 
         response_size = int(frame['response_size'], 16)
-        # ---- Read from serial
+
         hexResponse = serRx.read(response_size)
 
-        responseTime = str(time.time() - startTime)
-        logging.debug("Response time: " + responseTime)
-        logging.debug("GET: " + hexResponse.hex('-'))
+        responseTime = round(time.time() - startTime, 2)
+        message += " --> GET: " + hexResponse.hex()
+        message += f" / Response time:{responseTime}"
+        logging.debug(message)
 
         if response_validate(hexResponse, device_id, frame) is False:
             return False
 
-        data = list()
+        extracted_data = extract_relevant_data(frame, hexResponse)
 
-        DATA_START_INDEX = 6
-        DATA_END_INDEX = 21
-        for i in range(0, response_size):  # DATALEN
-            if (DATA_START_INDEX <= i < DATA_END_INDEX):
-                data.append(hexResponse[i])
-
-        decoded_data = decode_data(data)
-        logging.info(data)
+        decoded_data = decode_data(extracted_data)
+        logging.info(decoded_data)
 
         mapped_data = linear_map(decoded_data)
         logging.info(mapped_data)
-
 
         # TODO: evaluate alerts
 
@@ -1095,7 +1105,7 @@ def listen():
                 openSerialPort(USBPORTAUX)
 
         run_monitor()
-        eventlet.sleep(cfg.POLLING_SLEEP)
+        # eventlet.sleep(cfg.POLLING_SLEEP)
 
 
 eventlet.spawn(listen)
