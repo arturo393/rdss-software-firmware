@@ -38,7 +38,9 @@ else:
 
 # ------
 
-logging.basicConfig(filename=cfg.LOGGING_FILE, level=logging.DEBUG)
+logging.basicConfig(filename=cfg.LOGGING_FILE,
+                    level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s %(message)s')
 
 
 class MasterModule:
@@ -573,7 +575,6 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
         status_field_group = get_field_group(fieldsGroupArr, fieldsArr, 'status', 'query')
         finalData = build_field_associations(status_field_group, mapped_data, device)
 
-        logging.debug(finalData)
         serTx.flushInput()
         serTx.flushOutput()
         serRx.flushInput()
@@ -583,7 +584,7 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
         logging.error(e)
         sys.exit()
 
-    logging.debug("Query reception succesful")
+    logging.debug("Query reception succesfull")
     return finalData
 
 
@@ -763,7 +764,7 @@ def showBanner(provisionedDevicesArr, timeNow):
     """
     logging.debug("-------------------------------------------------------")
     logging.debug("Starting Polling - TimeStamp: %s ", timeNow)
-    logging.debug("Devices Count:" + str(len(provisionedDevicesArr)))
+    logging.debug("Devices Count:" + str(len(provisionedDevicesArr)) + "\n")
 
 
 def sendModbus(uartCmd, snifferAddress, data, serTx, serRx):
@@ -1084,15 +1085,15 @@ def run_monitor():
     SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
     showBanner(provisionedDevicesArr, timeNow)
-
     if len(provisionedDevicesArr) > 0:
         for device in provisionedDevicesArr:
             device_data = dict()
-            logging.debug(f"ID:{device['id']} name:{device['name']}")
-
+            logging.debug("-----------------------------------------------------")
+            logging.debug(f"Device ID:{device['id']} name:{device['name']} START")
             SNIFFERID = 8
             SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
             response = getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr)
+            logging.debug(f"Device Response: {response}")
             if response:
                 connectedDevices += 1
                 device_data["id"] = device["id"]
@@ -1115,7 +1116,7 @@ def run_monitor():
                 updateDeviceConnectionStatus(int(device["id"]), False)
 
             rtData.append(json.dumps(device_data, default=defaultJSONconverter))
-
+            logging.debug(f"Device ID:{device['id']} name:{device['name']} END\n\n")
         logging.debug("Connected devices: %s", connectedDevices)
         insertDevicesDataIntoDB(rtData)
         logging.debug("Inserted")
