@@ -23,16 +23,18 @@ import base64
 from flask_socketio import SocketIO
 from flask import Flask
 import eventlet
+import  platform
 
-# ---SERIAL COMMUNICATION PORTS---
-
-# USBPORTTX = "COM10"
-# USBPORTRX = "COM9"
-# USBPORTAUX = "COM4"
-
-USBPORTTX = "/dev/ttyUSB0"
-USBPORTRX = "/dev/ttyUSB1"
-USBPORTAUX = "/dev/ttyUSB3"
+if platform.system() == "Windows":
+    # Windows-specific port names
+    USBPORTTX = "COM9"
+    USBPORTRX = "COM3"
+    USBPORTAUX = "COM4"
+else:
+    # Linux-specific port names
+    USBPORTTX = "/dev/ttyUSB0"
+    USBPORTRX = "/dev/ttyUSB1"
+    USBPORTAUX = "/dev/ttyUSB3"
 
 # ------
 
@@ -109,7 +111,7 @@ def getProvisionedDevices():
         collection_name = database["devices"]
         devices = list(collection_name.find(
             {"status.provisioned": True},
-            {"id": 1, "type": 1, "name": 1, "attenuation": 1, "changed": 1, "_id": 0}).limit(cfg.MAX_DEVICES))
+            {"id": 1, "type": 1, "name": 1, "changed": 1, "_id": 0, "fields_values": 1}).limit(cfg.MAX_DEVICES))
         return devices
     except Exception as e:
         logging.exception(e)
@@ -217,27 +219,6 @@ def getChecksum(cmd):
     else:
         checksum = crc[4:6] + crc[2:4]
     return checksum
-
-
-def evaluateAlerts(response):
-    """
-    Check if the data collected is within the parameters configured in the DB
-    """
-    alerts = {}
-
-    params = getConfigParams()[0]
-
-    #    if (response["voltage"] < float(params["minVoltage"])) or (response["voltage"] > float(params["maxVoltage"])):
-    #        alerts["voltage"] = True
-    #    if (response["current"] < float(params["minCurrent"])) or (response["current"] > float(params["maxCurrent"])):
-    #        alerts["current"] = True
-    #    if (response["gupl"] < float(params["minUplink"])) or (response["gupl"] > float(params["maxUplink"])):
-    #        alerts["gupl"] = True
-    #    if (response["gdwl"] < float(params["minDownlink"])) or (response["gdwl"] > float(params["maxDownlink"])):
-    #        alerts["gdwl"] = True
-    #    if (response["power"] < float(params["minDownlinkOut"])) or (response["power"] > float(params["maxDownlinkOut"])):
-    #        alerts["power"] = True
-    return alerts
 
 
 def get_field_group_data(fields_group_arr, fields_arr, target_field_group_name):
@@ -409,6 +390,133 @@ def extract_relevant_data(frame: dict, hex_response: str) -> list:
     return extracted_data
 
 
+def get_field_group(
+        fields_group_arr: list[dict],
+        fields_arr: list[dict],
+        field_group_name: str,
+        state: str,
+) -> list:
+    """
+    Associates data points with relevant field groups and identifies potential alerts.
+
+    Args:
+        fields_group_arr: A list of dictionaries representing field groups.
+        field_group_name: The name of the specific field group to associate with.
+        fields_arr: A list of dictionaries representing individual fields.
+        data: A dictionary containing data points for each field.
+        device: (Optional) A dictionary containing device information, potentially including "fields_values".
+
+    Returns:
+        A dictionary associating field IDs with their corresponding data and alert status.
+    """
+
+    if not any(group.get("name") == "status" for group in fields_group_arr):
+        logging.error("Missing 'status' field group")
+        return []
+
+    result = []
+
+    for field_group in fields_group_arr:
+
+        for field in fields_arr:
+            if str(field_group["_id"]) == field["group_id"] and field_group["name"] == field_group_name:
+                if field[state]:
+                    result.append(field)
+
+    if not result:
+        logging.error(f"No fields found in '{field_group_name}' group with state '{state}'")
+
+    return result
+
+
+def get_alert_thresholds(device: dict = None) -> dict:
+    """
+    Retrieves alert thresholds (min and max) from the device information.
+
+    Args:
+      device: (Optional) A dictionary containing device information, potentially including "fields_values".
+
+    Returns:
+      A dictionary containing alert thresholds for each field ID (key)
+      with values being another dictionary containing 'min' and 'max' keys.
+    """
+    alert_thresholds = {}
+    if device:
+        fields_values = device.get("fields_values", {})
+        for field_id, field_data in fields_values.items():
+            alert_thresholds[field_id] = {
+                "min": int(field_data.get("alert_min", 0)),
+                "max": int(field_data.get("alert_max", 4095)),
+            }
+    return alert_thresholds
+
+
+def process_field_data(
+    field: dict, value: int, alert_thresholds: dict
+) -> dict:
+    """
+    Processes a single field, evaluates its data against alert thresholds, and creates a dictionary with its value and alert status.
+
+    Args:
+        field: A dictionary representing a field.
+        value: The integer value of the field's data (expected to be an integer).
+        alert_thresholds: A dictionary containing alert thresholds for each field ID.
+
+    Returns:
+        A dictionary containing the field ID (key) and a dictionary with 'value' and 'alert' (True/False) keys.
+
+    Raises:
+        TypeError: If the `value` is not an integer.
+    """
+    field_id = {}
+    try:
+        field_id = str(field["_id"])
+        if field_id in alert_thresholds:
+            alert_min = alert_thresholds[field_id]["min"]
+            alert_max = alert_thresholds[field_id]["max"]
+            alert = value < alert_min or value > alert_max
+        else:
+            alert = False  # Assume no alert if no thresholds found for the field
+    except TypeError as e:
+        logging.error(f"Failed to convert field {field['name']} value {value} to integer: {e}")
+        alert = False
+    except Exception as e:  # Catch other unexpected exceptions
+        logging.error(f"Unexpected error processing field data: {e}")
+        return {}  # Return an error dictionary for informative handling
+
+    return {field_id: {"value": value, "alert": alert}}
+
+
+def build_field_associations(
+        fields_arr: list[dict],
+        data: dict,
+        device: dict = None,
+) -> dict:
+    """
+    Associates data points with relevant fields and identifies potential alerts.
+
+    Args:
+      fields_arr: A list of dictionaries representing fields.
+      data: A dictionary containing data points for each field.
+      device: (Optional) A dictionary containing device information, potentially including "fields_values".
+
+    Returns:
+      A dictionary associating field IDs with their corresponding data and alert status.
+    """
+    alert_thresholds = get_alert_thresholds(device)
+    logging.info(f"data {data}")
+    final_data = {}
+    for field in fields_arr:
+        try:
+            value = data.get(field["name"], 0)
+        except ValueError:
+            logging.warning(f"Failed to convert value for field '{field['name']}' to integer, using 0")
+            value = 0
+        field_data = process_field_data(field, value, alert_thresholds)
+        final_data.update(field_data)
+    return final_data
+
+
 def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
     """
     Sends request to sniffer to obtain values of analog and digital i/o
@@ -421,6 +529,8 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
     """
 
     trama = ""
+
+
 
     # Verificar si 'status_query' está en el diccionario
     if not any(item.get('name') == 'status_query' for item in fieldsGroupArr):
@@ -443,7 +553,6 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
             serTx.write(bytes.fromhex(hex_byte))
 
         response_size = int(frame['response_size'], 16)
-
         hexResponse = serRx.read(response_size)
 
         responseTime = round(time.time() - startTime, 2)
@@ -457,19 +566,14 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
         extracted_data = extract_relevant_data(frame, hexResponse)
 
         decoded_data = decode_data(extracted_data)
-        logging.info(decoded_data)
+        logging.info(f"Decoded data: {decoded_data}")
 
         mapped_data = linear_map(decoded_data)
-        logging.info(mapped_data)
+        logging.info(f"Mapped data: {mapped_data}")
+        status_field_group = get_field_group(fieldsGroupArr, fieldsArr, 'status', 'query')
+        finalData = build_field_associations(status_field_group, mapped_data, device)
 
-        # TODO: evaluate alerts
-
-        # Verificar si 'status' está en el diccionario
-        if not any(item.get('name') == 'status' for item in fieldsGroupArr):
-            logging.error("not status group")
-            return {}
-
-        finalData = associate_field_groups(fieldsGroupArr, "status", fieldsArr, mapped_data)
+        logging.debug(finalData)
         serTx.flushInput()
         serTx.flushOutput()
         serRx.flushInput()
@@ -481,40 +585,6 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
 
     logging.debug("Query reception succesful")
     return finalData
-
-
-def associate_field_groups(fields_group_arr, field_group_name, fields_arr, data):
-    """
-    Associates field groups to fields and adds them to a dictionary.
-
-    Args:
-        fields_group_arr: List of field group dictionaries.
-        fields_arr: List of field dictionaries.
-        data: Dictionary containing field values.
-
-    Returns:
-        A dictionary with field_id as keys and values as dictionaries containing
-        "value" and "alert" information.
-    """
-
-    final_data: dict = {}
-
-    for field_group in fields_group_arr:
-        if not field_group:
-            logging.error("Empty field group encountered.")
-            continue
-
-    for field_group in fields_group_arr:
-        for field in fields_arr:
-            if str(field_group['_id']) == field['group_id'] and field_group['name'] == field_group_name:
-                if field['query']:
-                    final_data[str(field['_id'])] = {
-                        "value": data.get(field["name"], field["default_value"]),
-                        "alert": True
-                        # name: device["name"]
-                    }
-
-    return final_data
 
 
 def arduino_map(value, in_min, in_max, out_min, out_max):
