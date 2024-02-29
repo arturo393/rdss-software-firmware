@@ -33,7 +33,7 @@ function Chart(props) {
 
   useEffect(() => {
     if (Object.entries(rtData).length) {
-      console.log("rtData changed")
+      console.log("rtData changed",rtData)
       const data = { x: rtData.x, y: rtData.rtd[filter], marker: rtData.marker, text: rtData.text }
       setRevision(rtData.x.length + deviceId + Math.floor(Math.random() * 100 + 1))
       setPlotData(data)
@@ -66,67 +66,66 @@ function Chart(props) {
   }
 
   // //Acá va la lógica de conversión de datos que vienen desde monitorData
-  useEffect(() => {
-    console.log("Getting data from monitor...")
+  // useEffect(() => {
+  //   console.log("Getting data from monitor...")
     
 
-    if (deviceId) {
-      //Gets device data from monitorData
-      let currentDeviceData = {}
+  //   if (deviceId) {
+  //     //Gets device data from monitorData
+  //     let currentDeviceData = {}
       
 
-      monitorData?.map((monitor) => {
-        const data = JSON.parse(monitor)
+  //     monitorData?.map((monitor) => {
+  //       const data = JSON.parse(monitor)
 
-        if (data.id == deviceId) {
-          currentDeviceData = data
-        }
-      })
+  //       if (data.id == deviceId) {
+  //         currentDeviceData = data
+  //       }
+  //     })
 
       
 
 
-      if (Object.entries(plotData).length !== 0) {
-        let data = plotData
+  //     if (Object.entries(plotData).length !== 0) {
+  //       let data = plotData
 
 
-        console.log("currentDeviceData",currentDeviceData)
-        const currData = currentDeviceData?.field_values?.[filter]
-        const alertStatus = getPointText({connected: currentDeviceData?.field_values?.[filter]?.connected, alert: currentDeviceData?.field_values?.[filter]?.alert})
-        data?.y?.push((typeof currentDeviceData?.field_values?.[filter]?.value) === 'string'? parseFloat(currentDeviceData?.field_values?.[filter]?.value):currentDeviceData?.field_values?.[filter]?.value || data.y[data.y.length - 1])
-        const currentIndex = data?.y?.length - 1
-        let tmpTS = ""
-        let TS = {}
-        if (currentDeviceData.sampleTime !== undefined) tmpTS = JSON.stringify(currentDeviceData.sampleTime).replace("$date", "date").replace("T", " ").replace("Z", "")
-        if (tmpTS) TS = JSON.parse(tmpTS)
-        data.x[currentIndex] = TS
+  //       console.log("currentDeviceData",currentDeviceData)
+  //       const currData = currentDeviceData?.field_values?.[filter]
+  //       const alertStatus = getPointText({connected: currentDeviceData?.field_values?.[filter]?.connected, alert: currentDeviceData?.field_values?.[filter]?.alert})
+  //       data?.y?.push((typeof currentDeviceData?.field_values?.[filter]?.value) === 'string'? parseFloat(currentDeviceData?.field_values?.[filter]?.value):currentDeviceData?.field_values?.[filter]?.value || data.y[data.y.length - 1])
+  //       const currentIndex = data?.y?.length - 1
+  //       let tmpTS = ""
+  //       let TS = {}
+  //       if (currentDeviceData.sampleTime !== undefined) tmpTS = JSON.stringify(currentDeviceData.sampleTime).replace("$date", "date").replace("T", " ").replace("Z", "")
+  //       if (tmpTS) TS = JSON.parse(tmpTS)
+  //       data.x[currentIndex] = TS
 
-        // //Fixes power tolerane
-        // // if (filter == "power" && currentDeviceData.rtData[filter] < -5) currentDeviceData.rtData[filter] = -5
-        // if (!currentDeviceData?.rtData[filter]) {
-        //   currentDeviceData.rtData[filter] = {}
-        // }
-        // data.y.push(currentDeviceData?.rtData[filter] || data.y[data.y.length - 1])
-        // const currentIndex = data.y.length - 1
+  //       // //Fixes power tolerane
+  //       // // if (filter == "power" && currentDeviceData.rtData[filter] < -5) currentDeviceData.rtData[filter] = -5
+  //       // if (!currentDeviceData?.rtData[filter]) {
+  //       //   currentDeviceData.rtData[filter] = {}
+  //       // }
+  //       // data.y.push(currentDeviceData?.rtData[filter] || data.y[data.y.length - 1])
+  //       // const currentIndex = data.y.length - 1
 
-        // let tmpTS = ""
-        // let TS = {}
-        // if (currentDeviceData.rtData.sampleTime !== undefined) tmpTS = JSON.stringify(currentDeviceData.rtData.sampleTime).replace("$date", "date").replace("T", " ").replace("Z", "")
-        // if (tmpTS) TS = JSON.parse(tmpTS)
-        // data.x[currentIndex] = TS
-        // // data.x[currentIndex] = currentDeviceData.rtData.sampleTime
+  //       // let tmpTS = ""
+  //       // let TS = {}
+  //       // if (currentDeviceData.rtData.sampleTime !== undefined) tmpTS = JSON.stringify(currentDeviceData.rtData.sampleTime).replace("$date", "date").replace("T", " ").replace("Z", "")
+  //       // if (tmpTS) TS = JSON.parse(tmpTS)
+  //       // data.x[currentIndex] = TS
+  //       // // data.x[currentIndex] = currentDeviceData.rtData.sampleTime
 
-        if (!data.text[currentIndex]) {
-          data.text[currentIndex] = alertStatus.text
-          data.marker.color[currentIndex] = alertStatus.status ? "red" : color
-        }
-        setRevision(currentIndex + deviceId + Math.floor(Math.random() * 100 + 1))
-        setPlotData(data)
-      }
-    }
-  }, [monitorData])
+  //       if (!data.text[currentIndex]) {
+  //         data.text[currentIndex] = alertStatus.text
+  //         data.marker.color[currentIndex] = alertStatus.status ? "red" : color
+  //       }
+  //       setRevision(currentIndex + deviceId + Math.floor(Math.random() * 100 + 1))
+  //       setPlotData(data)
+  //     }
+  //   }
+  // }, [monitorData])
 
-  console.log("PLOT DATA", plotData)
   const renderPlot = () => {
     if (Object.entries(plotData).length !== 0 && autoArrange) {
       let d = plotData
