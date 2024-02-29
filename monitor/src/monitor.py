@@ -27,8 +27,8 @@ import  platform
 
 if platform.system() == "Windows":
     # Windows-specific port names
-    USBPORTTX = "COM9"
-    USBPORTRX = "COM3"
+    USBPORTTX = "COM6"
+    USBPORTRX = "COM7"
     USBPORTAUX = "COM4"
 else:
     # Linux-specific port names
@@ -86,10 +86,10 @@ def convert(x, in_min, in_max, out_min, out_max):
 def getFieldsDefinitions():
     try:
         collection_name = database["fields"]
-        fields = list(collection_name.find(
+        fields = list(collection_name.find())
             #            {"$or": [{"set": True}, {"query": True}]},
-            {},
-            {"_id": 1, "name": 1, "group_id": 1, "default_value": 1, "query": 1, "set": 1}))
+          #  {},
+          #  {"_id": 1, "name": 1, "group_id": 1, "default_value": 1, "query": 1, "set": 1}))
         return fields
     except Exception as e:
         logging.exception(e)
@@ -154,6 +154,7 @@ def insertDevicesDataIntoDB(rtData):
     """
     for device in rtData:
         d = json.loads(device)
+        logging.debug("---------------------------------")
         logging.debug("Data written to DB: {}".format(d))
         try:
             database.rtData.insert_one(d)
@@ -324,7 +325,50 @@ def decode_data(data):
     return decoded_data
 
 
-def linear_map(decoded_data: dict) -> dict:
+def linear_map(decoded_data: dict, field_group: list,device: dict) -> dict:
+    """Performs linear mapping on decoded data from a byte array.
+
+    Args:
+        decoded_data: A dictionary containing decoded values from a byte array.
+        field_group: A list of dictionaries containing field definitions.
+
+    Returns:
+        A dictionary containing the decoded values with applied linear mapping.
+    """
+
+    mapped_data = {}  # Use a dictionary for mapped values
+    device_conv_values = get_conv_values(device)
+    logging.warning(f"device_conv_values: {device_conv_values}'")
+    for field in field_group:
+        name = field.get("name")
+        field_id = str(field.get("_id"))
+        if field_id in device_conv_values:
+            conv_min = device_conv_values[field_id]["min"]
+            conv_max = device_conv_values[field_id]["max"]
+        else:
+            conv_min = field.get("conv_min")
+            conv_max = field.get("conv_max")
+
+        try:
+            # Attempt to convert conv_min and conv_max to integers first
+            conv_min = int(conv_min)
+            conv_max = int(conv_max)
+            raw = decoded_data.get(name, 0)
+            mapped = arduino_map(raw, 0, 4095, conv_min, conv_max)  # Use 0 if missing
+            rounded = round(mapped, 2)
+            mapped_data[name] = rounded
+
+        except Exception:
+
+            if (isinstance(conv_max, str) or isinstance(conv_min, str))  and  (conv_max != '' or conv_min != '') :
+                mapped_data[name] = conv_max if decoded_data.get(name) else conv_min
+            else:
+                logging.warning(f"Mapping variables not defined for field '{name}'")
+                mapped_data[name] = decoded_data.get(name)  # Use original value if missing
+    return mapped_data
+
+
+def linear_map_old(decoded_data: dict, field_group: list) -> dict:
     """Performs linear mapping on decoded data from a byte array.
 
     Args:
@@ -333,8 +377,6 @@ def linear_map(decoded_data: dict) -> dict:
     Returns:
         A dictionary containing the decoded values with applied linear mapping.
     """
-
-    # Constants used in mapping
     MAX_2BYTE = 4095
     I_MAX = 20
     V_MAX = 10
@@ -431,6 +473,28 @@ def get_field_group(
     return result
 
 
+def get_conv_values(device: dict = None) -> dict:
+    """
+    Retrieves alert thresholds (min and max) from the device information.
+
+    Args:
+      device: (Optional) A dictionary containing device information, potentially including "fields_values".
+
+    Returns:
+      A dictionary containing alert thresholds for each field ID (key)
+      with values being another dictionary containing 'min' and 'max' keys.
+    """
+    conv_values = {}
+    if device:
+        fields_values = device.get("fields_values", {})
+        for field_id, field_data in fields_values.items():
+            conv_values[field_id] = {
+                "min": field_data.get("conv_min"),
+                "max": field_data.get("conv_max"),
+            }
+    return conv_values
+
+
 def get_alert_thresholds(device: dict = None) -> dict:
     """
     Retrieves alert thresholds (min and max) from the device information.
@@ -447,8 +511,8 @@ def get_alert_thresholds(device: dict = None) -> dict:
         fields_values = device.get("fields_values", {})
         for field_id, field_data in fields_values.items():
             alert_thresholds[field_id] = {
-                "min": int(field_data.get("alert_min", 0)),
-                "max": int(field_data.get("alert_max", 4095)),
+                "min": field_data.get("alert_min"),
+                "max": field_data.get("alert_max"),
             }
     return alert_thresholds
 
@@ -473,12 +537,25 @@ def process_field_data(
     field_id = {}
     try:
         field_id = str(field["_id"])
+
         if field_id in alert_thresholds:
             alert_min = alert_thresholds[field_id]["min"]
             alert_max = alert_thresholds[field_id]["max"]
             alert = value < alert_min or value > alert_max
         else:
-            alert = False  # Assume no alert if no thresholds found for the field
+            alert_min = field.get("alert_min")
+            alert_max = field.get("alert_max")
+
+        alert = value < alert_min or value > alert_max
+        try:
+            # Attempt to convert conv_min and conv_max to integers first
+            alert_min = int(alert_min)
+            alert_max = int(alert_max)
+            alert = value < alert_min or value > alert_max
+
+        except Exception as e:
+            logging.warning(f"Mapping variables not defined for field '{e}'")
+            alert = False
     except TypeError as e:
         logging.error(f"Failed to convert field {field['name']} value {value} to integer: {e}")
         alert = False
@@ -506,7 +583,6 @@ def build_field_associations(
       A dictionary associating field IDs with their corresponding data and alert status.
     """
     alert_thresholds = get_alert_thresholds(device)
-    logging.info(f"data {data}")
     final_data = {}
     for field in fields_arr:
         try:
@@ -570,9 +646,11 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
         decoded_data = decode_data(extracted_data)
         logging.info(f"Decoded data: {decoded_data}")
 
-        mapped_data = linear_map(decoded_data)
-        logging.info(f"Mapped data: {mapped_data}")
         status_field_group = get_field_group(fieldsGroupArr, fieldsArr, 'status', 'query')
+
+        mapped_data = linear_map(decoded_data, status_field_group, device)
+        logging.info(f"Mapped data: {mapped_data}")
+
         finalData = build_field_associations(status_field_group, mapped_data, device)
 
         serTx.flushInput()
@@ -736,6 +814,7 @@ def sendStatusToFrontEnd(rtData):
     Sends via SocketIO the real-time provisioned devices status
     This updates frontend interface
     """
+    logging.debug("-----------------")
     logging.debug("Emiting event...")
 
     eventMessage = {
@@ -1102,8 +1181,8 @@ def run_monitor():
                 device_data["sampleTime"] = SampleTime
                 device_data["field_values"] = response
                 updateDeviceConnectionStatus(device["id"], True)
-                # data = packet_sniffer_output()
-                # setSnifferData(serTx, serRx, int(device["id"]), data)
+                data = packet_sniffer_output()
+                setSnifferData(serTx, serRx, int(device["id"]), data)
                 # data, uart_cmd = get_example_variable_frame(data)
                 # sendModbus(uart_cmd, f"{SNIFFERID:02x}", data, serTx, serRx)
             else:
@@ -1120,6 +1199,7 @@ def run_monitor():
         logging.debug("Connected devices: %s", connectedDevices)
         insertDevicesDataIntoDB(rtData)
         logging.debug("Inserted")
+
         sendStatusToFrontEnd(rtData)
     else:
         # sendStatusToFrontEnd([])
@@ -1176,7 +1256,7 @@ def listen():
                 openSerialPort(USBPORTAUX)
 
         run_monitor()
-        # eventlet.sleep(cfg.POLLING_SLEEP)
+        eventlet.sleep(cfg.POLLING_SLEEP)
 
 
 eventlet.spawn(listen)
