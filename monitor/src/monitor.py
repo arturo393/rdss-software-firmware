@@ -213,6 +213,14 @@ def getChecksum(cmd):
     -return: cheksum for the given command
     """
     data = bytearray.fromhex(cmd)
+    return calculate_checksum(data)
+
+def calculate_checksum(data:bytearray):
+    """
+    -Description: this fuction calculate the checksum for a given comand
+    -param text: string with the data, ex device = 03 , id = 03 cmd = 0503110000
+    -return: cheksum for the given command
+    """
 
     crc = hex(Crc16Xmodem.calc(data))
     if (len(crc) == 5):
@@ -224,7 +232,7 @@ def getChecksum(cmd):
     return checksum
 
 
-def get_field_group_data(fields_group_arr, fields_arr, target_field_group_name):
+def get_query_frame_from_fields(fields_group_arr, fields_arr, target_field_group_name):
     """Retrieves field group data from the specified arrays."""
 
     frame = {}
@@ -244,7 +252,7 @@ def get_field_group_data(fields_group_arr, fields_arr, target_field_group_name):
         return {}
 
 
-def construct_sniffer_query_status_frame(device_id, frame):
+def construct_query_status_frame(device_id, frame):
     """Constructs a sniffer query status frame."""
 
     try:
@@ -258,14 +266,48 @@ def construct_sniffer_query_status_frame(device_id, frame):
                 + frame["blank"]
         )
         checksum = getChecksum(base_frame_data)
-        sniffer_query_status_frame = (
+        query = (
                 frame["start_byte"] + base_frame_data + checksum + frame["end_byte"]
         )
-        return sniffer_query_status_frame
+        return query
 
     except Exception as e:
         logging.error(e)
         return {}
+
+
+def construct_query_frame(device_id, frame):
+    """Constructs a sniffer query status frame."""
+    devices = {}
+    devices['sniffer'] = 0x0A
+    devices['vlad'] = 0x09
+
+    start_byte = 0x7E
+    end_byte = 0x7F
+    device = frame.get("device","") # 0 is broadcast
+    device = devices.get(device,0)
+    command = int(frame.get("command",0),16) # 0 is no command
+    data_size = int(frame.get("data size",0),16)
+    data = int(frame.get("data",0),16)
+    try:
+        if not frame:
+            logging.error("Empty frame packet")
+            return {}
+        base = [
+            device,
+            device_id,
+            data_size,
+            data,
+        ]
+        base_bytearray = bytearray(base)
+        checksum = Crc16Xmodem.calc(base_bytearray)
+        query = [start_byte, base_bytearray, checksum, end_byte]
+        return query
+
+    except Exception as e:
+        logging.error(e)
+        return {}
+
 
 
 def response_validate(hex_response, device_id, frame):
@@ -365,48 +407,6 @@ def linear_map(decoded_data: dict, field_group: list,device: dict) -> dict:
             else:
                 logging.warning(f"Mapping variables not defined for field '{name}'")
                 mapped_data[name] = decoded_data.get(name)  # Use original value if missing
-    return mapped_data
-
-
-def linear_map_old(decoded_data: dict, field_group: list) -> dict:
-    """Performs linear mapping on decoded data from a byte array.
-
-    Args:
-        decoded_data: A dictionary containing decoded values from a byte array.
-
-    Returns:
-        A dictionary containing the decoded values with applied linear mapping.
-    """
-    MAX_2BYTE = 4095
-    I_MAX = 20
-    V_MAX = 10
-
-    # Linear mapping for analog values
-    a_in_1_10v_linear = round(arduino_map(decoded_data["aIn_1_10V"], 0, MAX_2BYTE, 0, V_MAX), 2)
-    a_out_1_10v_linear = round(arduino_map(decoded_data["aOut_1_10V"], 0, MAX_2BYTE, 0, V_MAX), 2)
-
-    # Determine current range based on switch states (assuming "ON" means 4-20mA)
-    current_range = (0, I_MAX) if decoded_data.get("swIn_x_20mA") == decoded_data.get("swOut_x_20mA") == "ON" else (
-        4, I_MAX)
-
-    # Apply linear mapping for current values using the determined range
-    a_in_x_20mA_linear = round(arduino_map(decoded_data["aIn_x_20mA"], 0, MAX_2BYTE, *current_range), 2)
-    a_out_x_20mA_linear = round(arduino_map(decoded_data["aOut_x_20mA"], 0, MAX_2BYTE, *current_range), 2)
-
-    # Update dictionary with mapped values
-    mapped_data = {
-        "aIn_1_10V": a_in_1_10v_linear,
-        "aOut_1_10V": a_out_1_10v_linear,
-        "aIn_x_20mA": a_in_x_20mA_linear,
-        "aOut_x_20mA": a_out_x_20mA_linear,
-        "swIn_x_20mA": "ON" if decoded_data["swIn_x_20mA"] else "OFF",
-        "swOut_x_20mA": "ON" if decoded_data["swOut_x_20mA"] else "OFF",
-        "dIn1": "HIGH" if decoded_data["dIn1"] else "LOW",  # Assuming HIGH/LOW logic for inputs
-        "dIn2": "HIGH" if decoded_data["dIn2"] else "LOW",
-        "dOut1": "HIGH" if decoded_data["dOut1"] else "LOW",
-        "dOut2": "HIGH" if decoded_data["dOut2"] else "LOW",
-        "swSerial": "RS485" if decoded_data["swSerial"] else "RS232"
-    }
     return mapped_data
 
 
@@ -595,7 +595,7 @@ def build_field_associations(
     return final_data
 
 
-def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
+def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr):
     """
     Sends request to sniffer to obtain values of analog and digital i/o
     Args:
@@ -608,19 +608,20 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
 
     trama = ""
 
-
-
     # Verificar si 'status_query' está en el diccionario
     if not any(item.get('name') == 'status_query' for item in fieldsGroupArr):
         logging.error("no status_query group created")
         return {}
 
     device_id = int(device['id'])
-    frame = get_field_group_data(fieldsGroupArr, fieldsArr, "status_query")
-
+    frame = get_query_frame_from_fields(fieldsGroupArr, fieldsArr, "status_query")
+    frame2 = get_query_frame_from_fields(fieldsGroupArr, fieldsArr, "sniffer_IO")
     if len(frame) == 0:
         return {}
-    query = construct_sniffer_query_status_frame(device_id, frame)
+
+    construct_query_frame(device_id,frame)
+    query = construct_query_status_frame(device_id, frame)
+
 
     message = f"SENT: {query}"
     cmd_bytes = bytearray.fromhex(query)
@@ -1169,31 +1170,24 @@ def run_monitor():
             device_data = dict()
             logging.debug("-----------------------------------------------------")
             logging.debug(f"Device ID:{device['id']} name:{device['name']} START")
-            SNIFFERID = 8
             SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-            response = getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr)
+            response = get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr)
             logging.debug(f"Device Response: {response}")
+            device_data["id"] = device["id"]
+            device_data["name"] = device["name"]
+            device_data["sampleTime"] = SampleTime
+            device_data["field_values"] = response
             if response:
                 connectedDevices += 1
-                device_data["id"] = device["id"]
-                device_data["name"] = device["name"]
                 device_data["connected"] = True
-                device_data["sampleTime"] = SampleTime
-                device_data["field_values"] = response
-                updateDeviceConnectionStatus(device["id"], True)
-                data = packet_sniffer_output()
-                setSnifferData(serTx, serRx, int(device["id"]), data)
+                #data = packet_sniffer_output()
+                #setSnifferData(serTx, serRx, int(device["id"]), data)
                 # data, uart_cmd = get_example_variable_frame(data)
                 # sendModbus(uart_cmd, f"{SNIFFERID:02x}", data, serTx, serRx)
             else:
-                logging.debug("No response from device")
-                device_data["id"] = device["id"]
-                device_data["name"] = device["name"]
                 device_data["connected"] = False
-                device_data["sampleTime"] = datetime.datetime.now().replace(microsecond=0)
-                device_data["field_values"] = {}
-                updateDeviceConnectionStatus(int(device["id"]), False)
 
+            updateDeviceConnectionStatus(device["id"], device_data["connected"])
             rtData.append(json.dumps(device_data, default=defaultJSONconverter))
             logging.debug(f"Device ID:{device['id']} name:{device['name']} END\n\n")
         logging.debug("Connected devices: %s", connectedDevices)
