@@ -23,20 +23,24 @@ import base64
 from flask_socketio import SocketIO
 from flask import Flask
 import eventlet
+import  platform
 
-# ---SERIAL COMMUNICATION PORTS---
-
-# USBPORTTX = "COM10"
-# USBPORTRX = "COM9"
-# USBPORTAUX = "COM4"
-
-USBPORTTX = "/dev/ttyUSB0"
-USBPORTRX = "/dev/ttyUSB1"
-USBPORTAUX = "/dev/ttyUSB3"
+if platform.system() == "Windows":
+    # Windows-specific port names
+    USBPORTTX = "COM6"
+    USBPORTRX = "COM7"
+    USBPORTAUX = "COM4"
+else:
+    # Linux-specific port names
+    USBPORTTX = "/dev/ttyUSB0"
+    USBPORTRX = "/dev/ttyUSB1"
+    USBPORTAUX = "/dev/ttyUSB3"
 
 # ------
 
-logging.basicConfig(filename=cfg.LOGGING_FILE, level=logging.DEBUG)
+logging.basicConfig(filename=cfg.LOGGING_FILE,
+                    level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s %(message)s')
 
 
 class MasterModule:
@@ -82,10 +86,10 @@ def convert(x, in_min, in_max, out_min, out_max):
 def getFieldsDefinitions():
     try:
         collection_name = database["fields"]
-        fields = list(collection_name.find(
+        fields = list(collection_name.find())
             #            {"$or": [{"set": True}, {"query": True}]},
-            {},
-            {"_id": 1, "name": 1, "group_id": 1, "default_value": 1, "query": 1, "set": 1}))
+          #  {},
+          #  {"_id": 1, "name": 1, "group_id": 1, "default_value": 1, "query": 1, "set": 1}))
         return fields
     except Exception as e:
         logging.exception(e)
@@ -109,7 +113,7 @@ def getProvisionedDevices():
         collection_name = database["devices"]
         devices = list(collection_name.find(
             {"status.provisioned": True},
-            {"id": 1, "type": 1, "name": 1, "attenuation": 1, "changed": 1, "_id": 0}).limit(cfg.MAX_DEVICES))
+            {"id": 1, "type": 1, "name": 1, "changed": 1, "_id": 0, "fields_values": 1}).limit(cfg.MAX_DEVICES))
         return devices
     except Exception as e:
         logging.exception(e)
@@ -150,6 +154,7 @@ def insertDevicesDataIntoDB(rtData):
     """
     for device in rtData:
         d = json.loads(device)
+        logging.debug("---------------------------------")
         logging.debug("Data written to DB: {}".format(d))
         try:
             database.rtData.insert_one(d)
@@ -208,6 +213,14 @@ def getChecksum(cmd):
     -return: cheksum for the given command
     """
     data = bytearray.fromhex(cmd)
+    return calculate_checksum(data)
+
+def calculate_checksum(data:bytearray):
+    """
+    -Description: this fuction calculate the checksum for a given comand
+    -param text: string with the data, ex device = 03 , id = 03 cmd = 0503110000
+    -return: cheksum for the given command
+    """
 
     crc = hex(Crc16Xmodem.calc(data))
     if (len(crc) == 5):
@@ -219,28 +232,7 @@ def getChecksum(cmd):
     return checksum
 
 
-def evaluateAlerts(response):
-    """
-    Check if the data collected is within the parameters configured in the DB
-    """
-    alerts = {}
-
-    params = getConfigParams()[0]
-
-    #    if (response["voltage"] < float(params["minVoltage"])) or (response["voltage"] > float(params["maxVoltage"])):
-    #        alerts["voltage"] = True
-    #    if (response["current"] < float(params["minCurrent"])) or (response["current"] > float(params["maxCurrent"])):
-    #        alerts["current"] = True
-    #    if (response["gupl"] < float(params["minUplink"])) or (response["gupl"] > float(params["maxUplink"])):
-    #        alerts["gupl"] = True
-    #    if (response["gdwl"] < float(params["minDownlink"])) or (response["gdwl"] > float(params["maxDownlink"])):
-    #        alerts["gdwl"] = True
-    #    if (response["power"] < float(params["minDownlinkOut"])) or (response["power"] > float(params["maxDownlinkOut"])):
-    #        alerts["power"] = True
-    return alerts
-
-
-def get_field_group_data(fields_group_arr, fields_arr, target_field_group_name):
+def get_query_frame_from_fields(fields_group_arr, fields_arr, target_field_group_name):
     """Retrieves field group data from the specified arrays."""
 
     frame = {}
@@ -248,7 +240,7 @@ def get_field_group_data(fields_group_arr, fields_arr, target_field_group_name):
         for field_group in fields_group_arr:
             if field_group["name"] == target_field_group_name:
                 for field in fields_arr:
-                    if field_group["_id"] == field["group_id"]:
+                    if str(field_group["_id"]) == field["group_id"]:
                         frame[field["name"]] = field["default_value"]
                 return frame  # Exit the function as soon as data is found
 
@@ -260,14 +252,13 @@ def get_field_group_data(fields_group_arr, fields_arr, target_field_group_name):
         return {}
 
 
-def construct_sniffer_query_status_frame(device_id, frame):
+def construct_query_status_frame(device_id, frame):
     """Constructs a sniffer query status frame."""
 
     try:
         if not frame:
             logging.error("Empty frame packet")
             return {}
-
         base_frame_data = (
                 frame["device_function"]
                 + f"{device_id:02x}"
@@ -275,17 +266,336 @@ def construct_sniffer_query_status_frame(device_id, frame):
                 + frame["blank"]
         )
         checksum = getChecksum(base_frame_data)
-        sniffer_query_status_frame = (
+        query = (
                 frame["start_byte"] + base_frame_data + checksum + frame["end_byte"]
         )
-        return sniffer_query_status_frame
+        return query
 
     except Exception as e:
         logging.error(e)
         return {}
 
 
-def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
+def construct_query_frame(device_id, frame):
+    """Constructs a sniffer query status frame."""
+    devices = {}
+    devices['sniffer'] = 0x0A
+    devices['vlad'] = 0x09
+
+    start_byte = 0x7E
+    end_byte = 0x7F
+    device = frame.get("device","") # 0 is broadcast
+    device = devices.get(device,0)
+    command = int(frame.get("command",0),16) # 0 is no command
+    data_size = int(frame.get("data size",0),16)
+    data = int(frame.get("data",0),16)
+    try:
+        if not frame:
+            logging.error("Empty frame packet")
+            return {}
+        base = [
+            device,
+            device_id,
+            data_size,
+            data,
+        ]
+        base_bytearray = bytearray(base)
+        checksum = Crc16Xmodem.calc(base_bytearray)
+        query = [start_byte, base_bytearray, checksum, end_byte]
+        return query
+
+    except Exception as e:
+        logging.error(e)
+        return {}
+
+
+
+def response_validate(hex_response, device_id, frame):
+    response_size = int(frame['response_size'], 16)
+    command = int(frame['command'], 16)
+    start_byte = int(frame['start_byte'], 16)
+    end_byte = int(frame['end_byte'], 16)
+    data_start_index = 6
+    data_end_index = 21
+    id_index = 2
+    command_index = 3
+
+    # Validations
+    if not hex_response.strip():
+        logging.debug("Query reception failed: Response empty")
+        return False
+
+    if len(hex_response) != response_size:
+        logging.debug("Query reception failed: Incorrect response length: {}".format(len(hex_response)))
+        return False
+
+    if hex_response[0] != start_byte or hex_response[-1] != end_byte:
+        logging.debug("Query reception failed: Incorrect start or end byte")
+        return False
+
+    if hex_response[id_index] != device_id:
+        logging.debug("Query reception failed: Incorrect ID received: {}".format(device_id))
+        return False
+
+    if hex_response[command_index] != command:
+        logging.debug("Query reception failed: Incorrect command received: {}".format(hex_response[command_index]))
+        return False
+
+
+def decode_data(data):
+    """Decodes received data from a byte array and returns a dictionary.
+
+  Args:
+      data: A byte array containing the received data.
+
+  Returns:
+      A dictionary containing the decoded values.
+  """
+    decoded_data = {
+        "aIn_1_10V": (data[0] | data[1] << 8),  # byte 1-2
+        "aOut_1_10V": (data[2] | data[3] << 8),  # byte 3-4
+        "aIn_x_20mA": (data[4] | data[5] << 8),  # byte 5-6
+        "aOut_x_20mA": (data[6] | data[7] << 8),  # byte 7-8
+        "swIn_x_20mA": data[8],  # byte 9 (more succinct)
+        "swOut_x_20mA": data[9],  # byte 10 (more succinct)
+        "dIn1": data[10],  # byte 11 (more succinct)
+        "dIn2": data[11],  # byte 12 (more succinct)
+        "dOut1": data[12],  # byte 13 (more succinct)
+        "dOut2": data[13],  # byte 14 (more succinct)
+        "swSerial": data[14]  # byte 15 (more succinct)
+    }
+    return decoded_data
+
+
+def linear_map(decoded_data: dict, field_group: list,device: dict) -> dict:
+    """Performs linear mapping on decoded data from a byte array.
+
+    Args:
+        decoded_data: A dictionary containing decoded values from a byte array.
+        field_group: A list of dictionaries containing field definitions.
+
+    Returns:
+        A dictionary containing the decoded values with applied linear mapping.
+    """
+
+    mapped_data = {}  # Use a dictionary for mapped values
+    device_conv_values = get_conv_values(device)
+    logging.warning(f"device_conv_values: {device_conv_values}'")
+    for field in field_group:
+        name = field.get("name")
+        field_id = str(field.get("_id"))
+        if field_id in device_conv_values:
+            conv_min = device_conv_values[field_id]["min"]
+            conv_max = device_conv_values[field_id]["max"]
+        else:
+            conv_min = field.get("conv_min")
+            conv_max = field.get("conv_max")
+
+        try:
+            # Attempt to convert conv_min and conv_max to integers first
+            conv_min = int(conv_min)
+            conv_max = int(conv_max)
+            raw = decoded_data.get(name, 0)
+            mapped = arduino_map(raw, 0, 4095, conv_min, conv_max)  # Use 0 if missing
+            rounded = round(mapped, 2)
+            mapped_data[name] = rounded
+
+        except Exception:
+
+            if (isinstance(conv_max, str) or isinstance(conv_min, str))  and  (conv_max != '' or conv_min != '') :
+                mapped_data[name] = conv_max if decoded_data.get(name) else conv_min
+            else:
+                logging.warning(f"Mapping variables not defined for field '{name}'")
+                mapped_data[name] = decoded_data.get(name)  # Use original value if missing
+    return mapped_data
+
+
+def extract_relevant_data(frame: dict, hex_response: str) -> list:
+    """
+    Extracts relevant data from the response based on frame indices.
+
+    Args:
+      frame: A dictionary containing frame information.
+      hex_response: The hexadecimal string representing the response data.
+
+    Returns:
+      A list containing the extracted relevant data.
+    """
+
+    response_size = int(frame['response_size'], 16)
+    data_start_index = int(frame['data_start_index'], 16)
+    data_end_index = int(frame['data_end_index'], 16)
+    extracted_data = []
+
+    for i in range(response_size):
+        if data_start_index <= i < data_end_index:
+            extracted_data.append(hex_response[i])
+
+    return extracted_data
+
+
+def get_field_group(
+        fields_group_arr: list[dict],
+        fields_arr: list[dict],
+        field_group_name: str,
+        state: str,
+) -> list:
+    """
+    Associates data points with relevant field groups and identifies potential alerts.
+
+    Args:
+        fields_group_arr: A list of dictionaries representing field groups.
+        field_group_name: The name of the specific field group to associate with.
+        fields_arr: A list of dictionaries representing individual fields.
+        data: A dictionary containing data points for each field.
+        device: (Optional) A dictionary containing device information, potentially including "fields_values".
+
+    Returns:
+        A dictionary associating field IDs with their corresponding data and alert status.
+    """
+
+    if not any(group.get("name") == "status" for group in fields_group_arr):
+        logging.error("Missing 'status' field group")
+        return []
+
+    result = []
+
+    for field_group in fields_group_arr:
+
+        for field in fields_arr:
+            if str(field_group["_id"]) == field["group_id"] and field_group["name"] == field_group_name:
+                if field[state]:
+                    result.append(field)
+
+    if not result:
+        logging.error(f"No fields found in '{field_group_name}' group with state '{state}'")
+
+    return result
+
+
+def get_conv_values(device: dict = None) -> dict:
+    """
+    Retrieves alert thresholds (min and max) from the device information.
+
+    Args:
+      device: (Optional) A dictionary containing device information, potentially including "fields_values".
+
+    Returns:
+      A dictionary containing alert thresholds for each field ID (key)
+      with values being another dictionary containing 'min' and 'max' keys.
+    """
+    conv_values = {}
+    if device:
+        fields_values = device.get("fields_values", {})
+        for field_id, field_data in fields_values.items():
+            conv_values[field_id] = {
+                "min": field_data.get("conv_min"),
+                "max": field_data.get("conv_max"),
+            }
+    return conv_values
+
+
+def get_alert_thresholds(device: dict = None) -> dict:
+    """
+    Retrieves alert thresholds (min and max) from the device information.
+
+    Args:
+      device: (Optional) A dictionary containing device information, potentially including "fields_values".
+
+    Returns:
+      A dictionary containing alert thresholds for each field ID (key)
+      with values being another dictionary containing 'min' and 'max' keys.
+    """
+    alert_thresholds = {}
+    if device:
+        fields_values = device.get("fields_values", {})
+        for field_id, field_data in fields_values.items():
+            alert_thresholds[field_id] = {
+                "min": field_data.get("alert_min"),
+                "max": field_data.get("alert_max"),
+            }
+    return alert_thresholds
+
+
+def process_field_data(
+    field: dict, value: int, alert_thresholds: dict
+) -> dict:
+    """
+    Processes a single field, evaluates its data against alert thresholds, and creates a dictionary with its value and alert status.
+
+    Args:
+        field: A dictionary representing a field.
+        value: The integer value of the field's data (expected to be an integer).
+        alert_thresholds: A dictionary containing alert thresholds for each field ID.
+
+    Returns:
+        A dictionary containing the field ID (key) and a dictionary with 'value' and 'alert' (True/False) keys.
+
+    Raises:
+        TypeError: If the `value` is not an integer.
+    """
+    field_id = {}
+    try:
+        field_id = str(field["_id"])
+
+        if field_id in alert_thresholds:
+            alert_min = alert_thresholds[field_id]["min"]
+            alert_max = alert_thresholds[field_id]["max"]
+            alert = value < alert_min or value > alert_max
+        else:
+            alert_min = field.get("alert_min")
+            alert_max = field.get("alert_max")
+
+        alert = value < alert_min or value > alert_max
+        try:
+            # Attempt to convert conv_min and conv_max to integers first
+            alert_min = int(alert_min)
+            alert_max = int(alert_max)
+            alert = value < alert_min or value > alert_max
+
+        except Exception as e:
+            logging.warning(f"Mapping variables not defined for field '{e}'")
+            alert = False
+    except TypeError as e:
+        logging.error(f"Failed to convert field {field['name']} value {value} to integer: {e}")
+        alert = False
+    except Exception as e:  # Catch other unexpected exceptions
+        logging.error(f"Unexpected error processing field data: {e}")
+        return {}  # Return an error dictionary for informative handling
+
+    return {field_id: {"value": value, "alert": alert}}
+
+
+def build_field_associations(
+        fields_arr: list[dict],
+        data: dict,
+        device: dict = None,
+) -> dict:
+    """
+    Associates data points with relevant fields and identifies potential alerts.
+
+    Args:
+      fields_arr: A list of dictionaries representing fields.
+      data: A dictionary containing data points for each field.
+      device: (Optional) A dictionary containing device information, potentially including "fields_values".
+
+    Returns:
+      A dictionary associating field IDs with their corresponding data and alert status.
+    """
+    alert_thresholds = get_alert_thresholds(device)
+    final_data = {}
+    for field in fields_arr:
+        try:
+            value = data.get(field["name"], 0)
+        except ValueError:
+            logging.warning(f"Failed to convert value for field '{field['name']}' to integer, using 0")
+            value = 0
+        field_data = process_field_data(field, value, alert_thresholds)
+        final_data.update(field_data)
+    return final_data
+
+
+def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr):
     """
     Sends request to sniffer to obtain values of analog and digital i/o
     Args:
@@ -298,144 +608,52 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
 
     trama = ""
 
-    # for field_group in fieldsGroupArr:
-    #     for field in fieldsArr:
-    #         if field_group['_id'] == field['group_id'] and field_group['name'] == 'Status':
-    #             trama[field_group['name']] += field['default_value']
-
-    # Verificar si 'status' está en el diccionario
-    if not any(item.get('name') == 'status' for item in fieldsGroupArr):
-        logging.error("not status group")
-        return {}
-
     # Verificar si 'status_query' está en el diccionario
     if not any(item.get('name') == 'status_query' for item in fieldsGroupArr):
         logging.error("no status_query group created")
         return {}
+
     device_id = int(device['id'])
+    frame = get_query_frame_from_fields(fieldsGroupArr, fieldsArr, "status_query")
+    frame2 = get_query_frame_from_fields(fieldsGroupArr, fieldsArr, "sniffer_IO")
+    if len(frame) == 0:
+        return {}
 
-    frame = get_field_group_data(fieldsGroupArr, fieldsArr, "status_query")
+    construct_query_frame(device_id,frame)
+    query = construct_query_status_frame(device_id, frame)
 
-    query = construct_sniffer_query_status_frame(device_id, frame)
 
-    DATA_START_INDEX = 6
-    DATA_END_INDEX = 21
-    ID_INDEX = 2
-    COMMAND_INDEX = 3
-
-    MAX_2BYTE = 4095
-    I_MAX = 20
-    V_MAX = 10
-
-    haveData = False
-    finalData = {}
-    logging.debug("SENT: " + query)
+    message = f"SENT: {query}"
     cmd_bytes = bytearray.fromhex(query)
-    hex_byte = ''
     startTime = time.time()
-
     try:
-        # ---- Send via serial
         for cmd_byte in cmd_bytes:
             hex_byte = ("{0:02x}".format(cmd_byte))
             serTx.write(bytes.fromhex(hex_byte))
 
-        read_length = int(frame['read_length'])
-        # ---- Read from serial
-        hexResponse = serRx.read(read_length)
+        response_size = int(frame['response_size'], 16)
+        hexResponse = serRx.read(response_size)
 
-        responseTime = str(time.time() - startTime)
-        logging.debug("Response time: " + responseTime)
+        responseTime = round(time.time() - startTime, 2)
+        message += " --> GET: " + hexResponse.hex()
+        message += f" / Response time:{responseTime}"
+        logging.debug(message)
 
-        logging.debug("GET: " + hexResponse.hex('-'))
-
-        # ---- Validations
-        if (hexResponse == None or hexResponse == "" or hexResponse == " " or len(hexResponse) == 0):
-            logging.debug("Query reception failed: " + "Response empty")
+        if response_validate(hexResponse, device_id, frame) is False:
             return False
-        if ((len(hexResponse) > read_length) or (len(hexResponse) < read_length)):
-            logging.debug("Query reception failed: " + "Incorrect response length: " + str(len(hexResponse)))
-            return False
-        if (hexResponse[0] != read_length or hexResponse[read_length - 1] != read_length):
-            logging.debug("Query reception failed: " + "Incorrect start or end byte")
-            return False
-        if (hexResponse[ID_INDEX] != int(device["id"], 16)):
-            logging.debug("Query reception failed: " + "Incorrect ID received: " + str(int(device["id"], 16)))
-            return False
-        if (hexResponse[COMMAND_INDEX] != frame["command"]):
-            logging.debug("Query reception failed: " + "Incorrect command received: " + str(hexResponse[COMMAND_INDEX]))
-            return False
-        # ------------------------
 
-        data = list()
+        extracted_data = extract_relevant_data(frame, hexResponse)
 
-        for i in range(0, read_length):  # DATALEN
-            if (DATA_START_INDEX <= i < DATA_END_INDEX):
-                data.append(hexResponse[i])
+        decoded_data = decode_data(extracted_data)
+        logging.info(f"Decoded data: {decoded_data}")
 
-        # ---- Decode received data
-        aIn_1_10V = (data[0] | data[1] << 8)  # byte 1-2
-        aOut_1_10V = (data[2] | data[3] << 8)  # byte 3-4
-        aIn_x_20mA = (data[4] | data[5] << 8)  # byte 5-6
-        aOut_x_20mA = (data[6] | data[7] << 8)  # byte 7-8
-        swIn_x_20mA = "ON" if (bool(data[8]) == 0x01) else "OFF"  # byte 9
-        swOut_x_20mA = "ON" if (bool(data[9]) == 0x01) else "OFF"  # byte 10
-        dIn1 = "ON" if (bool(data[10]) == 0x01) else "OFF"  # byte 11
-        dIn2 = "ON" if (bool(data[11]) == 0x01) else "OFF"  # byte 12
-        dOut1 = "ON" if (bool(data[12]) == 0x01) else "OFF"  # byte 13
-        dOut2 = "ON" if (bool(data[13]) == 0x01) else "OFF"  # byte 14
-        swSerial = "RS485" if (bool(data[14]) == 0x01) else "RS232"  # byte 15 (default: 0/rs232)
+        status_field_group = get_field_group(fieldsGroupArr, fieldsArr, 'status', 'query')
 
-        # Editables
-        logging.debug(f"ain1: {aIn_1_10V}")
-        logging.debug(f"aout1: {aOut_1_10V}")
-        logging.debug(f"ain2: {aIn_x_20mA}")
-        logging.debug(f"aout2: {aOut_x_20mA}")
-        logging.debug(f"din1: {dIn1}")
-        logging.debug(f"din2: {dIn2}")
-        logging.debug(f"dout1: {dOut1}")
-        logging.debug(f"dout2: {dOut2}")
-        # No editables
-        logging.debug(f"din_sw: {swIn_x_20mA}")
-        logging.debug(f"dout_sw: {swOut_x_20mA}")
-        logging.debug(f"swSerial: {swSerial}")
+        mapped_data = linear_map(decoded_data, status_field_group, device)
+        logging.info(f"Mapped data: {mapped_data}")
 
-        # ---- Linear mapping
-        aIn_1_10V_linear = round(arduino_map(aIn_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
-        aOut_1_10V_linear = round(arduino_map(aOut_1_10V, 0, MAX_2BYTE, 0, V_MAX), 2)
-        if swIn_x_20mA == swOut_x_20mA == "ON":
-            # 4-20mA
-            aIn_x_20mA_linear = round(arduino_map(aIn_x_20mA, 0, MAX_2BYTE, 0, I_MAX), 2)
-            aOut_x_20mA_linear = round(arduino_map(aOut_x_20mA, 0, MAX_2BYTE, 0, I_MAX), 2)
-        else:
-            # 0-20mA
-            aIn_x_20mA_linear = round(arduino_map(aIn_x_20mA, 0, MAX_2BYTE, 4, I_MAX), 2)
-            aOut_x_20mA_linear = round(arduino_map(aOut_x_20mA, 0, MAX_2BYTE, 4, I_MAX), 2)
+        finalData = build_field_associations(status_field_group, mapped_data, device)
 
-        logging.debug("Datos escalados: ")
-        logging.debug(f"Analog1 Input Voltage: {aIn_1_10V_linear} V")
-        logging.debug(f"Analog1 Output Voltage: {aOut_1_10V_linear} V")
-        logging.debug(f"Analog2 Input Current: {aIn_x_20mA_linear} mA")
-        logging.debug(f"Analog2 Output Current: {aOut_x_20mA_linear} mA")
-
-        SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-        timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
-
-        data = {
-            "aIn_1_10V": aIn_1_10V_linear,
-            "aOut_1_10V": aOut_1_10V_linear,
-            "aIn_x_20mA": aIn_x_20mA_linear,
-            "aOut_x_20mA": aOut_x_20mA_linear,
-            "swIn_x_20mA": swIn_x_20mA,
-            "swOut_x_20mA": swOut_x_20mA,
-            "dIn1": dIn1,
-            "dIn2": dIn2,
-            "dOut1": dOut1,
-            "dOut2": dOut2,
-            "swSerial": swSerial
-        }
-        # TODO: evaluate alerts
-        finalData = associate_field_groups(fieldsGroupArr, "status", fieldsArr, data)
         serTx.flushInput()
         serTx.flushOutput()
         serRx.flushInput()
@@ -445,42 +663,8 @@ def getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr):
         logging.error(e)
         sys.exit()
 
-    logging.debug("Query reception succesful")
+    logging.debug("Query reception succesfull")
     return finalData
-
-
-def associate_field_groups(fields_group_arr, field_group_name, fields_arr, data):
-    """
-    Associates field groups to fields and adds them to a dictionary.
-
-    Args:
-        fields_group_arr: List of field group dictionaries.
-        fields_arr: List of field dictionaries.
-        data: Dictionary containing field values.
-
-    Returns:
-        A dictionary with field_id as keys and values as dictionaries containing
-        "value" and "alert" information.
-    """
-
-    final_data: dict = {}
-
-    for field_group in fields_group_arr:
-        if not field_group:
-            logging.error("Empty field group encountered.")
-            continue
-
-    for field_group in fields_group_arr:
-        for field in fields_arr:
-            if str(field_group['_id']) == field['group_id'] and field_group['name'] == field_group_name:
-                if field['query']:
-                    final_data[str(field['_id'])] = {
-                        "value": data.get(field["name"], field["default_value"]),
-                        "alert": True
-                        # name: device["name"]
-                    }
-
-    return final_data
 
 
 def arduino_map(value, in_min, in_max, out_min, out_max):
@@ -631,6 +815,7 @@ def sendStatusToFrontEnd(rtData):
     Sends via SocketIO the real-time provisioned devices status
     This updates frontend interface
     """
+    logging.debug("-----------------")
     logging.debug("Emiting event...")
 
     eventMessage = {
@@ -659,7 +844,7 @@ def showBanner(provisionedDevicesArr, timeNow):
     """
     logging.debug("-------------------------------------------------------")
     logging.debug("Starting Polling - TimeStamp: %s ", timeNow)
-    logging.debug("Devices Count:" + str(len(provisionedDevicesArr)))
+    logging.debug("Devices Count:" + str(len(provisionedDevicesArr)) + "\n")
 
 
 def sendModbus(uartCmd, snifferAddress, data, serTx, serRx):
@@ -980,41 +1165,35 @@ def run_monitor():
     SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
     showBanner(provisionedDevicesArr, timeNow)
-
     if len(provisionedDevicesArr) > 0:
         for device in provisionedDevicesArr:
             device_data = dict()
-            logging.debug(f"ID:{device['id']} name:{device['name']}")
-
-            SNIFFERID = 8
-            response = getSnifferStatus(serTx, serRx, device, fieldsArr, fieldsGroupArr)
+            logging.debug("-----------------------------------------------------")
+            logging.debug(f"Device ID:{device['id']} name:{device['name']} START")
+            SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            response = get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr)
+            logging.debug(f"Device Response: {response}")
+            device_data["id"] = device["id"]
+            device_data["name"] = device["name"]
+            device_data["sampleTime"] = SampleTime
+            device_data["field_values"] = response
             if response:
                 connectedDevices += 1
-                device_data["id"] = device["id"]
-                device_data["name"] = device["name"]
                 device_data["connected"] = True
-                device_data["sampleTime"] = datetime.datetime.now().replace(microsecond=0)
-                device_data["field_values"] = response
-                updateDeviceConnectionStatus(device["id"], True)
-                if device["type"] == "sniffer":
-                    data = packet_sniffer_output()
-                    setSnifferData(serTx, serRx, int(device["id"]), data)
-                    data, uart_cmd = get_example_variable_frame(data)
-                    sendModbus(uart_cmd, f"{SNIFFERID:02x}", data, serTx, serRx)
+                #data = packet_sniffer_output()
+                #setSnifferData(serTx, serRx, int(device["id"]), data)
+                # data, uart_cmd = get_example_variable_frame(data)
+                # sendModbus(uart_cmd, f"{SNIFFERID:02x}", data, serTx, serRx)
             else:
-                logging.debug("No response from device")
-                device_data["id"] = device["id"]
-                device_data["name"] = device["name"]
                 device_data["connected"] = False
-                device_data["sampleTime"] = datetime.datetime.now().replace(microsecond=0)
-                device_data["field_values"] = {}
-                updateDeviceConnectionStatus(int(device["id"]), False)
 
+            updateDeviceConnectionStatus(device["id"], device_data["connected"])
             rtData.append(json.dumps(device_data, default=defaultJSONconverter))
-
+            logging.debug(f"Device ID:{device['id']} name:{device['name']} END\n\n")
         logging.debug("Connected devices: %s", connectedDevices)
         insertDevicesDataIntoDB(rtData)
         logging.debug("Inserted")
+
         sendStatusToFrontEnd(rtData)
     else:
         # sendStatusToFrontEnd([])
