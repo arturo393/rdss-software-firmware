@@ -26,7 +26,6 @@ const Alerts = (props) => {
   const [data,setData] = useState([])
   const [displayDeviceFieldGroup, setDisplayDeviceFieldGroup] = useState([])
 
-
   const api_url = process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT
 
 //   const fakeMonitorData = [
@@ -298,12 +297,15 @@ const Alerts = (props) => {
                         Object.entries(device?.field_values).map(([fieldId, fieldValue]) => {
                           const field = fields.find((f) => f._id === fieldId);
                           const fieldGroup = fields_groups.find((fg) => fg._id === field?.group_id);
-
-                          if (field?.set) {
+                          const thisDevice = props.devices.find(d => d.id === device.id);
+                          const fieldDef = thisDevice?.fields_values && field?._id && thisDevice?.fields_values[field._id] || null;
+                          
+                          if (field?.set && fieldDef?.visible) {
                             return (
                               <form onSubmit={saveDevice} key={fieldId} className="d-flex m-0 p-0  mx-0 w-100">
                                 {/* <div key={fieldId} className="d-flex m-0 p-0  mx-1 w-100"> */}
                                   <span className="input-group-text m-0 p-0"><img alt="" src={device.connected?(!fieldValue.alert?green.src:red.src):gray.src} width={20} height={20} /></span>
+                                    
                                     
                                   {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-75">{fieldGroup?.name}/{field?.name}</span>)}
                                   
@@ -326,7 +328,7 @@ const Alerts = (props) => {
                             )
                           }
 
-                          if (field?.query) {
+                          if (field?.query && fieldDef?.visible) {
                             return (
                               // <div key={fieldId} >
                               //   <span className="text-dark"><img alt="" src={device.connected?(!fieldValue.alert?green.src:red.src):gray.src} width={20} height={20} /> {fieldGroup?.name}/{field?.name} <span className="badge bg-secondary">{fieldValue.value}</span> </span>

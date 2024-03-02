@@ -140,21 +140,49 @@ const DevicesEdit = (props) => {
   //   })
   // }
 
+  // const handleChange = (e) => {
+  //   e.preventDefault();
+  //   const { id, value } = e.target;
+  //   const [field_id, param] = id.split("|");
+    
+  //   if (param) {
+  //     setDeviceData((prevDeviceData) => {
+  //       const updatedFieldsValues = prevDeviceData?.fields_values ? { ...prevDeviceData.fields_values } : {};
+    
+  //       // Update the corresponding parameter for the specified field_id
+  //       updatedFieldsValues[field_id] = {
+  //         ...updatedFieldsValues[field_id],
+  //         [param]: value,
+  //       };
+    
+  //       return {
+  //         ...prevDeviceData,
+  //         fields_values: updatedFieldsValues,
+  //       };
+  //     });
+  //   } else {
+  //     setDeviceData({
+  //       ...deviceData,
+  //       [id]: value
+  //     })
+  //   }
+    
+  // };
+
   const handleChange = (e) => {
     e.preventDefault();
-    const { id, value } = e.target;
+    const { id, value, type, checked } = e.target;
     const [field_id, param] = id.split("|");
-    
-    if (param) {
+  
+    if (type === "checkbox") {
       setDeviceData((prevDeviceData) => {
         const updatedFieldsValues = prevDeviceData?.fields_values ? { ...prevDeviceData.fields_values } : {};
-    
-        // Update the corresponding parameter for the specified field_id
+  
         updatedFieldsValues[field_id] = {
           ...updatedFieldsValues[field_id],
-          [param]: value,
+          visible: checked,
         };
-    
+  
         return {
           ...prevDeviceData,
           fields_values: updatedFieldsValues,
@@ -163,13 +191,12 @@ const DevicesEdit = (props) => {
     } else {
       setDeviceData({
         ...deviceData,
-        [id]: value
-      })
+        [id]: value,
+      });
     }
-    
   };
 
-  console.log("DeviceData", deviceData)
+  // console.log("DeviceData", deviceData)
 
   return (
     <>
@@ -235,7 +262,7 @@ const DevicesEdit = (props) => {
                               </span>
 
                               <div className="custom-control custom-switch">
-                                      <input type="checkbox" className="custom-control-input" id={`${field._id}|visible`} key={`${field._id}|visible`} name="visible" value={deviceData?.fields_values?.[field._id]?.visible || field?.visible || false} onChange={handleChange} disabled={!selectedDevice}/>
+                                      <input type="checkbox" className="custom-control-input" id={`${field._id}|visible`} key={`${field._id}|visible`} name="visible"  checked={deviceData?.fields_values?.[field._id]?.visible || field?.visible} onChange={handleChange} disabled={!selectedDevice}/>
                                       <label className="custom-control-label small" for="visible">visible</label>
                                     </div>
 
