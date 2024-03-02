@@ -7,17 +7,18 @@ import Schema from "../components/Schema"
 import Login from "../components/auth/Login"
 import { connect } from "react-redux"
 
-import { setConfig, setDevices, setMonitorDataEvent ,setdbDevicestype} from "../redux/actions/main"
+import { setConfig, setDevices, setMonitorDataEvent ,setdbDevicestype, setFields} from "../redux/actions/main"
 import DynamicComponent from "../components/DynamicComponent"
 
 const Home = (props) => {
-  const { isLoggedIn, dbConfig, dbDevices,dbDevicestype,setdbDevicestype, setConfig, setDevices, setMonitorDataEvent } = props
+  const { isLoggedIn, dbConfig, dbDevices,dbDevicestype,setdbDevicestype, setConfig, setDevices, setMonitorDataEvent, setFields, dbFields } = props
 
   useEffect(() => {
     setConfig(dbConfig)
     setDevices(dbDevices)
     setdbDevicestype(dbDevicestype)
     setMonitorDataEvent()
+    setFields(dbFields)
   }, [])
 
   if (isLoggedIn) {
@@ -31,22 +32,31 @@ const Home = (props) => {
   } else return <Login />
 }
 export async function getServerSideProps(context) {
-  const dbConfig = await axios.get(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/config").then((res) => {
+
+  const url = process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT
+
+  const dbConfig = await axios.get(url + "/api/manage/config").then((res) => {
     return res.data[0]
   })
-  const dbDevices = await axios.get(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/devices").then((res) => {
+  const dbDevices = await axios.get(url + "/api/devices/devices").then((res) => {
     return res.data
   })
-  const dbDevicestype = await axios.get(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/devicestype").then((res) => {
+  const dbDevicestype = await axios.get(url + "/api/devices/devicestype").then((res) => {
     return res.data
   })
 
+  const dbFields = await axios.get(url + "/api/fields").then((res) => {
+    return res.data
+  })
+
+  console.log("dbFields", dbFields)
+
   return {
-    props: { dbConfig, dbDevices , dbDevicestype},
+    props: { dbConfig, dbDevices , dbDevicestype, dbFields},
   }
 }
 
-const mapDispatchToProps = { setConfig, setDevices,setdbDevicestype, setMonitorDataEvent }
+const mapDispatchToProps = { setConfig, setDevices,setdbDevicestype, setMonitorDataEvent, setFields }
 
 const mapStateToProps = (state) => {
   return {

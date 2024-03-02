@@ -107,6 +107,8 @@ export default async function (req, res, next) {
     },
   ]
 
+  console.log("pipeline",JSON.stringify(pipeline))
+
   const fields = await db.collection("fields").find({ plottable: true }).toArray()
   const rtData = await db.collection("rtData").aggregate(pipeline).toArray()
 

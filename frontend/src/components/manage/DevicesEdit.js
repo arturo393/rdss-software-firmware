@@ -177,7 +177,7 @@ const DevicesEdit = (props) => {
       <div class="container-fuid">
         <div class="row text-center">
           <div class="col-2"></div>
-          <div class="col-7">
+          <div class="col-8">
             <select className="form-control" id="device" onChange={handleDeviceSelected}>
               <option value={0}>=== Select a Device ===</option>
               {devices.map((device) => {
@@ -222,9 +222,11 @@ const DevicesEdit = (props) => {
                         .filter((field) => field.group_id === group._id)
                         .map((field) => (
                           <div className="input-group mb-1 d-flex bd-highlight" key={field.id}>
-                            <div class="d-flex bd-highlight w-100">
+                            <div className="d-flex bd-highlight w-100">
+                            
                               <span className="input-group-text w-25 text-wrap flex-grow-1 bd-highlight">
                                 <strong>{field.name}</strong>
+                                
                                 <div className="bd-highligh">
                                   <span className="badge bg-primary mx-1">{field?.query ? "query" : null}</span>
                                   <span className="badge bg-success mx-1">{field?.set ? "set" : null}</span>
@@ -232,8 +234,13 @@ const DevicesEdit = (props) => {
                                 </div>
                               </span>
 
+                              <div className="custom-control custom-switch">
+                                      <input type="checkbox" className="custom-control-input" id={`${field._id}|visible`} key={`${field._id}|visible`} name="visible" value={deviceData?.fields_values?.[field._id]?.visible || field?.visible || false} onChange={handleChange} disabled={!selectedDevice}/>
+                                      <label className="custom-control-label small" for="visible">visible</label>
+                                    </div>
+
                               {/* FIELD NAME */}
-                              <div class="form-floating">
+                              <div className="form-floating">
                                 <input
                                   type="text"
                                   className="form-control"

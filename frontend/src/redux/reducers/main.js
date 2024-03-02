@@ -9,6 +9,7 @@ const main = (
     config: {},
     devices: [],
     activeDeviceId: 0,
+    fields: []
   },
   action
 ) => {
@@ -49,6 +50,11 @@ const main = (
         ...state,
         activeDeviceId: action.payload,
       }
+      case t.SET_FIELDS:
+        return {
+          ...state,
+          fields: action.payload,
+        }
     default:
       return { ...state }
   }
