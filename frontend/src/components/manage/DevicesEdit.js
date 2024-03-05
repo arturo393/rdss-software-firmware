@@ -159,7 +159,7 @@ const DevicesEdit = (props) => {
   return (
     <>
       
-      <h5 className="text-center w-100 bg-danger text-light">Devices Editor</h5>
+      <h5 className="text-center w-100 sigmaRed text-light">Devices Editor</h5>
       <div className="container-fuid">
         <div className="row text-center">
           <div className="col-2">

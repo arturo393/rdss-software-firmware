@@ -153,7 +153,7 @@ const Rtdata = (props) => {
 
   return (
     <>
-    <h5 className="text-center w-100 bg-danger text-light">RT-Data {device > 0 && deviceName}</h5>
+    <h5 className="text-center w-100 sigmaRed text-light">RT-Data {device > 0 && deviceName}</h5>
     
    
     <div className="containers text-center">

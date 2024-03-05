@@ -289,7 +289,7 @@ const Diagram = (props) => {
     <>
       <div class="container-fuid">
         <div class="row text-center">
-        <h5 className="text-center w-100 bg-danger text-light">Diagram Edit</h5>
+        <h5 className="text-center w-100 sigmaRed text-light">Diagram Edit</h5>
           <div class="col-2"></div>
           <div class="col-7">
             <label for="image" className="form-label">

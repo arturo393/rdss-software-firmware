@@ -189,7 +189,7 @@ const FieldsEdit = (props) => {
 
   return (
     <>
-    <h5 className="text-center w-100 bg-danger text-light">Devices fields definitions</h5>
+    <h5 className="text-center w-100 sigmaRed text-light">Devices fields definitions</h5>
     <div className="container-fluid" style={{ minHeight: "100vh" }}>
       <div className="text-center mt-2 mb-2">
         
