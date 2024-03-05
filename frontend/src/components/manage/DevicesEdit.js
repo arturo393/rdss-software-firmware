@@ -161,8 +161,8 @@ const DevicesEdit = (props) => {
       <h5 className="text-center">Device Editor</h5>
       <div className="container-fuid">
         <div className="row text-center">
-          <div className="col-2"></div>
-          <div className="col-8">
+          <div className="col-1"></div>
+          <div className="col-10">
             <select className="form-control" id="device" onChange={handleDeviceSelected}>
               <option value={0}>=== Select a Device ===</option>
               {devices.map((device) => {
@@ -180,15 +180,17 @@ const DevicesEdit = (props) => {
                 <input type="text" className="form-control" id="name" value={deviceData?.name} onChange={handleChange} />
               </div>
               {/* IMAGE */}
-              <div className="input-group mb-3">
-                <span className="input-group-text">Image</span>
-                <input type="file" className="form-control" id="image" onChange={(e) => handleImageChange(e)} />
+                <div className="input-group w-100">
+                <span className="input-group-text text-light bg-dark w-25">Image</span>
+                  <input type="file" className="form-control" id="image" onChange={(e) => handleImageChange(e)} />
+                  
+                </div>
+                <div className="w-100 bg-light d-flex align-items-center justify-content-center">
                 {(base64 || deviceData?.image) && (
-                <img src={base64 || deviceData?.image} className="input-group-text img-thumbnail w-100 h-100" alt={deviceData?.name || "No image loaded"}/>
-                )}
-              </div>
-              
-              
+                  <img src={base64 || deviceData?.image} className="input-group-text img-thumbnail" height={150} width={150} alt={deviceData?.name || "No image loaded"}/>
+                  )}
+                </div>
+    
 
               <div className="input-group mb-3">
                 {/* <span className="input-group-text">Type</span> */}
@@ -214,7 +216,7 @@ const DevicesEdit = (props) => {
                 fields_group.map((group) => (
                   <Card>
                     <Card.Header>
-                      <Accordion.Toggle as={Button} variant="link" className="text-start w-100 bg-dark text-light text-decoration-none text-uppercase"  eventKey={group._id}>
+                      <Accordion.Toggle as={Button} variant="link" className="text-start w-100 text-dark text-decoration-none text-uppercase"  eventKey={group._id}>
                       <strong>{group.name}</strong>
                       </Accordion.Toggle>
                     </Card.Header>
@@ -228,7 +230,7 @@ const DevicesEdit = (props) => {
                             <div className="d-flex bd-highlight w-100">
       
                               <div className="flex flex-column w-25">
-                                <span className="input-group-text w-100 text-wrap flex-grow-1 bd-highlight bg-dark text-light">
+                                <span className="input-group-text w-100 text-wrap flex-grow-1 bd-highlight text-light bg-secondary">
                                   <strong>{field.name}</strong>
                                 </span>
                                 <div className="bd-highligh w-100 text-start">
