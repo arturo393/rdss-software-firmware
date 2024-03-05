@@ -206,7 +206,7 @@ const FieldsEdit = (props) => {
               className="form-control"
               id="new_group_name"
               onChange={(e) => handleChange(e)}
-              placeholder="New Group Name"
+              placeholder="New Fields Group Name"
               value={formData.new_group_name || ""}
             />
             <button className="btn btn-success" type="button" onClick={addGroup}>
@@ -217,7 +217,7 @@ const FieldsEdit = (props) => {
 
           {/* LIST OF GROUPS */}
           <div className="input-group mb-3">
-            <span className="input-group-text text-light bg-dark">Group Name</span>
+            <span className="input-group-text text-light bg-dark w-25">Fields Group Name</span>
             <select className="form-control" id="selectedGroup" onChange={handleGroupSelected}>
               <option value={""}>=== Select a Group ===</option>
               {groups.map((group) => (
@@ -238,7 +238,7 @@ const FieldsEdit = (props) => {
           {/* ADD FIELD */}
           {selectedGroup && (
             <div className="input-group mb-3">
-              <span className="input-group-text text-light bg-dark">Field Name</span>
+              <span className="input-group-text text-light bg-dark w-25">Field Name</span>
               <input
                 type="text"
                 className="form-control"

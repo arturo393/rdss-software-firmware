@@ -54,10 +54,10 @@ const Header = (props) => {
                   Alerts Limits
                 </a> */}
                 <a className="dropdown-item" onClick={() => setActiveComponent("fieldsEdit")}>
-                  Device Fields
+                  Device Fields Definitions
                 </a>
                 <a className="dropdown-item" onClick={() => setActiveComponent("groupsEdit")}>
-                  Device Groups
+                  Devices Groups Management
                 </a>
                 <a className="dropdown-item" onClick={() => setActiveComponent("devicesEdit")}>
                   Device Management

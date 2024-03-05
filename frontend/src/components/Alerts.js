@@ -28,49 +28,6 @@ const Alerts = (props) => {
 
   const api_url = process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT
 
-//   const fakeMonitorData = [
-//     {
-//         id: 1,
-//         name: "prueba",
-//         type: "sniffer",
-//         connected: true,
-//         group_id: "65c1362edc83920013291fc4",
-//         rtData: 
-//             {
-//                 "65c135fddc83920013291fc2": {
-//                     alert: true,
-//                     value: 10
-//                 },
-//                 "65c13600dc83920013291fc3": {
-//                     alert: false,
-//                     value: 99
-//                 },
-//                 "65c13c52dc83920013291fc5": {
-//                   alert: false,
-//                   value: 35
-//                 }
-//             }
-//     },
-//     {
-//         id: 2,
-//         name: "prueba 2",
-//         type: "sniffer",
-//         connected: true,
-//         group_id: "65c1362edc83920013291fc4",
-//         rtData: 
-//             {
-//                 "65c135fddc83920013291fc2": {
-//                     alert: false,
-//                     value: 13
-//                 },
-//                 "65c13600dc83920013291fc3": {
-//                     alert: true,
-//                     value: 8
-//                 }
-//             }
-//     }
-// ]
-
   const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`;
 
   const { monitorData } = props
