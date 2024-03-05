@@ -46,7 +46,7 @@ const Login = (props) => {
                   <Form.Check type="checkbox" label="Check me out" />
                 </Form.Group> */}
                   <div className="row mt-5">
-                    <Button variant="primary" type="submit">
+                    <Button variant="primary" type="submit" classname="border-0">
                       Login
                     </Button>
                   </div>

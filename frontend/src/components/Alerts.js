@@ -275,7 +275,7 @@ const Alerts = (props) => {
 
   return (
     <>
-      <h5 className="text-center">Devices Status</h5>
+      <h5 className="text-center w-100 bg-danger text-light">Devices Status</h5>
       
 
       <div className="container table-responsive text-center col-10 ">
@@ -287,7 +287,7 @@ const Alerts = (props) => {
               {data && data.filter(d => (props.devices.some(deviceItem => deviceItem.id === d.id && deviceItem.group_id === device_group._id))).map(device => (
                 <>
                 <div className="d-flex w-100 bg-light text-wrap">
-                  <img src={props.devices.find(d => d.id === device.id)?.image} alt="" width={100} height={100}/>
+                  <img src={props.devices.find(d => d.id === device.id)?.image} className="img-thumbnail" width={100} height={100} alt=""/>
                   <span className="input-group-text text-dark bg-light w-25 text-wrap">
                     <img alt="" className="m-2" src={device?.connected?green.src:red.src} width={20} height={20} /> ({device?.id}) {device?.name} {!device?.connected && "(not connected)"}
                   
@@ -353,43 +353,7 @@ const Alerts = (props) => {
                           
                         })}
                   </div>
-                  {/* SETTERS
-                  <div className="w-50 align-content-start bg-light">
-                  {device?.field_values &&
-                        Object.entries(device?.field_values).map(([fieldId, fieldValue]) => {
-                          const field = fields.find((f) => f._id === fieldId);
-                          const fieldGroup = fields_groups.find((fg) => fg._id === field?.group_id);
-                          
-                          
-                          
-                          if (field?.set) {
-                            return (
-                              <div key={fieldId}>
-                                <form onSubmit={saveDevice}>
-                                  <div className="input-group col">
-                                    {fieldValue?.name?(<span className="input-group-text w-50">{fieldValue?.name}</span>):(<span className="input-group-text w-50">{fieldGroup?.name}/{field?.name}</span>)}
-                                    
-                                    <input className="form-control text-info" name="field" id={field?._id} onChange={handleChange} defaultValue={fieldValue?.value}/>
-                                    <button className="btn btn-primary" type="submit">Save</button>
-                                    <input type="hidden" name="id" id="id" value={device.id}/>
-                                  </div>
-                                  <div className="row">
-                                    <div className="col-md-12 text-center">
-                                      <div className="alert alert-info hidden" role="alert" id={device.id+"status"}>OK
-                                      </div>
-                                    </div>
-                                  </div>
-                                </form>
-                              </div>
-                            )
-                          }
-
-                          return null
-                          
-                          
-                        })}
-        
-                  </div> */}
+                  
                 </div>
                 </>
               ))}
@@ -401,74 +365,7 @@ const Alerts = (props) => {
 
 
 
-        {/* CONTENIDO */}
-        {/* <div className="row">
-          <table className="table table-striped table-bordered table-light">
-            <thead>
-              <tr>
-                <th>
-                  <h6>Device</h6>
-                </th>
-                <th>
-                  <h6>Connection</h6>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {alerts && alerts?.map((data) => {
-                return (
-                  <tr>
-                    <td>{data.name + "(" + data.type + "-" + data.id + ")"}</td>
-                    <td><img alt="" src={data.connected} width={20} height={20} /></td>
-                    {fields && fields.map(field => (
-                      <td>asd
-                        <img alt="" src={data[field?._id]} width={20} height={20} />
-                      </td>
-                    ))}
-                    <td>
-                      <img alt="" src={data.voltage} width={20} height={20} />
-                    </td>
-                    <td>
-                      <img alt="" src={data.current} width={20} height={20} />
-                    </td>
-                    <td>
-                      <img alt="" src={data.gupl} width={20} height={20} />
-                    </td>
-                    <td>
-                      <img alt="" src={data.guwl} width={20} height={20} />
-                    </td>
-                    <td>
-                      <img alt="" src={data.power} width={20} height={20} />
-                    </td>
-                    <td>
-                    <img alt="" src={data.smartTune} width={20} height={20} />
-                    </td>
-                    <td>
-                    <img alt="" src={data.reverse} width={20} height={20} />
-                    </td>
-                    <td width={200}>
-                      <form onSubmit={saveDevice}>
-                        <div className="input-group col">
-                          <span className="input-group-text">{data?.attenuation}</span>
-                          <input type="number" className="form-control" id={"attenuation"}  onChange={handleChange} />
-                          <button className="btn btn-primary" type="submit">Save</button>
-                          <input type="hidden" name="id" id="id" value={data.id}/>
-                        </div>
-                        <div className="row">
-                          <div className="col-md-12 text-center">
-                            <div className="alert alert-info hidden" role="alert" id={data.id+"status"}>OK
-                            </div>
-                          </div>
-                        </div>
-                      </form>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div> */}
-        {/* FIN CONTENIDO */}
+       
       </div>
     </>
   )

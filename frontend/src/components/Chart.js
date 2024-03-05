@@ -197,7 +197,7 @@ function Chart(props) {
       layout={plot.layout}
       debug={true}
       config={plot.config}
-      // className="w-75"
+      // className="col-8"
     />
   )
 }

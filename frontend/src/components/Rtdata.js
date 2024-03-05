@@ -152,6 +152,10 @@ const Rtdata = (props) => {
   // console.log("RTDATA", rtData)
 
   return (
+    <>
+    <h5 className="text-center w-100 bg-danger text-light">RT-Data {device > 0 && deviceName}</h5>
+    
+   
     <div className="containers text-center">
       <span className="spinnerContainer" id="spinnerContainer">
         <span>Loading...</span>
@@ -199,12 +203,12 @@ const Rtdata = (props) => {
             </button>
           </div>
           <div className="text-center mt-2 mb-2">
-                <h5>RT-Data: {deviceName}</h5>
+                
               </div>
           {(device > 0 && fields &&  rtData.x?.length > 0)? (
             <>
               
-              {console.log("RTDATA", rtData)}
+              {/* {console.log("RTDATA", rtData)} */}
               {
                   fields.filter(field => field.plottable).map(field => (
                     // rtData = { x, rtd, marker, text }
@@ -221,6 +225,7 @@ const Rtdata = (props) => {
         </div>
       </div>
     </div>
+    </>
   )
 }
 

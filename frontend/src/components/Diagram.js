@@ -55,7 +55,6 @@ const Diagram = (props) => {
 
     if (devices.length > 0) {
       let squaresArr = []
-      console.log("ddevices",  devices)
       devices.map((device) => {
         let square = {}
         if (device.status.provisioned) {
@@ -290,10 +289,12 @@ const Diagram = (props) => {
     <>
       <div class="container-fuid">
         <div class="row text-center">
+        <h5 className="text-center w-100 bg-danger text-light">Diagram Edit</h5>
           <div class="col-2"></div>
           <div class="col-7">
             <label for="image" className="form-label">
-            <h5 className="text-center">Diagram Edit</h5>
+            
+            
             </label>
             <div class="input-group mb-3">
               <input className="form-control" type="file" id="image" name="image" onChange={handleImageChange} />

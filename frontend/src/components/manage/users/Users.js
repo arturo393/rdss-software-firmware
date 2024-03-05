@@ -150,9 +150,11 @@ const Users = (props) => {
   }
 
   return (
+    <>
+    <h5 className="text-center w-100 bg-danger text-light">Users Admin</h5>
     <div className="container-fluid col-10">
       <div className="text-center mt-2 mb-2">
-        <h5>Users Admin</h5>
+      
       </div>
       <div className="card h-100">
         <div className="card-body">
@@ -247,6 +249,7 @@ const Users = (props) => {
         </form>
       </div>
     </div>
+    </>
   )
 }
 
