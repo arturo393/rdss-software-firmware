@@ -163,8 +163,10 @@ const DevicesEdit = (props) => {
       <div className="container-fuid">
         <div className="row text-center">
           <div className="col-2">
-          {(base64 || deviceData?.image) && (
-                  <img src={base64 || deviceData?.image} className="input-group-text img-fluid img-thumbnail" alt={deviceData?.name || "No image loaded"}/>
+          {(base64 || deviceData?.image) ? (
+                  <img src={base64 || deviceData?.image} className="input-group-text img-fluid img-thumbnail w-100" alt={deviceData?.name}/>
+                  ):(
+                    <img src="/images/no_image.png" className="input-group-text img-fluid img-thumbnail w-100"  alt="no image"/>
                   )}
           </div>
           <div className="col-8">

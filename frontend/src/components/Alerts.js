@@ -286,12 +286,17 @@ const Alerts = (props) => {
               {/* DEVICE ID/NAME LOOP */}
               {data && data.filter(d => (props.devices.some(deviceItem => deviceItem.id === d.id && deviceItem.group_id === device_group._id))).map(device => (
                 <>
-                <div className="d-flex w-100 bg-light text-wrap">
-                  <img src={props.devices.find(d => d.id === device.id)?.image} className="img-thumbnail" width={100} height={100} alt=""/>
-                  <span className="input-group-text text-dark bg-light w-25 text-wrap">
-                    <img alt="" className="m-2" src={device?.connected?green.src:red.src} width={20} height={20} /> ({device?.id}) {device?.name} {!device?.connected && "(not connected)"}
+                <div className="d-flex w-100 bg-light border-0">
+                  {props.devices.find(d => d.id === device.id)?.image ? (
+                    <img src={props.devices.find(d => d.id === device.id)?.image} className="img-thumbnail" width={100} height={100} alt={device?.id}/>
+                  ):(
+                    <img src="/images/no_image.png" className="img-thumbnail" width={100} height={100} alt="no image"/>
+                  )}
+                  <span width={100} height={100}></span>
                   
-                    
+                  <span className="input-group-text text-dark bg-light w-25 text-wrap">
+                    <img alt="" className="m-2" src={device?.connected?green.src:red.src} width={20} height={20} />
+                    ({device?.id}) {device?.name} {!device?.connected && "(not connected)"}
                   </span>
                   
                   {/* QUERIES */}
