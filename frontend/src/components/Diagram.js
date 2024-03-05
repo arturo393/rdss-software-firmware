@@ -55,7 +55,7 @@ const Diagram = (props) => {
 
     if (devices.length > 0) {
       let squaresArr = []
-
+      console.log("ddevices",  devices)
       devices.map((device) => {
         let square = {}
         if (device.status.provisioned) {
@@ -69,6 +69,11 @@ const Diagram = (props) => {
             fill: fill,
             name: label,
             id: device.id,
+          }
+          if (device.image) {
+            const newImage = new window.Image()
+            newImage.src = device.image
+            square.image = newImage
           }
           squaresArr.push(square)
         }
@@ -348,6 +353,20 @@ const Diagram = (props) => {
                 return (
                   <Group>
                     <Text text={square.name} x={square.x + 20} y={square.y + 5} fill="#000000" stroke="#ffffff" fillAfterStrokeEnabled="true" />
+                    {square.image && (
+                      <>
+                      <Image
+                        image={square.image}
+                        layout="fill"
+                        x={square.x + -10}
+                        y={square.y + 15}
+                        width={100}
+                        height={100}
+                        onError={(e) => console.error("Error loading image:", e)}
+                      />
+                      </>
+                      
+                    )}
                     <Circle
                       x={square.x}
                       y={square.y}

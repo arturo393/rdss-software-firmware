@@ -49,7 +49,6 @@ export async function getServerSideProps(context) {
     return res.data
   })
 
-  console.log("dbFields", dbFields)
 
   return {
     props: { dbConfig, dbDevices , dbDevicestype, dbFields},

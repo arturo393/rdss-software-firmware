@@ -89,6 +89,11 @@ const Schema = (props) => {
         id: device.id,
         key: device.status.x * device.status.y,
       }
+      if (device.image) {
+        const newImage = new window.Image()
+        newImage.src = device.image
+        device.image = newImage
+      }
       newSquares.push(device)
     })
     setSquares(newSquares)
@@ -112,6 +117,13 @@ const Schema = (props) => {
           name: label,
           id: device.id,
         }
+
+        if (device.image) {
+          const newImage = new window.Image()
+          newImage.src = device.image
+          square.image = newImage
+        }
+
         newSquares.push(square)
       }
     })
@@ -240,6 +252,7 @@ const Schema = (props) => {
     const lastDist = 0
   }
   // return <>Schema </>
+  
   return (
     <div
       style={{
@@ -276,8 +289,23 @@ const Schema = (props) => {
         <Layer>
           <Image image={image} layout="fill" />
           {squares.map((square) => (
-            <Group>
-              <Text text={square.name} x={square.x + 20} y={square.y + 5} fill="#000000" stroke="#ffffff" fillAfterStrokeEnabled="true" />
+            <>
+            <Group key={square.id}>
+              <Text text={square.name} x={square.x + 20} y={square.y + 0} fill="#000000" stroke="#ffffff" fillAfterStrokeEnabled="true" />
+              {square.image && (
+                <>
+                <Image
+                  image={square.image}
+                  layout="fill"
+                  x={square.x + -10}
+                  y={square.y + 15}
+                  width={100}
+                  height={100}
+                  onError={(e) => console.error("Error loading image:", e)}
+                />
+                </>
+                
+              )}
               <Circle
                 radius={10}
                 x={square.x}
@@ -288,6 +316,7 @@ const Schema = (props) => {
                 onTap={() => selectDevice(square.id.toString())}
               />
             </Group>
+            </>
           ))}
         </Layer>
       </Stage>
