@@ -374,7 +374,7 @@ const DevicesEdit = (props) => {
 
 
 
-              <button className="btn btn-primary w-100" type="button" onClick={saveDevice} disabled={!selectedDevice}>
+              <button className="btn btn-primary w-100 mt-3" type="button" onClick={saveDevice} disabled={!selectedDevice}>
                 Save
               </button>
             </div>

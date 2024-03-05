@@ -286,11 +286,14 @@ const Alerts = (props) => {
               {/* DEVICE ID/NAME LOOP */}
               {data && data.filter(d => (props.devices.some(deviceItem => deviceItem.id === d.id && deviceItem.group_id === device_group._id))).map(device => (
                 <>
-                <div className="d-flex w-100">
-                  
+                <div className="d-flex w-100 bg-light">
+                  <img src={props.devices.find(d => d.id === device.id)?.image} alt="" width={100} height={100}/>
                   <span className="input-group-text text-dark bg-light w-25">
                     <img alt="" className="m-2" src={device?.connected?green.src:red.src} width={20} height={20} /> ({device?.id}) {device?.name} {!device?.connected && "(not connected)"}
+                  
+                    
                   </span>
+                  
                   {/* QUERIES */}
                   <div className="input-group-text text-dark bg-light w-100 mx-0 d-flex justify-content-start flex-column">
                   {device?.field_values &&
@@ -306,7 +309,7 @@ const Alerts = (props) => {
                                 {/* <div key={fieldId} className="d-flex m-0 p-0  mx-1 w-100"> */}
                                   <span className="input-group-text m-0 p-0"><img alt="" src={device.connected?(!fieldValue.alert?green.src:red.src):gray.src} width={20} height={20} /></span>
                                     
-                                    
+                                  
                                   {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-75">{fieldGroup?.name}/{field?.name}</span>)}
                                   
                                   
