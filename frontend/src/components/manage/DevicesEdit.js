@@ -373,10 +373,12 @@ const DevicesEdit = (props) => {
               </Accordion>
 
 
-
-              <button className="btn btn-primary w-100 mt-3" type="button" onClick={saveDevice} disabled={!selectedDevice}>
-                Save
-              </button>
+              <div className="row mt-3 w-100 text-center">
+                <button className="btn btn-primary w-25 border-0 mx-auto" type="button" onClick={saveDevice} disabled={!selectedDevice}>
+                  Save
+                </button>
+              </div>
+              
             </div>
           </div>
           <div className="col-2"></div>

@@ -150,7 +150,7 @@ const Users = (props) => {
   }
 
   return (
-    <div className="container-fluid ">
+    <div className="container-fluid col-10">
       <div className="text-center mt-2 mb-2">
         <h5>Users Admin</h5>
       </div>
@@ -164,11 +164,11 @@ const Users = (props) => {
                     <td>
                       {user?.name} ({user?.email})
                     </td>
-                    <td>
-                      <button className="btn btn-primary btn-sm" type="button" onClick={handleEdit} id={user._id}>
+                    <td className="text-right">
+                      <button className="btn btn-primary btn-sm mx-2" type="button" onClick={handleEdit} id={user._id}>
                         Edit
                       </button>
-                      <button className="btn btn-danger btn-sm" type="button" onClick={handleDelete} id={user._id}>
+                      <button className="btn btn-danger btn-sm mx-2" type="button" onClick={handleDelete} id={user._id}>
                         Delete
                       </button>
                     </td>

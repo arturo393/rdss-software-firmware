@@ -278,7 +278,7 @@ const Alerts = (props) => {
       <h5 className="text-center">Devices Status</h5>
       
 
-      <div className="container table-responsive text-center ">
+      <div className="container table-responsive text-center col-10 ">
         {/* DEVICE GROUP LOOP */}
         {devices_groups && devices_groups.map(device_group => (
             <div className="input-group mb-5" key={device_group._id}>
@@ -286,9 +286,9 @@ const Alerts = (props) => {
               {/* DEVICE ID/NAME LOOP */}
               {data && data.filter(d => (props.devices.some(deviceItem => deviceItem.id === d.id && deviceItem.group_id === device_group._id))).map(device => (
                 <>
-                <div className="d-flex w-100 bg-light">
+                <div className="d-flex w-100 bg-light text-wrap">
                   <img src={props.devices.find(d => d.id === device.id)?.image} alt="" width={100} height={100}/>
-                  <span className="input-group-text text-dark bg-light w-25">
+                  <span className="input-group-text text-dark bg-light w-25 text-wrap">
                     <img alt="" className="m-2" src={device?.connected?green.src:red.src} width={20} height={20} /> ({device?.id}) {device?.name} {!device?.connected && "(not connected)"}
                   
                     
