@@ -161,8 +161,12 @@ const DevicesEdit = (props) => {
       <h5 className="text-center">Device Editor</h5>
       <div className="container-fuid">
         <div className="row text-center">
-          <div className="col-1"></div>
-          <div className="col-10">
+          <div className="col-2">
+          {(base64 || deviceData?.image) && (
+                  <img src={base64 || deviceData?.image} className="input-group-text img-thumbnail w-100" alt={deviceData?.name || "No image loaded"}/>
+                  )}
+          </div>
+          <div className="col-8">
             <select className="form-control" id="device" onChange={handleDeviceSelected}>
               <option value={0}>=== Select a Device ===</option>
               {devices.map((device) => {
@@ -185,11 +189,11 @@ const DevicesEdit = (props) => {
                   <input type="file" className="form-control" id="image" onChange={(e) => handleImageChange(e)} />
                   
                 </div>
-                <div className="w-100 bg-light d-flex align-items-center justify-content-center">
+                {/* <div className="w-100 bg-light d-flex align-items-center justify-content-center">
                 {(base64 || deviceData?.image) && (
                   <img src={base64 || deviceData?.image} className="input-group-text img-thumbnail" height={150} width={150} alt={deviceData?.name || "No image loaded"}/>
                   )}
-                </div>
+                </div> */}
     
 
               <div className="input-group mb-3">
