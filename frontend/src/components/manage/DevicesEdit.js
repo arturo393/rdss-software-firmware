@@ -131,7 +131,7 @@ const DevicesEdit = (props) => {
     const { id, value, type, checked } = e.target;
     const [field_id, param] = id.split("|");
 
-    console.log("e",e.target)
+    // console.log("e",e.target)
   
     if (type === "checkbox") {
       setDeviceData((prevDeviceData) => {
