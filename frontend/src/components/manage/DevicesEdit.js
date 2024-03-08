@@ -103,7 +103,7 @@ const DevicesEdit = (props) => {
       image: base64 || null
     }
 
-    console.log("structuredData", structuredData)
+    // console.log("structuredData", structuredData)
     // Create a new FormData object
 
 
