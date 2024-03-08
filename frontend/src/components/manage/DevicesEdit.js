@@ -130,6 +130,8 @@ const DevicesEdit = (props) => {
     e.preventDefault();
     const { id, value, type, checked } = e.target;
     const [field_id, param] = id.split("|");
+
+    console.log("e",e.target)
   
     if (type === "checkbox") {
       setDeviceData((prevDeviceData) => {
@@ -146,10 +148,20 @@ const DevicesEdit = (props) => {
         };
       });
     } else {
-      setDeviceData({
-        ...deviceData,
-        [id]: value,
-      });
+      // setDeviceData({
+      //   ...deviceData,
+      //   [id]: value,
+      // });
+      setDeviceData(prevDeviceData => ({
+        ...prevDeviceData,
+        fields_values: {
+          ...prevDeviceData.fields_values,
+          [field_id]: {
+            ...prevDeviceData.fields_values[field_id],
+            [param]: value,
+          },
+        },
+      }));
     }
 
   };

@@ -49,8 +49,8 @@ const Rtdata = (props) => {
   }, [activeDeviceId])
   
   useEffect(() => {
-    console.log("fields.length",fields.length)
-    console.log("device",device)
+    // console.log("fields.length",fields.length)
+    // console.log("device",device)
     if (fields.length && device) {
       getDeviceRTData(device)
       document.getElementById("device").value = device

@@ -193,7 +193,7 @@ const Alerts = (props) => {
     // get device data
     const device = await axios.get(api_url + "/api/device/" + e.target.id.value);
   
-    console.log("device", device.data[0]);
+    // console.log("device", device.data[0]);
   
     const fieldId = e.target.field.id;
     const fieldValue = e.target.field.value;
@@ -223,7 +223,7 @@ const Alerts = (props) => {
     } else {
       message = "Error saving device data";
     }
-    console.log("RES", res);
+    // console.log("RES", res);
     status.style.display = "block";
     status.innerHTML = message;
   };

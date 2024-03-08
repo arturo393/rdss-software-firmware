@@ -33,7 +33,7 @@ function Chart(props) {
 
   useEffect(() => {
     if (Object.entries(rtData).length) {
-      console.log("rtData changed",rtData)
+      // console.log("rtData changed",rtData)
       const data = { x: rtData.x, y: rtData.rtd[filter], marker: rtData.marker, text: rtData.text }
       setRevision(rtData.x.length + deviceId + Math.floor(Math.random() * 100 + 1))
       setPlotData(data)
@@ -45,7 +45,7 @@ function Chart(props) {
   }, [deviceId])
 
   useEffect(() => {
-    console.log("plotData changed")
+    // console.log("plotData changed")
     renderPlot()
   }, [revision])
 
