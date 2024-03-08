@@ -24,47 +24,40 @@ const Chart = dynamic(import("./Chart"), {
 
 const Rtdata = (props) => {
   const defaultNullValue = 0
-  const { activeDeviceId, devices } = props
+  const { activeDeviceId, devices, fields } = props
   // const [devices, setDevices] = useState([])
   const [device, setDevice] = useState(activeDeviceId || 0)
   const [deviceData, setDeviceData] = useState({})
   const [deviceName, setDeviceName] = useState("=== Select a Device ===")
 
-  const [fields,setFields] = useState([])
 
   const [dateFrom, handleDateFromChange] = useState(new Date(Date.now() - 3600 * 1000 * 6))
   const [dateTo, handleDateToChange] = useState(new Date())
   const [rtData, setRtData] = useState({})
 
-  const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`;
-
-
-  const getFieldsData = async () => {
-      const res = await axios.get(`${url}/api/fields`);
-        setFields(res.data.filter(field => field.plottable ))
-    }
 
   useEffect(() => {
-    showSpinner()
-    setDevice(activeDeviceId || 0)
-    getDeviceRTData(activeDeviceId)
-    getFieldsData().then(() => {hiddeSpinner()})
+    activeDeviceId && setDevice(activeDeviceId)
+    hiddeSpinner()
   }, [])
-
+  
   useEffect(() => {
-    setDevice(activeDeviceId)
-  },[activeDeviceId])
+    activeDeviceId && setDevice(activeDeviceId)
+    handleDateFromChange(new Date(Date.now() - 3600 * 1000 * 6))
+    handleDateToChange(new Date())
 
-
-
+  }, [activeDeviceId])
+  
   useEffect(() => {
-    if (device > 0 && fields.length > 0) {
+    // console.log("fields.length",fields.length)
+    // console.log("device",device)
+    if (fields.length && device) {
+      getDeviceRTData(device)
       document.getElementById("device").value = device
       const dev = devices.find((d) => Number(d.id) === Number(device))
-      setDeviceName(dev.name ? dev.name + "(" + dev.type + "-" + dev.id + ")" : dev.type + "-" + dev.id)
-      
-      getDeviceRTData(device)
+      setDeviceName(dev.name ? dev.name + "(" + dev.type + "-" + dev.id + ")" : dev.type + "-" + dev.id) 
     }
+         
   }, [device])
   
 
@@ -89,7 +82,8 @@ const Rtdata = (props) => {
         const datetime = getDateTime(data?._id)
         x.push(datetime)
         Object.keys(data?.field_values).map((key) => {
-          rtd[key].push(data?.field_values[key].value)
+          
+          rtd[key]?.push(data?.field_values[key].value)
           marker.color.push(data?.field_values[key].alert?"red":"lightblue")
           let text_content = `<b>Device: ${data._id.device}</b><br>\n`
           text_content = data?.connected?"":"Disconnect"
@@ -155,9 +149,13 @@ const Rtdata = (props) => {
       spinner.style.opacity = 1
     }
   }
-  console.log("RTDATA", rtData)
+  // console.log("RTDATA", rtData)
 
   return (
+    <>
+    <h5 className="text-center w-100 sigmaRed text-light">RT-Data {device > 0 && deviceName}</h5>
+    
+   
     <div className="containers text-center">
       <span className="spinnerContainer" id="spinnerContainer">
         <span>Loading...</span>
@@ -204,22 +202,30 @@ const Rtdata = (props) => {
               Search
             </button>
           </div>
-          {device > 0 && fields &&  rtData.x?.length > 0 && (
-            <>
-              <div className="text-center mt-2 mb-2">
-                <h5>RT-Data: {deviceName}</h5>
+          <div className="text-center mt-2 mb-2">
+                
               </div>
-              {fields.filter(field => field.plottable).map(field => (
-                // rtData = { x, rtd, marker, text }
-                <div>
-                <Chart deviceId={device}  rtData={rtData} label={field.name} filter={field._id} color={field.color || "lightblue"} />
-                </div>
-              ))}
+          {(device > 0 && fields &&  rtData.x?.length > 0)? (
+            <>
+              
+              {/* {console.log("RTDATA", rtData)} */}
+              {
+                  fields.filter(field => field.plottable).map(field => (
+                    // rtData = { x, rtd, marker, text }
+                    <div>
+                    <Chart deviceId={device}  rtData={rtData} label={field.name} filter={field._id} color={field.color || "lightblue"} />
+                    </div>
+                  ))
+              }
+              
             </>
+          ):(
+            <div>No Data Found</div>
           )}
         </div>
       </div>
     </div>
+    </>
   )
 }
 
@@ -227,6 +233,7 @@ const mapStateToProps = (state) => {
   return {
     activeDeviceId: state.main.activeDeviceId,
     devices: state.main.devices,
+    fields: state.main.fields
   }
 }
 

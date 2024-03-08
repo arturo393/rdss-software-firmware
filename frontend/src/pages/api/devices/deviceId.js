@@ -9,14 +9,13 @@ export default async function (req, res, next) {
 
   var diffInDays = end.diff(start, "days").as("days")
 
-  console.log("diffInDays",diffInDays)
+  // console.log("diffInDays", diffInDays)
 
   let dynId = {
     device: "$id",
     year: "$year",
     month: "$month",
     day: "$day",
-
   }
 
   if (diffInDays > 4 && diffInDays <= 31) {
@@ -30,118 +29,71 @@ export default async function (req, res, next) {
     dynId.second = "$second"
   }
 
-
+  
   const pipeline = [
     {
       $match: {
-        $and: [
-          {
-            id: req.body.id ,
-          },
-          {
-            sampleTime: {
-              $gte: new Date(start).toISOString(),
-            },
-          },
-          {
-            sampleTime: {
-              $lte: new Date(end).toISOString(),
-            },
-          },
-        ],
+        $and: [{ id: req.body.id }, { sampleTime: { $gte: new Date(start).toISOString(), } }, { sampleTime: { $lte: new Date(end).toISOString() } }],
       },
     },
     {
       $project: {
         id: "$id",
-        year: {
-          $year: {
-            $toDate: "$sampleTime",
-          },
-        },
-        month: {
-          $month: {
-            $toDate: "$sampleTime",
-          },
-        },
-        day: {
-          $dayOfMonth: {
-            $toDate: "$sampleTime",
-          },
-        },
-        hour: {
-          $hour: {
-            $toDate: "$sampleTime",
-          },
-        },
-        minute: {
-          $minute: {
-            $toDate: "$sampleTime",
-          },
-        },
-        seconds: {
-          $second: {
-            $toDate: "$sampleTime",
-          },
-        },
+        year: { $year: { $toDate: "$sampleTime" } },
+        month: { $month: { $toDate: "$sampleTime" } },
+        day: { $dayOfMonth: { $toDate: "$sampleTime" } },
+        hour: { $hour: { $toDate: "$sampleTime" } },
+        minute: { $minute: { $toDate: "$sampleTime" } },
+        seconds: { $second: { $toDate: "$sampleTime" } },
         connected: "$connected",
-        field_values_array: {
+        field_values: {
           $objectToArray: "$field_values",
         },
       },
     },
     {
-      $unwind: "$field_values_array",
-    },
-    {
-      $addFields: {
-        field_values_array: {
-          k: {
-            $toObjectId: "$field_values_array.k",
-          },
-          v: "$field_values_array.v",
-        },
-      },
-    },
-    
-    {
-      $lookup: {
-        from: "fields",
-        localField: "field_values_array.k",
-        foreignField: "_id",
-        as: "field_info",
-      },
-    },
-    {
-      $unwind: "$field_info",
-    },
-    {
-      $match: {    
-        "field_info.plottable": true,
-      },
+      $unwind: "$field_values",
     },
     {
       $group: {
-        _id: {...dynId, connected: {$and: "$connected"}, field: "$field_values_array.k"},
-        averageValue: { $avg: "$field_values_array.v.value" },
-        alerts: { $push: "$field_values_array.v.alert" },
+        _id: dynId,
+        connected: {
+          $last: "$connected",
+        },
+        values: {
+          $push: {
+            k: "$field_values.k",
+            value: "$field_values.v.value",
+            alert: "$field_values.v.alert",
+          },
+        },
       },
     },
     {
       $project: {
-        _id: 1,
-        connected: {
-          $ifNull: ["$connected", false]
-        },
+        _id: "$_id",
+        connected: "$connected",
         field_values: {
-          k: {$toString: "$_id.field"},
-          v: {
-            value: "$averageValue",
-            alert: {
-              $reduce: {
-                input: "$alerts",
-                initialValue: true,
-                in: { $and: ["$$value", "$$this"] },
+          $arrayToObject: {
+            $map: {
+              input: "$values",
+              as: "value",
+              in: {
+                k: "$$value.k",
+                v: {
+                  value: {
+                    $avg: "$$value.value",
+                  },
+                  alert: {
+                    $allElementsTrue: {
+                      $map: {
+                        input: ["$$value.alert"],
+                        as: "alert",
+                        in: "$$alert",
+                      },
+                    },
+                  },
+                },
               },
             },
           },
@@ -149,63 +101,21 @@ export default async function (req, res, next) {
       },
     },
     {
-      $group: {
-        _id: {
-          device: "$_id.device",
-          year: "$_id.year",
-          month: "$_id.month",
-          day: "$_id.day",
-          hour: {
-            $cond: {
-              if: "$_id.hour",  // Check if dynId.hour exists
-              then: "$_id.hour",  // Include dynId.hour if it exists
-              else: ''  // Otherwise, set it to null or omit it
-            }
-          },
-          minute: {
-            $cond: {
-              if: "$_id.minute",  // Check if dynId.hour exists
-              then: "$_id.minute",  // Include dynId.hour if it exists
-              else: ''  // Otherwise, set it to null or omit it
-            }
-          },
-          second: {
-            $cond: {
-              if: "$_id.second",  // Check if dynId.hour exists
-              then: "$_id.second",  // Include dynId.hour if it exists
-              else: ''  // Otherwise, set it to null or omit it
-            }
-          },
-        },
-        connected: {$last: "$connected"},
-        field_values: { $push: "$field_values" },
-      },
-    },
-    {
-      $project: {
-        _id: 1,
-        connected: 1,
-        field_values: {
-          $arrayToObject: "$field_values",
-        },
-      },  
-    },
-    {
       $sort: {
-        "_id": 1,
+        _id: 1,
       },
-    }
+    },
   ]
 
-  console.log(JSON.stringify(pipeline))
-  
-  const  fields = await db.collection("fields").find({'plottable': true}).toArray()
+  console.log("pipeline",JSON.stringify(pipeline))
 
-
+  const fields = await db.collection("fields").find({ plottable: true }).toArray()
   const rtData = await db.collection("rtData").aggregate(pipeline).toArray()
 
-
-  res.json(rtData)
+  const filteredResponse = rtData.map(data => {
+    const filteredFieldValues = Object.fromEntries(Object.entries(data.field_values).filter(([key]) => fields.find(def => String(def._id) === key && def.plottable)));
+    return Object.keys(filteredFieldValues).length > 0 ? { ...data, field_values: filteredFieldValues } : null;
+  }).filter(item => item !== null);
+  
+  res.json(filteredResponse)
 }
-
-

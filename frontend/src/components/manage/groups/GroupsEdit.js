@@ -130,9 +130,11 @@ const GroupsEdit = (props) => {
   }
 
   return (
+    <>
+    <h5 className="text-center w-100 sigmaRed text-light">Devices groups</h5>
     <div className="container-fluid" style={{ minHeight: "100vh" }}>
       <div className="text-center mt-2 mb-2">
-        <h5>Devices groups</h5>
+        
       </div>
       <div className="row">
         <div className="col-2"></div>
@@ -140,7 +142,7 @@ const GroupsEdit = (props) => {
         <div className="col-7">
           {/* ADD GROUP */}
           <div className="input-group mb-5">
-            <input type="text" required className="form-control" id="new_group_name" onChange={(e) => handleChange(e)} placeholder="New Group Name" value={formData.new_group_name || ""} />
+            <input type="text" required className="form-control" id="new_group_name" onChange={(e) => handleChange(e)} placeholder="New Devices Group Name" value={formData.new_group_name || ""} />
             <button className="btn btn-success" type="button" onClick={addGroup}>
               Add New Devices Group
             </button>
@@ -149,9 +151,9 @@ const GroupsEdit = (props) => {
 
           {/* LIST OF GROUPS */}
           <div className="input-group mb-3">
-            <span className="input-group-text text-light bg-dark w-25">Group Name</span>
+            <span className="input-group-text text-light bg-dark w-25">Devices Group Name</span>
             <select className="form-control" id="selectedGroup" onChange={handleGroupSelected}>
-              <option value={""}>=== Select a Group ===</option>
+              <option value={""}>=== Select a Devices Group ===</option>
               {groups.map((group) => (
                 <option key={group._id} value={group._id} selected={group._id === selectedGroup}>
                   {group.name}
@@ -199,7 +201,7 @@ const GroupsEdit = (props) => {
                       {device.name} ({device.type}-{device.id})
                     </span>
                     <button className="btn btn-warning w-25" id={`del-${device._id}`} onClick={() => removeDeviceFromGroup(device._id)}>
-                      Remove from group
+                      Remove from this Devices group
                     </button>
                   </div>
                 </React.Fragment>
@@ -218,6 +220,7 @@ const GroupsEdit = (props) => {
         </div>
       </div>
     </div>
+    </>
   )
 }
 

@@ -6,6 +6,8 @@ import axios from "axios"
 
 import { setDevices } from "../../redux/actions/main"
 
+import {Accordion} from "react-bootstrap"
+
 const DevicesEdit = (props) => {
   const { devices, setDevices } = props
 
@@ -22,6 +24,7 @@ const DevicesEdit = (props) => {
 
   const [selectedGroup, setSelectedGroup] = useState()
   const [groups, setGroups] = useState([])
+  const [base64, setBase64] = useState()
 
   const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`
 
@@ -52,13 +55,13 @@ const DevicesEdit = (props) => {
     document.getElementById("name").value = ""
     document.getElementById("type").value = ""
     setSelectedFieldGroup(null)
+    setBase64(null)
     const deviceId = e.target.value
 
     if (deviceId) {
       setSelectedDevice(deviceId)
-      const uri = process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/device/" + deviceId
       axios
-        .get(uri)
+        .get(url + "/api/device/" + deviceId)
         .then(
           (result) => {
             return result.data[0]
@@ -72,7 +75,19 @@ const DevicesEdit = (props) => {
         })
       // setDeviceData(devices.find((device) => device.id === Number(deviceId)))
     }
+    
   }
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      let reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onloadend = () => {
+        setBase64(reader.result)
+      }
+    }
+  };
 
   const saveDevice = (e) => {
     e.preventDefault()
@@ -85,11 +100,14 @@ const DevicesEdit = (props) => {
       status: deviceData.status,
       type: deviceData.type,
       fields_values: deviceData?.fields_values,
+      image: base64 || null
     }
 
     console.log("structuredData", structuredData)
+    // Create a new FormData object
 
-    axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/device/save", structuredData).then(
+
+    axios.post(url + "/api/device/save", structuredData).then(
       (result) => {
         document.getElementById("status").style.display = "block"
         result ? setStatus("Device attributes updated successfully") : setStatus("Error when try to save device data")
@@ -106,78 +124,64 @@ const DevicesEdit = (props) => {
     )
   }
 
-  // const handleChange = (e) => {
-  //   e.preventDefault()
-  //   const { id, value } = e.target
-  //   const [field_id, param] = id.split("|")
-
-  //   setDeviceData((prevDeviceData) => {
-  //     const updatedFieldsValues = prevDeviceData?.fields_values ? [...prevDeviceData.fields_values] : []
-
-  //     // Check if the field already exists in fields_values
-  //     const fieldIndex = updatedFieldsValues.findIndex((fv) => fv.field_id === field_id)
-
-  //     if (fieldIndex !== -1) {
-  //       // If the field exists, update the corresponding parameter
-  //       updatedFieldsValues[fieldIndex][param] = value
-  //     } else {
-  //       // If the field doesn't exist, create a new entry
-  //       updatedFieldsValues.push({
-  //         field_id,
-  //         default_value: "",
-  //         conv_min: "",
-  //         conv_max: "",
-  //         alert_min: "",
-  //         alert_max: "",
-  //         [param]: value,
-  //       })
-  //     }
-
-  //     return {
-  //       ...prevDeviceData,
-  //       fields_values: updatedFieldsValues,
-  //     }
-  //   })
-  // }
+  
 
   const handleChange = (e) => {
     e.preventDefault();
-    const { id, value } = e.target;
+    const { id, value, type, checked } = e.target;
     const [field_id, param] = id.split("|");
-    
-    if (param) {
+
+    // console.log("e",e.target)
+  
+    if (type === "checkbox") {
       setDeviceData((prevDeviceData) => {
         const updatedFieldsValues = prevDeviceData?.fields_values ? { ...prevDeviceData.fields_values } : {};
-    
-        // Update the corresponding parameter for the specified field_id
+  
         updatedFieldsValues[field_id] = {
           ...updatedFieldsValues[field_id],
-          [param]: value,
+          visible: checked,
         };
-    
+  
         return {
           ...prevDeviceData,
           fields_values: updatedFieldsValues,
         };
       });
     } else {
-      setDeviceData({
-        ...deviceData,
-        [id]: value
-      })
+      // setDeviceData({
+      //   ...deviceData,
+      //   [id]: value,
+      // });
+      setDeviceData(prevDeviceData => ({
+        ...prevDeviceData,
+        fields_values: {
+          ...prevDeviceData.fields_values,
+          [field_id]: {
+            ...prevDeviceData.fields_values[field_id],
+            [param]: value,
+          },
+        },
+      }));
     }
-    
+
   };
 
-  console.log("DeviceData", deviceData)
+  // console.log("DeviceData", deviceData)
 
   return (
     <>
-      <h5 className="text-center">Device Editor</h5>
-      <div class="container-fuid">
-        <div class="row text-center">
-          <div class="col-2"></div>
-          <div class="col-7">
+      
+      <h5 className="text-center w-100 sigmaRed text-light">Devices Editor</h5>
+      <div className="container-fuid">
+        <div className="row text-center">
+          <div className="col-2">
+          {(base64 || deviceData?.image) ? (
+                  <img src={base64 || deviceData?.image} className="input-group-text img-fluid img-thumbnail w-100" alt={deviceData?.name}/>
+                  ):(
+                    <img src="/images/no_image.png" className="input-group-text img-fluid img-thumbnail w-100"  alt="no image"/>
+                  )}
+          </div>
+          <div className="col-8">
             <select className="form-control" id="device" onChange={handleDeviceSelected}>
               <option value={0}>=== Select a Device ===</option>
               {devices.map((device) => {
@@ -189,11 +193,24 @@ const DevicesEdit = (props) => {
               })}
             </select>
             <p></p>
-            <div class="input-group mb-3">
+            <div className="input-group mb-3">
               <div className="input-group mb-3">
                 <span className="input-group-text">Name</span>
                 <input type="text" className="form-control" id="name" value={deviceData?.name} onChange={handleChange} />
               </div>
+              {/* IMAGE */}
+                <div className="input-group w-100">
+                <span className="input-group-text text-light bg-dark w-25">Image</span>
+                  <input type="file" className="form-control" id="image" onChange={(e) => handleImageChange(e)} />
+                  
+                </div>
+                {/* <div className="w-100 bg-light d-flex align-items-center justify-content-center">
+                {(base64 || deviceData?.image) && (
+                  <img src={base64 || deviceData?.image} className="input-group-text img-thumbnail" height={150} width={150} alt={deviceData?.name || "No image loaded"}/>
+                  )}
+                </div> */}
+    
+
               <div className="input-group mb-3">
                 {/* <span className="input-group-text">Type</span> */}
                 <input type="hidden" className="form-control" id="type" value={deviceData?.type} onChange={handleChange} />
@@ -211,29 +228,44 @@ const DevicesEdit = (props) => {
                 </select>
               </div>
               {/* END LIST OF GROUPS */}
-
+              
+              <Accordion className="w-100">
               {fields_group &&
                 selectedDevice &&
                 fields_group.map((group) => (
-                  <div className="input-group mb-5" key={group._id}>
-                    <span className="input-group-text w-100 bg-dark text-light">{group.name}</span>
-                    {fields &&
+                  <Card>
+                    <Card.Header>
+                      <Accordion.Toggle as={Button} variant="link" className="text-start w-100 text-dark text-decoration-none text-uppercase"  eventKey={group._id}>
+                      <strong>{group.name}</strong>
+                      </Accordion.Toggle>
+                    </Card.Header>
+                    <Accordion.Collapse eventKey={group._id}>
+                      <Card.Body>
+                      {fields &&
                       fields
                         .filter((field) => field.group_id === group._id)
                         .map((field) => (
-                          <div className="input-group mb-1 d-flex bd-highlight" key={field.id}>
-                            <div class="d-flex bd-highlight w-100">
-                              <span className="input-group-text w-25 text-wrap flex-grow-1 bd-highlight">
-                                <strong>{field.name}</strong>
-                                <div className="bd-highligh">
-                                  <span className="badge bg-primary mx-1">{field?.query ? "query" : null}</span>
-                                  <span className="badge bg-success mx-1">{field?.set ? "set" : null}</span>
-                                  <span className="badge bg-info mx-1">{field?.plottable ? "plottable" : null}</span>
-                                </div>
-                              </span>
+                          <div className="input-group mb-3 d-flex bd-highlight" key={field.id}>
+                            <div className="d-flex bd-highlight w-100">
+      
+                              <div className="flex flex-column w-25">
+                                <span className="input-group-text w-100 text-wrap flex-grow-1 bd-highlight text-light bg-secondary">
+                                  <strong>{field.name}</strong>
+                                </span>
+                                <div className="bd-highligh w-100 text-start">
+                                    <span className="badge bg-primary mx-1">{field?.query ? "query" : null}</span>
+                                    <span className="badge bg-success mx-1">{field?.set ? "set" : null}</span>
+                                    <span className="badge bg-info mx-1">{field?.plottable ? "plottable" : null}</span>
+                                  </div>
+                              </div>
+
+                              <div className="custom-control custom-switch">
+                                      <input type="checkbox" className="custom-control-input" id={`${field._id}|visible`} key={`${field._id}|visible`} name="visible"  checked={deviceData?.fields_values?.[field._id]?.visible || field?.visible} onChange={handleChange} disabled={!selectedDevice}/>
+                                      <label className="custom-control-label small" for="visible">visible</label>
+                                    </div>
 
                               {/* FIELD NAME */}
-                              <div class="form-floating">
+                              <div className="form-floating">
                                 <input
                                   type="text"
                                   className="form-control"
@@ -251,7 +283,7 @@ const DevicesEdit = (props) => {
                               </div>
 
                               {/* DEFAULT VALUE */}
-                              <div class="form-floating">
+                              <div className="form-floating">
                                 <input
                                   type="text"
                                   className="form-control"
@@ -270,7 +302,7 @@ const DevicesEdit = (props) => {
                               </div>
 
                               {/* CONV MIN */}
-                              <div class="form-floating">
+                              <div className="form-floating">
                                 <input
                                   type="text"
                                   className="form-control"
@@ -289,7 +321,7 @@ const DevicesEdit = (props) => {
                               </div>
 
                               {/* CONV MAX */}
-                              <div class="form-floating">
+                              <div className="form-floating">
                                 <input
                                   type="text"
                                   className="form-control"
@@ -308,7 +340,7 @@ const DevicesEdit = (props) => {
                               </div>
 
                               {/* Alert Min */}
-                              <div class="form-floating">
+                              <div className="form-floating">
                                 <input
                                   type="text"
                                   className="form-control"
@@ -327,7 +359,7 @@ const DevicesEdit = (props) => {
                               </div>
 
                               {/* Alert Max */}
-                              <div class="form-floating">
+                              <div className="form-floating">
                                 <input
                                   type="text"
                                   className="form-control"
@@ -348,15 +380,23 @@ const DevicesEdit = (props) => {
                             </div>
                           </div>
                         ))}
-                  </div>
-                ))}
+                      </Card.Body>
+                    </Accordion.Collapse>
+                  </Card>
+                  )
+                )}
+              </Accordion>
 
-              <button className="btn btn-primary w-100" type="button" onClick={saveDevice} disabled={!selectedDevice}>
-                Save
-              </button>
+
+              <div className="row mt-3 w-100 text-center">
+                <button className="btn btn-primary w-25 border-0 mx-auto" type="button" onClick={saveDevice} disabled={!selectedDevice}>
+                  Save
+                </button>
+              </div>
+              
             </div>
           </div>
-          <div class="col-2"></div>
+          <div className="col-2"></div>
         </div>
       </div>
       <div className="row">

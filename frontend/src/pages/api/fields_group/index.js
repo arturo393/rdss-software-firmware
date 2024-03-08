@@ -26,7 +26,7 @@ export default async function (req, res) {
         } else if (req.method === "DELETE") {
             const fieldId = req.query.id // Obtén el ID del campo de la consulta
             const xx = await db.collection(COLLECTION).deleteOne({ _id: ObjectId(fieldId) })
-            console.log("API RES", xx)
+            // console.log("API RES", xx)
             res.status(200).end("Group deleted successfully")
         } else {
             res.status(405).end(`Method ${req.method} Not Allowed`)

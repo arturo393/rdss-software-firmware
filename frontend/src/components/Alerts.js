@@ -26,51 +26,7 @@ const Alerts = (props) => {
   const [data,setData] = useState([])
   const [displayDeviceFieldGroup, setDisplayDeviceFieldGroup] = useState([])
 
-
   const api_url = process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT
-
-//   const fakeMonitorData = [
-//     {
-//         id: 1,
-//         name: "prueba",
-//         type: "sniffer",
-//         connected: true,
-//         group_id: "65c1362edc83920013291fc4",
-//         rtData: 
-//             {
-//                 "65c135fddc83920013291fc2": {
-//                     alert: true,
-//                     value: 10
-//                 },
-//                 "65c13600dc83920013291fc3": {
-//                     alert: false,
-//                     value: 99
-//                 },
-//                 "65c13c52dc83920013291fc5": {
-//                   alert: false,
-//                   value: 35
-//                 }
-//             }
-//     },
-//     {
-//         id: 2,
-//         name: "prueba 2",
-//         type: "sniffer",
-//         connected: true,
-//         group_id: "65c1362edc83920013291fc4",
-//         rtData: 
-//             {
-//                 "65c135fddc83920013291fc2": {
-//                     alert: false,
-//                     value: 13
-//                 },
-//                 "65c13600dc83920013291fc3": {
-//                     alert: true,
-//                     value: 8
-//                 }
-//             }
-//     }
-// ]
 
   const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`;
 
@@ -237,7 +193,7 @@ const Alerts = (props) => {
     // get device data
     const device = await axios.get(api_url + "/api/device/" + e.target.id.value);
   
-    console.log("device", device.data[0]);
+    // console.log("device", device.data[0]);
   
     const fieldId = e.target.field.id;
     const fieldValue = e.target.field.value;
@@ -267,7 +223,7 @@ const Alerts = (props) => {
     } else {
       message = "Error saving device data";
     }
-    console.log("RES", res);
+    // console.log("RES", res);
     status.style.display = "block";
     status.innerHTML = message;
   };
@@ -276,10 +232,10 @@ const Alerts = (props) => {
 
   return (
     <>
-      <h5 className="text-center">Devices Status</h5>
+      <h5 className="text-center w-100 sigmaRed text-light">Devices Status</h5>
       
 
-      <div className="container table-responsive text-center ">
+      <div className="container table-responsive text-center col-10 ">
         {/* DEVICE GROUP LOOP */}
         {devices_groups && devices_groups.map(device_group => (
             <div className="input-group mb-5" key={device_group._id}>
@@ -287,24 +243,35 @@ const Alerts = (props) => {
               {/* DEVICE ID/NAME LOOP */}
               {data && data.filter(d => (props.devices.some(deviceItem => deviceItem.id === d.id && deviceItem.group_id === device_group._id))).map(device => (
                 <>
-                <div className="d-flex w-100">
+                <div className="d-flex w-100 bg-light border-0">
+                  {props.devices.find(d => d.id === device.id)?.image ? (
+                    <img src={props.devices.find(d => d.id === device.id)?.image} className="img-thumbnail" width={100} height={100} alt={device?.id}/>
+                  ):(
+                    <img src="/images/no_image.png" className="img-thumbnail" width={100} height={100} alt="no image"/>
+                  )}
+                  <span width={100} height={100}></span>
                   
-                  <span className="input-group-text text-dark bg-light w-25">
-                    <img alt="" className="m-2" src={device?.connected?green.src:red.src} width={20} height={20} /> ({device?.id}) {device?.name} {!device?.connected && "(not connected)"}
+                  <span className="input-group-text text-dark bg-light w-25 text-wrap">
+                    <img alt="" className="m-2" src={device?.connected?green.src:red.src} width={20} height={20} />
+                    ({device?.id}) {device?.name} {!device?.connected && "(not connected)"}
                   </span>
+                  
                   {/* QUERIES */}
                   <div className="input-group-text text-dark bg-light w-100 mx-0 d-flex justify-content-start flex-column">
                   {device?.field_values &&
                         Object.entries(device?.field_values).map(([fieldId, fieldValue]) => {
                           const field = fields.find((f) => f._id === fieldId);
                           const fieldGroup = fields_groups.find((fg) => fg._id === field?.group_id);
-
-                          if (field?.set) {
+                          const thisDevice = props.devices.find(d => d.id === device.id);
+                          const fieldDef = thisDevice?.fields_values && field?._id && thisDevice?.fields_values[field._id] || null;
+                          
+                          if (field?.set && fieldDef?.visible) {
                             return (
                               <form onSubmit={saveDevice} key={fieldId} className="d-flex m-0 p-0  mx-0 w-100">
                                 {/* <div key={fieldId} className="d-flex m-0 p-0  mx-1 w-100"> */}
                                   <span className="input-group-text m-0 p-0"><img alt="" src={device.connected?(!fieldValue.alert?green.src:red.src):gray.src} width={20} height={20} /></span>
                                     
+                                  
                                   {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-75">{fieldGroup?.name}/{field?.name}</span>)}
                                   
                                   
@@ -326,7 +293,7 @@ const Alerts = (props) => {
                             )
                           }
 
-                          if (field?.query) {
+                          if (field?.query && fieldDef?.visible) {
                             return (
                               // <div key={fieldId} >
                               //   <span className="text-dark"><img alt="" src={device.connected?(!fieldValue.alert?green.src:red.src):gray.src} width={20} height={20} /> {fieldGroup?.name}/{field?.name} <span className="badge bg-secondary">{fieldValue.value}</span> </span>
@@ -348,43 +315,7 @@ const Alerts = (props) => {
                           
                         })}
                   </div>
-                  {/* SETTERS
-                  <div className="w-50 align-content-start bg-light">
-                  {device?.field_values &&
-                        Object.entries(device?.field_values).map(([fieldId, fieldValue]) => {
-                          const field = fields.find((f) => f._id === fieldId);
-                          const fieldGroup = fields_groups.find((fg) => fg._id === field?.group_id);
-                          
-                          
-                          
-                          if (field?.set) {
-                            return (
-                              <div key={fieldId}>
-                                <form onSubmit={saveDevice}>
-                                  <div className="input-group col">
-                                    {fieldValue?.name?(<span className="input-group-text w-50">{fieldValue?.name}</span>):(<span className="input-group-text w-50">{fieldGroup?.name}/{field?.name}</span>)}
-                                    
-                                    <input className="form-control text-info" name="field" id={field?._id} onChange={handleChange} defaultValue={fieldValue?.value}/>
-                                    <button className="btn btn-primary" type="submit">Save</button>
-                                    <input type="hidden" name="id" id="id" value={device.id}/>
-                                  </div>
-                                  <div className="row">
-                                    <div className="col-md-12 text-center">
-                                      <div className="alert alert-info hidden" role="alert" id={device.id+"status"}>OK
-                                      </div>
-                                    </div>
-                                  </div>
-                                </form>
-                              </div>
-                            )
-                          }
-
-                          return null
-                          
-                          
-                        })}
-        
-                  </div> */}
+                  
                 </div>
                 </>
               ))}
@@ -396,74 +327,7 @@ const Alerts = (props) => {
 
 
 
-        {/* CONTENIDO */}
-        {/* <div className="row">
-          <table className="table table-striped table-bordered table-light">
-            <thead>
-              <tr>
-                <th>
-                  <h6>Device</h6>
-                </th>
-                <th>
-                  <h6>Connection</h6>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {alerts && alerts?.map((data) => {
-                return (
-                  <tr>
-                    <td>{data.name + "(" + data.type + "-" + data.id + ")"}</td>
-                    <td><img alt="" src={data.connected} width={20} height={20} /></td>
-                    {fields && fields.map(field => (
-                      <td>asd
-                        <img alt="" src={data[field?._id]} width={20} height={20} />
-                      </td>
-                    ))}
-                    <td>
-                      <img alt="" src={data.voltage} width={20} height={20} />
-                    </td>
-                    <td>
-                      <img alt="" src={data.current} width={20} height={20} />
-                    </td>
-                    <td>
-                      <img alt="" src={data.gupl} width={20} height={20} />
-                    </td>
-                    <td>
-                      <img alt="" src={data.guwl} width={20} height={20} />
-                    </td>
-                    <td>
-                      <img alt="" src={data.power} width={20} height={20} />
-                    </td>
-                    <td>
-                    <img alt="" src={data.smartTune} width={20} height={20} />
-                    </td>
-                    <td>
-                    <img alt="" src={data.reverse} width={20} height={20} />
-                    </td>
-                    <td width={200}>
-                      <form onSubmit={saveDevice}>
-                        <div className="input-group col">
-                          <span className="input-group-text">{data?.attenuation}</span>
-                          <input type="number" className="form-control" id={"attenuation"}  onChange={handleChange} />
-                          <button className="btn btn-primary" type="submit">Save</button>
-                          <input type="hidden" name="id" id="id" value={data.id}/>
-                        </div>
-                        <div className="row">
-                          <div className="col-md-12 text-center">
-                            <div className="alert alert-info hidden" role="alert" id={data.id+"status"}>OK
-                            </div>
-                          </div>
-                        </div>
-                      </form>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div> */}
-        {/* FIN CONTENIDO */}
+       
       </div>
     </>
   )
