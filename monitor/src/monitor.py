@@ -16,6 +16,7 @@ import base64
 import eventlet
 from flask_socketio import SocketIO
 from flask import Flask
+import struct
 
 import platform
 
@@ -305,13 +306,14 @@ def construct_query_frame(device_id, frame):
     device = frame.get("device", "")  # 0 is broadcast
     device = devices.get(device, 0)
     command = int(frame.get("command", "0"), 16)  # 0 is no command
-    data_size = int(frame.get("data size", "0"), 16)
+    data_size = 1
     try:
         # Attempt to convert data to integer (hexadecimal)
         data = int(frame.get("data", "0"), 16)
     except ValueError:
         # If conversion fails, assume data is a string and create a bytearray
         data = bytearray(frame.get("data", "0"), "utf-8")
+        data_size = len(data)
         data.append(0xFF)
 
     # **Fix:** Convert data back to bytes if it's a bytearray
@@ -346,7 +348,7 @@ def construct_query_frame(device_id, frame):
 
 
 def response_validate(hex_response, device_id, frame):
-    response_size = MESSAGE_BASE_SIZE + int(frame['data response size'], 16)
+    response_size = MESSAGE_BASE_SIZE + int(frame['response size'], 16)
     command = int(frame['command'], 16)
 
     # Validations
@@ -355,7 +357,7 @@ def response_validate(hex_response, device_id, frame):
         return False
 
     if len(hex_response) != response_size:
-        logging.debug("Query reception failed: Incorrect response length: {}".format(len(hex_response)))
+        logging.debug(f"Incorrect response length: {len(hex_response)} and waited {response_size}")
         return False
 
     if hex_response[0] != START_BYTE or hex_response[-1] != END_BYTE:
@@ -400,8 +402,19 @@ def decode_sniffer_io_set(data):
     return "This is case 1"
 
 
-def decode_sniffer_io_modbus(data):
-    return "This is case 2"
+def decode_sniffer_io_modbus(data, modbus_data_type):
+    if modbus_data_type:
+        if len(data) != 4:
+            raise ValueError("Byte array must be 4 bytes long for a 32-bit float.")
+
+        # Use struct.unpack to efficiently unpack the byte array
+        byte_array = bytes(data)
+        data_hex = byte_array.hex()
+        value = struct.unpack('!f', byte_array)[0]
+        decoded_data = {"modbus data reply": value}
+    else:
+        data = decoded_data
+    return decoded_data
 
 
 def linear_map(decoded_data: dict, field_group: list, device: dict) -> dict:
@@ -417,7 +430,7 @@ def linear_map(decoded_data: dict, field_group: list, device: dict) -> dict:
 
     mapped_data = {}  # Use a dictionary for mapped values
     device_conv_values = get_conv_values(device)
-    logging.warning(f"device_conv_values: {device_conv_values}'")
+    logging.debug(f"device_conv_values: {device_conv_values}'")
     for field in field_group:
         name = field.get("name")
         field_id = str(field.get("_id"))
@@ -459,7 +472,7 @@ def extract_relevant_data(frame: dict, hex_response: str) -> list:
       A list containing the extracted relevant data.
     """
 
-    response_size = int(frame['data response size'], 16)
+    response_size = int(frame['response size'], 16)
     data_start_index = int(frame.get('data start position', "0"), 16)
     extracted_data = []
 
@@ -475,20 +488,6 @@ def get_field_group(
         field_group_name: str,
         state: str,
 ) -> list:
-    """
-    Associates data points with relevant field groups and identifies potential alerts.
-
-    Args:
-        fields_group_arr: A list of dictionaries representing field groups.
-        field_group_name: The name of the specific field group to associate with.
-        fields_arr: A list of dictionaries representing individual fields.
-        data: A dictionary containing data points for each field.
-        device: (Optional) A dictionary containing device information, potentially including "fields_values".
-
-    Returns:
-        A dictionary associating field IDs with their corresponding data and alert status.
-    """
-
     if not any(group.get("name") == field_group_name for group in fields_group_arr):
         logging.error("Missing 'status' field group")
         return []
@@ -509,66 +508,34 @@ def get_field_group(
 
 
 def get_conv_values(device: dict = None) -> dict:
-    """
-    Retrieves alert thresholds (min and max) from the device information.
-
-    Args:
-      device: (Optional) A dictionary containing device information, potentially including "fields_values".
-
-    Returns:
-      A dictionary containing alert thresholds for each field ID (key)
-      with values being another dictionary containing 'min' and 'max' keys.
-    """
     conv_values = {}
     if device:
         fields_values = device.get("fields_values", {})
         for field_id, field_data in fields_values.items():
-            conv_values[field_id] = {
-                "min": field_data.get("conv_min"),
-                "max": field_data.get("conv_max"),
-            }
+            if "conv_min" in field_data and "conv_max" in field_data:
+                conv_values[field_id] = {
+                    "min": field_data.get("conv_min"),
+                    "max": field_data.get("conv_max"),
+                }
     return conv_values
 
 
 def get_alert_thresholds(device: dict = None) -> dict:
-    """
-    Retrieves alert thresholds (min and max) from the device information.
-
-    Args:
-      device: (Optional) A dictionary containing device information, potentially including "fields_values".
-
-    Returns:
-      A dictionary containing alert thresholds for each field ID (key)
-      with values being another dictionary containing 'min' and 'max' keys.
-    """
     alert_thresholds = {}
     if device:
         fields_values = device.get("fields_values", {})
         for field_id, field_data in fields_values.items():
-            alert_thresholds[field_id] = {
-                "min": field_data.get("alert_min"),
-                "max": field_data.get("alert_max"),
-            }
+            if "alert_max" in field_data or "alert_min" in field_data:
+                alert_thresholds[field_id] = {
+                    "min": field_data.get("alert_min"),
+                    "max": field_data.get("alert_max"),
+                }
     return alert_thresholds
 
 
 def process_field_data(
         field: dict, value: int, alert_thresholds: dict
 ) -> dict:
-    """
-    Processes a single field, evaluates its data against alert thresholds, and creates a dictionary with its value and alert status.
-
-    Args:
-        field: A dictionary representing a field.
-        value: The integer value of the field's data (expected to be an integer).
-        alert_thresholds: A dictionary containing alert thresholds for each field ID.
-
-    Returns:
-        A dictionary containing the field ID (key) and a dictionary with 'value' and 'alert' (True/False) keys.
-
-    Raises:
-        TypeError: If the `value` is not an integer.
-    """
     field_id = {}
     try:
         field_id = str(field["_id"])
@@ -576,12 +543,9 @@ def process_field_data(
         if field_id in alert_thresholds:
             alert_min = alert_thresholds[field_id]["min"]
             alert_max = alert_thresholds[field_id]["max"]
-            alert = value < alert_min or value > alert_max
         else:
             alert_min = field.get("alert_min")
             alert_max = field.get("alert_max")
-
-        alert = value < alert_min or value > alert_max
         try:
             # Attempt to convert conv_min and conv_max to integers first
             alert_min = int(alert_min)
@@ -589,7 +553,7 @@ def process_field_data(
             alert = value < alert_min or value > alert_max
 
         except Exception as e:
-            logging.warning(f"Mapping variables not defined for field '{e}'")
+            logging.warning(f"No alert defined for {field['name']} alert_min:'{alert_min}' alert_max: '{alert_max}'")
             alert = False
     except TypeError as e:
         logging.error(f"Failed to convert field {field['name']} value {value} to integer: {e}")
@@ -606,17 +570,6 @@ def build_field_associations(
         data: dict,
         device: dict = None,
 ) -> dict:
-    """
-    Associates data points with relevant fields and identifies potential alerts.
-
-    Args:
-      fields_arr: A list of dictionaries representing fields.
-      data: A dictionary containing data points for each field.
-      device: (Optional) A dictionary containing device information, potentially including "fields_values".
-
-    Returns:
-      A dictionary associating field IDs with their corresponding data and alert status.
-    """
     alert_thresholds = get_alert_thresholds(device)
     final_data = {}
     for field in fields_arr:
@@ -664,7 +617,7 @@ def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times):
         return {}
 
     query = construct_query_frame(device_id, frame)
-    response_size = MESSAGE_BASE_SIZE + int(frame.get("data response size", "0"), 16)
+    response_size = MESSAGE_BASE_SIZE + int(frame.get("response size", "0"), 16)
     message = f"Attempt: {times} "
     message += f"SENT: {query.hex()}"
     startTime = time.time()
@@ -682,18 +635,20 @@ def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times):
         message += " --> GET: " + hexResponse.hex()
         message += f" / Response time:{responseTime}"
         logging.debug(message)
-
         if response_validate(hexResponse, device_id, frame) is False:
             return get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times - 1)
 
         extracted_data = extract_relevant_data(frame, hexResponse)
         command = int(frame.get('command', "0"), 16)
-        decoder = decoders.get(command, "invalid decode command")
-        if decoder is False:
+        if command == SNIFFER_IO_QUERY:
+            decoded_data = decode_sniffer_io_query(extracted_data)
+        elif command == SNIFFER_MODBUS:
+            modbus_data_type = frame.get('modbus data type', 0)
+            decoded_data = decode_sniffer_io_modbus(extracted_data, modbus_data_type)
+        else:
             logging.info("Invalid command. No corresponding function found.")
             return False
 
-        decoded_data = decoder(extracted_data)
         logging.info(f"Decoded data: {decoded_data}")
         status_field_group = get_field_group(fieldsGroupArr, fieldsArr, 'sniffer_IO', 'query')
         mapped_data = linear_map(decoded_data, status_field_group, device)
@@ -1167,7 +1122,7 @@ def sendTxQuery(serTx):
 
 def setMasterPorts():
     """
-    Assigns TX and RX port to correponding masters. 
+    Assigns TX and RX port to correponding masters.
     """
     openSerialPort(USBPORTTX, "tx")
     status = sendTxQuery(serTx)
