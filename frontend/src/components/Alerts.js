@@ -235,25 +235,25 @@ const Alerts = (props) => {
       <h5 className="text-center w-100 sigmaRed text-light">Devices Status</h5>
       
 
-      <div className="container table-responsive text-center col-10 ">
+      <div className="container table-responsive text-center col-10">
         {/* DEVICE GROUP LOOP */}
         {devices_groups && devices_groups.map(device_group => (
-            <div className="input-group mb-5" key={device_group._id}>
-              <span className="input-group-text text-light bg-dark w-100">{device_group?.name}</span>
+            <div className="input-group mb-5 rounded shadow-sm">
+              <span className="input-group-text text-light bg-dark w-100 rounded">{device_group?.name}</span>
               {/* DEVICE ID/NAME LOOP */}
               {data && data.filter(d => (props.devices.some(deviceItem => deviceItem.id === d.id && deviceItem.group_id === device_group._id))).map(device => (
                 <>
                 <div className="d-flex w-100 bg-light border-0">
                   {props.devices.find(d => d.id === device.id)?.image ? (
-                    <img src={props.devices.find(d => d.id === device.id)?.image} className="img-thumbnail" width={100} height={100} alt={device?.id}/>
+                    <img src={props.devices.find(d => d.id === device.id)?.image}  width={100} height={100} alt={device?.id}/>
                   ):(
-                    <img src="/images/no_image.png" className="img-thumbnail" width={100} height={100} alt="no image"/>
+                    <img src="/images/no_image.png" width={100} height={100} alt="no image"/>
                   )}
                   <span width={100} height={100}></span>
                   
                   <span className="input-group-text text-dark bg-light w-25 text-wrap">
                     <img alt="" className="m-2" src={device?.connected?green.src:red.src} width={20} height={20} />
-                    ({device?.id}) {device?.name} {!device?.connected && "(not connected)"}
+                    ({device?.id}) {device?.name} {!device?.connected && ""}
                   </span>
                   
                   {/* QUERIES */}
@@ -278,7 +278,7 @@ const Alerts = (props) => {
                                   
                                   <div className="input-group-text w-25 m-0 p-0 ">
                                     <input className="form-control text-info input-group-text bg-light w-75 text-start" name="field" id={field?._id} onChange={handleChange} defaultValue={fieldValue?.value}/>
-                                    <button className="btn btn-primary w-25" type="submit">Save</button>
+                                    <button className="btn btn-primary w-25 border-0" type="submit">Save</button>
                                     <input type="hidden" name="id" id="id" value={device.id}/>
                                     <div className="row">
                                       <div className="col-md-12 text-center">

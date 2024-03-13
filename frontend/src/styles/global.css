@@ -81,12 +81,12 @@ body {
 
 @font-face {
   font-family: Avenir;
-  src: url(/opt/rdss/frontend/styles/Avenir.ttc);
+  src: url(Avenir.ttc);
 }
 
 @font-face {
   font-family: Century Gothic;
-  src: url(/opt/rdss/frontend/styles/CenturyGothic.ttf);
+  src: url(CenturyGothic.ttf);
 }
 
 
