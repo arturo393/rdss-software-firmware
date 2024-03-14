@@ -315,9 +315,7 @@ def construct_query_frame(device_id, frame):
         data = bytearray(frame.get("data", "0"), "utf-8")
         data_size = len(data)
         data.append(0xFF)
-
     # **Fix:** Convert data back to bytes if it's a bytearray
-
     try:
         if not frame:
             logging.error("Empty frame packet")
@@ -410,7 +408,8 @@ def decode_sniffer_io_modbus(data, modbus_data_type):
         # Use struct.unpack to efficiently unpack the byte array
         byte_array = bytes(data)
         data_hex = byte_array.hex()
-        value = struct.unpack('!f', byte_array)[0]
+        value = struct.unpack('f', byte_array)[0]
+        value = round(value, 2)
         decoded_data = {"modbus data reply": value}
     else:
         data = decoded_data
@@ -460,6 +459,48 @@ def linear_map(decoded_data: dict, field_group: list, device: dict) -> dict:
     return mapped_data
 
 
+def delinear_map(decoded_data: dict, field_group: list, device: dict) -> dict:
+    """Performs linear mapping on decoded data from a byte array.
+
+    Args:
+        decoded_data: A dictionary containing decoded values from a byte array.
+        field_group: A list of dictionaries containing field definitions.
+
+    Returns:
+        A dictionary containing the decoded values with applied linear mapping.
+    """
+
+    demapped_data = {}  # Use a dictionary for mapped values
+    device_conv_values = get_conv_values(device)
+    logging.debug(f"device_conv_values: {device_conv_values}'")
+    for field in field_group:
+        name = field.get("name")
+        field_id = str(field.get("_id"))
+        if field_id in device_conv_values:
+            conv_min = device_conv_values[field_id]["min"]
+            conv_max = device_conv_values[field_id]["max"]
+        else:
+            conv_min = field.get("conv_min")
+            conv_max = field.get("conv_max")
+
+        try:
+            # Attempt to convert conv_min and conv_max to integers first
+            conv_min = int(conv_min)
+            conv_max = int(conv_max)
+            raw = float(decoded_data.get(name, 0))
+            demapped = arduino_map(raw, conv_min, conv_max, 0, 4095)  # Use 0 if missing
+            demapped_data[name] = int(demapped)
+
+        except Exception:
+
+            if (isinstance(conv_max, str) or isinstance(conv_min, str)) and (conv_max != '' or conv_min != ''):
+                demapped_data[name] = 1 if decoded_data.get(name) == conv_max else 0
+            else:
+                logging.warning(f"Mapping variables not defined for field '{name}'")
+                demapped_data[name] = decoded_data.get(name)  # Use original value if missing
+    return demapped_data
+
+
 def extract_relevant_data(frame: dict, hex_response: str) -> list:
     """
     Extracts relevant data from the response based on frame indices.
@@ -505,6 +546,20 @@ def get_field_group(
         logging.error(f"No fields found in '{field_group_name}' group with state '{state}'")
 
     return result
+
+
+def get_default_values(device: dict = None) -> dict:
+    default_values = {}
+    if device:
+        fields_values = device.get("fields_values", {})
+        for field_id, field_data in fields_values.items():
+            key = "default_value"
+            if key in field_data:
+                default_values[field_id] = {
+                    key: field_data.get(key),
+
+                }
+    return default_values
 
 
 def get_conv_values(device: dict = None) -> dict:
@@ -593,6 +648,9 @@ def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times):
     Returns:
         boolean: True if valid segment is received.
     """
+    frame = get_query_frame_from_fields(fieldsGroupArr, fieldsArr, device, "sniffer_IO")
+    if len(frame) == 0:
+        return {}
 
     if times == 0:
         return False
@@ -611,12 +669,90 @@ def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times):
         return {}
 
     device_id = int(device['id'])
+    data = ""
+    data_size = ""
+    device_set_data = {}
+    if device['changed'] == True:
+        device_default_values = get_default_values(device)
+        set_field_group = get_field_group(fieldsGroupArr, fieldsArr, 'sniffer_IO', 'set')
+        for field in set_field_group:
+            id = str(field["_id"])
+            if id in device_default_values:
+                name = field["name"]
+                default_value = device_default_values.get(id, 0)
+                value = default_value.get('default_value', 0)
+                device_set_data[name] = value
 
-    frame = get_query_frame_from_fields(fieldsGroupArr, fieldsArr, device, "sniffer_IO")
-    if len(frame) == 0:
+        demmaped_data = delinear_map(device_set_data, set_field_group, device)
+
+        aOut1_0_10V = demmaped_data.get("analog output 0-10V", 0)
+        aOut2_x_20mA = demmaped_data.get("analog output x-20mA", 0)
+        dOut1 = demmaped_data.get("digital output 1", "Off")
+        dOut2 = demmaped_data.get("digital output 2", "Off")
+        serialSW = demmaped_data.get("switch serial comunitacio", "RS485")
+
+        # serialSW = 0 #seteaer a rs232
+        serialSW = 1  # setear a rs485
+        # Invertir los bytes de aout1
+        aout1 = ((aOut1_0_10V >> 8) & 0xFF) | ((aOut1_0_10V << 8) & 0xFF00)
+        # Invertir los bytes de aout2
+        aout2 = ((aOut2_x_20mA >> 8) & 0xFF) | ((aOut2_x_20mA << 8) & 0xFF00)
+        # Create a bytearray instead of string
+        data_bytes = bytearray(7)
+
+        # Set each byte in the bytearray
+        data_bytes[0] = aout1 >> 8  # Most significant byte of aOut1
+        data_bytes[1] = aout1 & 0xFF  # Leasst significant byte of aOut1
+        data_bytes[2] = aout2 >> 8  # Most significant byte of aOut2
+        data_bytes[3] = aout2 & 0xFF  # Least significant byte of aOut2
+        data_bytes[4] = dOut1
+        data_bytes[5] = dOut2
+        data_bytes[6] = serialSW
+
+        frame["command"] = f"{SNIFFER_IO_SET:02X}"
+        frame["data"] = data_bytes
+
+    #    query = construct_query_frame(device_id, frame)
+
+    device_types = {}
+    device_types['sniffer'] = 0x0A
+    device_types['vlad'] = 0x09
+
+    start_byte = bytes([START_BYTE])
+    end_byte = bytes([END_BYTE])
+    device_type = frame.get("device", "")  # 0 is broadcast
+    device_type = device_types.get(device_type, 0)
+    command = int(frame.get("command", "0"), 16)  # 0 is no command
+
+    if command == SNIFFER_IO_QUERY:
+        data = 0x00
+        data_size = 1
+    elif command == SNIFFER_MODBUS:
+        data = bytearray(frame.get("data", "0"), "utf-8")
+        data_size = len(data)
+        data.append(0xFF)
+    elif command == SNIFFER_IO_SET:
+        data = data_bytes
+        data_size = len(data_bytes)
+
+    try:
+        if not frame:
+            logging.error("Empty frame packet")
+            return {}
+        base = [device_type, device_id, command, data_size]
+        if isinstance(data, bytearray):
+            base.extend(data)  # Append individual bytes
+        else:
+            base.append(data)
+        base_bytearray = bytearray(base)
+        checksum = Crc16Xmodem.calc(base_bytearray)
+        checksum1_byte = bytes([(checksum >> 8) & 0xFF])  # Most significant byte
+        checksum2_byte = bytes([checksum & 0xFF])  # Least significant
+        query = bytearray(start_byte + base_bytearray + checksum2_byte + checksum1_byte + end_byte)
+    except Exception as e:
+        logging.error(e)
         return {}
 
-    query = construct_query_frame(device_id, frame)
     response_size = MESSAGE_BASE_SIZE + int(frame.get("response size", "0"), 16)
     message = f"Attempt: {times} "
     message += f"SENT: {query.hex()}"
@@ -640,7 +776,7 @@ def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times):
 
         extracted_data = extract_relevant_data(frame, hexResponse)
         command = int(frame.get('command', "0"), 16)
-        if command == SNIFFER_IO_QUERY:
+        if command == SNIFFER_IO_QUERY or command == SNIFFER_IO_SET:
             decoded_data = decode_sniffer_io_query(extracted_data)
         elif command == SNIFFER_MODBUS:
             modbus_data_type = frame.get('modbus data type', 0)
@@ -972,8 +1108,8 @@ def setSnifferData(serTx, serRx, id, data):
 
     cmd_bytes = bytearray.fromhex(command)
     hex_byte = ''
-
     startTime = time.time()
+
     try:
         # ---- Send via serial
         for cmd_byte in cmd_bytes:
@@ -1175,9 +1311,12 @@ def run_monitor():
             device_data["name"] = device["name"]
             device_data["sampleTime"] = SampleTime
             device_data["field_values"] = response
+            device_data["changed"] = False
+
             if response:
                 connectedDevices += 1
                 device_data["connected"] = True
+                database.devices.update_one({"id": device["id"]}, {"$set": {"changed": False}})
                 # data = packet_sniffer_output()
                 # setSnifferData(serTx, serRx, int(device["id"]), data)
                 # data, uart_cmd = get_example_variable_frame(data)
