@@ -170,7 +170,7 @@ const Rtdata = (props) => {
               Device
             </span>
             <select className="form-select" id="device" onChange={(e) => setDevice(e.target.value)} value={device}>
-              <option value={0}>{deviceName}</option>
+              {/* <option value={0}>{deviceName}</option> */}
               {devices.map((d) => {
                 return (
                   <option value={d.id}>
