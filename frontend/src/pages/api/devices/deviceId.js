@@ -29,11 +29,15 @@ export default async function (req, res, next) {
     dynId.second = "$second"
   }
 
-  
   const pipeline = [
     {
       $match: {
-        $and: [{ id: req.body.id }, { sampleTime: { $gte: new Date(start).toISOString(), } }, { sampleTime: { $lte: new Date(end).toISOString() } }],
+        $and: [
+          { id: req.body.id },
+          { sampleTime: { $gte: new Date(start).toISOString() } },
+          { sampleTime: { $lte: new Date(end).toISOString() } },
+          { field_values: { $type: "object" } }
+        ],
       },
     },
     {
@@ -53,6 +57,13 @@ export default async function (req, res, next) {
     },
     {
       $unwind: "$field_values",
+    },
+    {
+      $match: {
+        "field_values.v.value": {
+          $type: "number",
+        },
+      },
     },
     {
       $group: {
@@ -107,15 +118,17 @@ export default async function (req, res, next) {
     },
   ]
 
-  console.log("pipeline",JSON.stringify(pipeline))
+  console.log("pipeline", JSON.stringify(pipeline))
 
   const fields = await db.collection("fields").find({ plottable: true }).toArray()
   const rtData = await db.collection("rtData").aggregate(pipeline).toArray()
 
-  const filteredResponse = rtData.map(data => {
-    const filteredFieldValues = Object.fromEntries(Object.entries(data.field_values).filter(([key]) => fields.find(def => String(def._id) === key && def.plottable)));
-    return Object.keys(filteredFieldValues).length > 0 ? { ...data, field_values: filteredFieldValues } : null;
-  }).filter(item => item !== null);
-  
+  const filteredResponse = rtData
+    .map((data) => {
+      const filteredFieldValues = Object.fromEntries(Object.entries(data.field_values).filter(([key]) => fields.find((def) => String(def._id) === key && def.plottable)))
+      return Object.keys(filteredFieldValues).length > 0 ? { ...data, field_values: filteredFieldValues } : null
+    })
+    .filter((item) => item !== null)
+
   res.json(filteredResponse)
 }
