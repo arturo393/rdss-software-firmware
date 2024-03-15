@@ -548,6 +548,20 @@ def get_field_group(
     return result
 
 
+def get_field_names(device: dict = None) -> dict:
+    field_names = {}
+    if device:
+        fields_values = device.get("fields_values", {})
+        for field_id, field_data in fields_values.items():
+            key = "field_name"
+            if key in field_data:
+                field_names[field_id] = {
+                    key: field_data.get(key),
+
+                }
+    return field_names
+
+
 def get_default_values(device: dict = None) -> dict:
     default_values = {}
     if device:
@@ -672,6 +686,7 @@ def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times):
     data = ""
     data_size = ""
     device_set_data = {}
+
     if device['changed'] == True:
         device_default_values = get_default_values(device)
         set_field_group = get_field_group(fieldsGroupArr, fieldsArr, 'sniffer_IO', 'set')
@@ -1323,7 +1338,8 @@ def run_monitor():
                 # sendModbus(uart_cmd, f"{SNIFFERID:02x}", data, serTx, serRx)
             else:
                 device_data["connected"] = False
-
+            field_names = get_field_names(device)
+            # database.devices.update_one({"id": device["id"]}, {"$set": {"changed": False}})
             updateDeviceConnectionStatus(device["id"], device_data["connected"])
             rtData.append(json.dumps(device_data, default=defaultJSONconverter))
             logging.debug(f"Device ID:{device['id']} name:{device['name']} END\n\n")
