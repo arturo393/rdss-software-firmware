@@ -730,8 +730,6 @@ def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times):
         frame["command"] = f"{SNIFFER_IO_SET:02X}"
         frame["data"] = data_bytes
 
-    #    query = construct_query_frame(device_id, frame)
-
     device_types = {}
     device_types['sniffer'] = 0x0A
     device_types['vlad'] = 0x09
@@ -807,8 +805,6 @@ def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times):
         query_field_group = get_field_group(fieldsGroupArr, fieldsArr, 'sniffer_IO', 'query')
         mapped_data = linear_map(decoded_data, query_field_group, device)
         logging.info(f"Mapped data: {mapped_data}")
-        finalData = build_field_associations(query_field_group, mapped_data, device)
-
         alert_thresholds = get_alert_thresholds(device)
         field_names = get_field_names(device)
         final_data = {}
@@ -819,8 +815,14 @@ def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times):
                 logging.warning(f"Failed to convert value for field '{query_field['name']}' to integer, using 0")
                 field_value = 0
             field_data = evaluate_alert(query_field, field_value, alert_thresholds)
-            final_data.update(field_data)
+            id = str(query_field.get("_id"))
+            if id in field_names:
+                name = field_names[id]['field_name']
+                field_data[id]['name'] = name
+            elif 'default_value' in query_field:
+                field_data[id]['name'] = query_field['default_value']
 
+            final_data.update(field_data)
 
 
     except Exception as e:
@@ -828,7 +830,7 @@ def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times):
         sys.exit()
 
     logging.debug("Query reception succesfull")
-    return finalData
+    return final_data
 
 
 def arduino_map(value, in_min, in_max, out_min, out_max):
