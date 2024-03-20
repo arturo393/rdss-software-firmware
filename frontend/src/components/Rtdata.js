@@ -37,7 +37,7 @@ const Rtdata = (props) => {
 
 
   useEffect(() => {
-    activeDeviceId && setDevice(activeDeviceId)
+    activeDeviceId?setDevice(activeDeviceId):setDevice(1)
     hiddeSpinner()
   }, [])
   
@@ -213,7 +213,7 @@ const Rtdata = (props) => {
                   fields.filter(field => field.plottable).map(field => (
                     // rtData = { x, rtd, marker, text }
                     <div>
-                    <Chart deviceId={device}  rtData={rtData} label={field.name} filter={field._id} color={field.color || "lightblue"} />
+                    <Chart className="w-100 bg-danger" deviceId={device}  rtData={rtData} label={field.name} filter={field._id} color={field.color || "lightblue"} />
                     </div>
                   ))
               }

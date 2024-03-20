@@ -41,11 +41,21 @@ const Diagram = (props) => {
   // const Text = dynamic(() => import("react-konva").then((module) => module.Text), { ssr: false })
   // const Group = dynamic(() => import("react-konva").then((module) => module.Group), { ssr: false })
 
+  const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`;
+
+  const loadDevices = async () => {
+    const dbDevices = await axios.get(url + "/api/devices/devices").then((res) => {
+      return res.data
+    })
+    setDevices(dbDevices)
+  }
+
   function removeDuplicates(data, key) {
     return [...new Map(data.map((item) => [key(item), item])).values()]
   }
 
   useEffect(() => {
+    loadDevices()
     document.getElementById("status").style.display = "none"
     const aspectRatio = 16 / 9
     const width = window.innerWidth * 1

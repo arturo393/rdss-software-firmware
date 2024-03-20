@@ -20,6 +20,7 @@ let a_attenuation
 const Alerts = (props) => {
   const [alerts, setAlerts] = useState([])
   const [deviceData, setDeviceData] = useState({})
+  const [devices, setDevices] = useState([])
   const [fields,setFields] = useState([])
   const [fields_groups,setFieldsGroups] = useState([])
   const [devices_groups,setDevicesGroups] = useState([])
@@ -31,6 +32,17 @@ const Alerts = (props) => {
   const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`;
 
   const { monitorData } = props
+
+  useEffect(()=>{
+    const loadDevices = async () => {
+      const dbDevices = await axios.get(url + "/api/devices/devices").then((res) => {
+        return res.data
+      })
+      setDevices(dbDevices)
+    }
+    loadDevices()
+    
+  },[])
 
   // Leyendo los fields provisionados al cargar el componente
   useEffect(() => {
@@ -241,11 +253,11 @@ const Alerts = (props) => {
             <div className="input-group mb-5 rounded shadow-sm">
               <span className="input-group-text text-light bg-dark w-100 rounded">{device_group?.name}</span>
               {/* DEVICE ID/NAME LOOP */}
-              {data && data.filter(d => (props.devices.some(deviceItem => deviceItem.id === d.id && deviceItem.group_id === device_group._id))).map(device => (
+              {data && data.filter(d => (devices.some(deviceItem => deviceItem.id === d.id && deviceItem.group_id === device_group._id))).map(device => (
                 <>
                 <div className="d-flex w-100 bg-light border-0">
-                  {props.devices.find(d => d.id === device.id)?.image ? (
-                    <img src={props.devices.find(d => d.id === device.id)?.image}  width={100} height={100} alt={device?.id}/>
+                  {devices.find(d => d.id === device.id)?.image ? (
+                    <img src={devices.find(d => d.id === device.id)?.image}  width={100} height={100} alt={device?.id}/>
                   ):(
                     <img src="/images/no_image.png" width={100} height={100} alt="no image"/>
                   )}
@@ -262,7 +274,7 @@ const Alerts = (props) => {
                         Object.entries(device?.field_values).map(([fieldId, fieldValue]) => {
                           const field = fields.find((f) => f._id === fieldId);
                           const fieldGroup = fields_groups.find((fg) => fg._id === field?.group_id);
-                          const thisDevice = props.devices.find(d => d.id === device.id);
+                          const thisDevice = devices.find(d => d.id === device.id);
                           const fieldDef = thisDevice?.fields_values && field?._id && thisDevice?.fields_values[field._id] || null;
                           
                           if (field?.set && fieldDef?.visible) {
@@ -336,7 +348,7 @@ const Alerts = (props) => {
 const mapStateToProps = (state) => {
   return {
     monitorData: state.main.monitorData,
-    devices: state.main.devices,
+    // devices: state.main.devices,
   }
 }
 

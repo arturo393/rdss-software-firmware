@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react"
 import { Stage, Layer, Image, Group, Text, Circle } from "react-konva"
 // import dynamic from "next/dynamic"
+import axios from "axios"
 
 import { connect } from "react-redux"
 import { setActiveComponent, setActiveDeviceId } from "../redux/actions/main"
@@ -15,8 +16,10 @@ const Schema = (props) => {
   // const Text = dynamic(() => import("react-konva").then((module) => module.Text), { ssr: false })
   // const Group = dynamic(() => import("react-konva").then((module) => module.Group), { ssr: false })
 
-  const { monitorData, config, devices, setActiveComponent, setActiveDeviceId } = props
+  const { monitorData, config, setActiveComponent, setActiveDeviceId } = props
   const [provisioned, setProvisioned] = useState([])
+  const [devices, setDevices] = useState([])
+
   const [image, setImage] = useState(null)
   const [scale, setScale] = useState(1)
   const [stageX, setStageX] = useState(0)
@@ -24,6 +27,21 @@ const Schema = (props) => {
   const [squares, setSquares] = useState([])
   const [width, setWidth] = useState(500)
   const [height, setHeight] = useState(500)
+
+  const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`;
+
+
+  useEffect(()=>{
+    const loadDevices = async () => {
+      const dbDevices = await axios.get(url + "/api/devices/devices").then((res) => {
+        return res.data
+      })
+      setDevices(dbDevices)
+    }
+    loadDevices()
+    console.log("Schema inicio...")
+    
+  },[])
 
   useEffect(() => {
     if (config.image) {
@@ -79,25 +97,25 @@ const Schema = (props) => {
       }
 
       let device = devices.find((square) => square.id == mdevice.id)
-      const label = device.name ? device.name + " (" + device.type + "-" + device.id + ")" : device.type + "-" + device.id
+      const label = device?.name ? device?.name + " (" + device?.type + "-" + device?.id + ")" : device?.type + "-" + device?.id
       device = {
         ...device,
-        x: device.status.x,
-        y: device.status.y,
+        x: device?.status.x,
+        y: device?.status.y,
         fill: fill,
         name: label,
-        id: device.id,
-        key: device.status.x * device.status.y,
+        id: device?.id,
+        key: device?.status.x * device?.status.y,
       }
-      if (device.image) {
+      if (device?.image) {
         const newImage = new window.Image()
-        newImage.src = device.image
+        newImage.src = device?.image
         device.image = newImage
       }
       newSquares.push(device)
     })
     setSquares(newSquares)
-  }, [monitorData])
+  }, [monitorData, devices])
 
   useEffect(() => {
     let prov = devices.filter((device) => device.status.provisioned === true)
@@ -170,7 +188,7 @@ const Schema = (props) => {
   }
   const handleDragEnd = (e) => {
     e.evt?.preventDefault()
-    const scaleBy = 1.02
+    const scaleBy = 1.00
     const stage = e.target.getStage()
     const oldScale = stage.scaleX()
     const mousePointTo = {
@@ -327,7 +345,7 @@ const mapStateToProps = (state) => {
   return {
     monitorData: state.main.monitorData,
     config: state.main.config,
-    devices: state.main.devices,
+    // devices: state.main.devices,
   }
 }
 

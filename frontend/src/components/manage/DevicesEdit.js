@@ -45,9 +45,10 @@ const DevicesEdit = (props) => {
     if (devices.length > 0) setNewDevices(devices)
   }, [devices])
 
-  useEffect(() => {
-    setDevices(newDevices)
-  }, [newDevices])
+  // useEffect(() => {
+  //   console.log("newDevices",newDevices)
+  //   setDevices(newDevices)
+  // }, [newDevices])
 
   const handleDeviceSelected = (e) => {
     e.preventDefault()
@@ -108,7 +109,7 @@ const DevicesEdit = (props) => {
 
 
     axios.post(url + "/api/device/save", structuredData).then(
-      (result) => {
+      async (result) => {
         document.getElementById("status").style.display = "block"
         result ? setStatus("Device attributes updated successfully") : setStatus("Error when try to save device data")
         const objIndex = newDevices.findIndex((d) => d.id == parseInt(deviceData.id))
@@ -117,14 +118,17 @@ const DevicesEdit = (props) => {
         let newDevicesList = devices
         newDevicesList[objIndex] = dev
         setNewDevices(newDevicesList)
+        const dbDevices = await axios.get(url + "/api/devices/devices").then((res) => {
+          return res.data
+        })
+        setDevices(dbDevices)
+
       },
       (error) => {
         console.log(error)
       }
     )
   }
-
-  
 
   const handleChange = (e) => {
     e.preventDefault();
@@ -193,6 +197,7 @@ const DevicesEdit = (props) => {
               })}
             </select>
             <p></p>
+        
             <div className="input-group mb-3">
               <div className="input-group mb-3">
                 <span className="input-group-text">Name</span>
@@ -395,6 +400,7 @@ const DevicesEdit = (props) => {
               </div>
               
             </div>
+   
           </div>
           <div className="col-2"></div>
         </div>
