@@ -480,13 +480,17 @@ def delinear_map(decoded_data: dict, field_group: list, device: dict) -> dict:
             conv_min = device_conv_values[field_id]["min"]
             conv_max = device_conv_values[field_id]["max"]
         else:
-            conv_min = field.get("conv_min")
-            conv_max = field.get("conv_max")
+            conv_min = field.get("conv_min", 0)
+            conv_max = field.get("conv_max", 10)
 
         try:
             # Attempt to convert conv_min and conv_max to integers first
-            conv_min = int(conv_min)
-            conv_max = int(conv_max)
+            if (conv_min == '' or conv_max == ''):
+                conv_min = 0
+                conv_max = 10
+            else:
+                conv_min = int(conv_min)
+                conv_max = int(conv_max)
             raw = float(decoded_data.get(name, 0))
             demapped = arduino_map(raw, conv_min, conv_max, 0, 4095)  # Use 0 if missing
             demapped_data[name] = int(demapped)
@@ -602,9 +606,8 @@ def get_alert_thresholds(device: dict = None) -> dict:
     return alert_thresholds
 
 
-def process_field_data(
-        field: dict, value: int, alert_thresholds: dict
-) -> dict:
+def evaluate_alert(field: dict, value: int, alert_thresholds: dict
+                   ) -> dict:
     field_id = {}
     try:
         field_id = str(field["_id"])
@@ -647,7 +650,8 @@ def build_field_associations(
         except ValueError:
             logging.warning(f"Failed to convert value for field '{field['name']}' to integer, using 0")
             value = 0
-        field_data = process_field_data(field, value, alert_thresholds)
+        field_data = evaluate_alert(field, value, alert_thresholds)
+
         final_data.update(field_data)
     return final_data
 
@@ -667,7 +671,7 @@ def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times):
         return {}
 
     if times == 0:
-        return False
+        return {}
 
     decoders = {
         SNIFFER_IO_QUERY: decode_sniffer_io_query,
@@ -690,13 +694,13 @@ def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times):
     if device['changed'] == True:
         device_default_values = get_default_values(device)
         set_field_group = get_field_group(fieldsGroupArr, fieldsArr, 'sniffer_IO', 'set')
-        for field in set_field_group:
-            id = str(field["_id"])
+        for query_field in set_field_group:
+            id = str(query_field["_id"])
             if id in device_default_values:
-                name = field["name"]
+                name = query_field["name"]
                 default_value = device_default_values.get(id, 0)
-                value = default_value.get('default_value', 0)
-                device_set_data[name] = value
+                field_value = default_value.get('default_value', 0)
+                device_set_data[name] = field_value
 
         demmaped_data = delinear_map(device_set_data, set_field_group, device)
 
@@ -704,11 +708,10 @@ def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times):
         aOut2_x_20mA = demmaped_data.get("analog output x-20mA", 0)
         dOut1 = demmaped_data.get("digital output 1", "Off")
         dOut2 = demmaped_data.get("digital output 2", "Off")
-        serialSW = demmaped_data.get("switch serial comunitacio", "RS485")
+        serialSW = demmaped_data.get("switch serial comunitacion", 0)
 
-        # serialSW = 0 #seteaer a rs232
-        serialSW = 1  # setear a rs485
         # Invertir los bytes de aout1
+
         aout1 = ((aOut1_0_10V >> 8) & 0xFF) | ((aOut1_0_10V << 8) & 0xFF00)
         # Invertir los bytes de aout2
         aout2 = ((aOut2_x_20mA >> 8) & 0xFF) | ((aOut2_x_20mA << 8) & 0xFF00)
@@ -726,8 +729,6 @@ def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times):
 
         frame["command"] = f"{SNIFFER_IO_SET:02X}"
         frame["data"] = data_bytes
-
-    #    query = construct_query_frame(device_id, frame)
 
     device_types = {}
     device_types['sniffer'] = 0x0A
@@ -798,20 +799,38 @@ def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times):
             decoded_data = decode_sniffer_io_modbus(extracted_data, modbus_data_type)
         else:
             logging.info("Invalid command. No corresponding function found.")
-            return False
+            return {}
 
         logging.info(f"Decoded data: {decoded_data}")
-        status_field_group = get_field_group(fieldsGroupArr, fieldsArr, 'sniffer_IO', 'query')
-        mapped_data = linear_map(decoded_data, status_field_group, device)
+        query_field_group = get_field_group(fieldsGroupArr, fieldsArr, 'sniffer_IO', 'query')
+        mapped_data = linear_map(decoded_data, query_field_group, device)
         logging.info(f"Mapped data: {mapped_data}")
+        alert_thresholds = get_alert_thresholds(device)
+        field_names = get_field_names(device)
+        final_data = {}
+        for query_field in query_field_group:
+            try:
+                field_value = mapped_data.get(query_field["name"], 0)
+            except ValueError:
+                logging.warning(f"Failed to convert value for field '{query_field['name']}' to integer, using 0")
+                field_value = 0
+            field_data = evaluate_alert(query_field, field_value, alert_thresholds)
+            id = str(query_field.get("_id"))
+            if id in field_names:
+                name = field_names[id]['field_name']
+                field_data[id]['name'] = name
+            elif 'default_value' in query_field:
+                field_data[id]['name'] = query_field['default_value']
 
-        finalData = build_field_associations(status_field_group, mapped_data, device)
+            final_data.update(field_data)
+
+
     except Exception as e:
         logging.error(e)
         sys.exit()
 
     logging.debug("Query reception succesfull")
-    return finalData
+    return final_data
 
 
 def arduino_map(value, in_min, in_max, out_min, out_max):
@@ -1332,14 +1351,10 @@ def run_monitor():
                 connectedDevices += 1
                 device_data["connected"] = True
                 database.devices.update_one({"id": device["id"]}, {"$set": {"changed": False}})
-                # data = packet_sniffer_output()
-                # setSnifferData(serTx, serRx, int(device["id"]), data)
-                # data, uart_cmd = get_example_variable_frame(data)
-                # sendModbus(uart_cmd, f"{SNIFFERID:02x}", data, serTx, serRx)
             else:
                 device_data["connected"] = False
-            field_names = get_field_names(device)
-            # database.devices.update_one({"id": device["id"]}, {"$set": {"changed": False}})
+                database.devices.update_one({"id": device["id"]}, {"$set": {"changed": False}})
+
             updateDeviceConnectionStatus(device["id"], device_data["connected"])
             rtData.append(json.dumps(device_data, default=defaultJSONconverter))
             logging.debug(f"Device ID:{device['id']} name:{device['name']} END\n\n")
