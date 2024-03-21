@@ -126,12 +126,13 @@ const Rtdata = (props) => {
     showSpinner()
     e.preventDefault()
     const deviceSelector = document.getElementById("device")
-    if (deviceSelector.value > 0) {
-      setDevice(deviceSelector.selectedIndex)
-      const dev = devices.find((d) => Number(d.id) === Number(deviceSelector.value))
+    if (deviceSelector.value >= 0) {
+      setDevice(deviceSelector.selectedIndex+1)
+      const dev = devices.find((d) => Number(d.id) === Number(deviceSelector.value+1))
       setDeviceName(dev.name ? dev.name + "(" + dev.type + "-" + dev.id + ")" : dev.type + "-" + dev.id)
-      setDeviceData(devices.find((d) => d.id === deviceSelector.selectedIndex))
+      setDeviceData(devices.find((d) => d.id === deviceSelector.selectedIndex+1))
     }
+    hiddeSpinner()
   }
 
   const hiddeSpinner = () => {

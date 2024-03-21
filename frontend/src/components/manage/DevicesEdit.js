@@ -93,7 +93,7 @@ const DevicesEdit = (props) => {
   const saveDevice = (e) => {
     e.preventDefault()
 
-    const structuredData = {
+    let structuredData = {
       _id: deviceData._id,
       id: deviceData.id,
       name: deviceData.name,
@@ -101,7 +101,10 @@ const DevicesEdit = (props) => {
       status: deviceData.status,
       type: deviceData.type,
       fields_values: deviceData?.fields_values,
-      image: base64 || null
+    }
+
+    if (base64) {
+      structuredData = {...structuredData, image: base64}
     }
 
     // console.log("structuredData", structuredData)
