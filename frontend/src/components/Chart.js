@@ -103,39 +103,14 @@ function Chart(props) {
           let TS = {}
           if (currentDeviceData.sampleTime !== undefined) tmpTS = JSON.stringify(currentDeviceData.sampleTime).replace("$date", "date").replace("T", " ").replace("Z", "")
           if (tmpTS) TS = JSON.parse(tmpTS)
-          // console.log("TS", TS)
-
-          // data.x[currentIndex] = TS
-          // data.y[currentIndex] = parseFloat(currentDeviceData?.field_values?.[filter]?.value)
-          // data.text[currentIndex] = alertStatus.text
-          // data.marker.color[currentIndex] = alertStatus.alerted ? "red" : color
+ 
 
           data.x.push(TS)
           data.y.push(parseFloat(currentDeviceData?.field_values?.[filter]?.value))
           data.text.push(alertStatus.text)
           data.marker.color.push(alertStatus.alerted ? "red" : color)
           
-          // data.y.push(parseFloat(currentDeviceData?.field_values?.[filter]?.value))
-          // //Fixes power tolerane
-          // // if (filter == "power" && currentDeviceData.rtData[filter] < -5) currentDeviceData.rtData[filter] = -5
-          // if (!currentDeviceData?.rtData[filter]) {
-          //   currentDeviceData.rtData[filter] = {}
-          // }
-          
-          // data.y.shift()
-          // const currentIndex = data.y.length - 1
-  
-          // let tmpTS = ""
-          // let TS = {}
-          // if (currentDeviceData.rtData.sampleTime !== undefined) tmpTS = JSON.stringify(currentDeviceData.rtData.sampleTime).replace("$date", "date").replace("T", " ").replace("Z", "")
-          // if (tmpTS) TS = JSON.parse(tmpTS)
-          // data.x[currentIndex] = TS
-          // // data.x[currentIndex] = currentDeviceData.rtData.sampleTime
-          // console.log("data" ,data)
-          // if (!data.text[currentIndex]) {
-          //   data.text[currentIndex] = alertStatus.text
-          //   data.marker.color[currentIndex] = alertStatus.alerted ? "red" : color
-          // }
+         
           setRevision(currentIndex + deviceId + Math.floor(Math.random() * 100 + 1))
           setPlotData(data)
         } else {
