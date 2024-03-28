@@ -329,7 +329,7 @@ const Schema = (props) => {
                 x={square.x}
                 y={square.y}
                 fill={square.fill}
-                id={square.id.toString()}
+                id={square.id?.toString()}
                 onClick={() => selectDevice(square.id.toString())}
                 onTap={() => selectDevice(square.id.toString())}
               />

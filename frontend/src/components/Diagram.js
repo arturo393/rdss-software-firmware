@@ -233,7 +233,7 @@ const Diagram = (props) => {
   }
   const handleDragEnd = (e) => {
     e.evt?.preventDefault()
-    const scaleBy = 1.02
+    const scaleBy = 1.00
     const stage = e.target.getStage()
     const oldScale = stage.scaleX()
     const mousePointTo = {

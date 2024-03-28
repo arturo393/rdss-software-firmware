@@ -33,19 +33,23 @@ const Alerts = (props) => {
 
   const { monitorData } = props
 
-  useEffect(()=>{
-    const loadDevices = async () => {
-      const dbDevices = await axios.get(url + "/api/devices/devices").then((res) => {
-        return res.data
-      })
-      setDevices(dbDevices)
-    }
-    loadDevices()
+  // useEffect(()=>{
+  //   const loadDevices = async () => {
+  //     const dbDevices = await axios.get(url + "/api/devices/devices").then((res) => {
+  //       return res.data
+  //     })
+  //     setDevices(dbDevices)
+  //   }
+  //   loadDevices()
     
-  },[])
+  // },[])
 
   // Leyendo los fields provisionados al cargar el componente
   useEffect(() => {
+    const loadDevices = async () => {
+      const res = await axios.get(url + "/api/devices/devices")
+        setDevices(res.data)
+    }
     const getFieldsData = async () => {
       const res = await axios.get(`${url}/api/fields`);
       setFields(res.data)
@@ -62,6 +66,7 @@ const Alerts = (props) => {
     getFieldsData()
     getFieldsGroups()
     getDevicesGroups()
+    loadDevices()
   },[])
 
 
@@ -284,7 +289,8 @@ const Alerts = (props) => {
                                   <span className="input-group-text m-0 p-0"><img alt="" src={device.connected?(!fieldValue.alert?green.src:red.src):gray.src} width={20} height={20} /></span>
                                     
                                   
-                                  {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-75">{fieldGroup?.name}/{field?.name}</span>)}
+                                  {/* {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-75">{fieldGroup?.name}/{field?.name}</span>)} */}
+                                  {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-75">{field?.name}</span>)}
                                   
                                   
                                   
@@ -313,7 +319,8 @@ const Alerts = (props) => {
                               <div key={fieldId} className="d-flex m-0 p-0  mx-1 w-100">
                                   <span className="input-group-text m-0 p-0"><img alt="" src={device.connected?(!fieldValue.alert?green.src:red.src):gray.src} width={20} height={20} /></span>
                                   
-                                  {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-75">{fieldGroup?.name}/{field?.name}</span>)}
+                                  {/* {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-75">{fieldGroup?.name}/{field?.name}</span>)} */}
+                                  {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-75">{field?.name}</span>)}
                                   
                                   <span className="input-group-text w-25">{fieldValue.value}</span>
                               </div>
