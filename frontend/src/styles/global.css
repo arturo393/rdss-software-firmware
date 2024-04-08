@@ -200,3 +200,14 @@ body {
   top: 50%;
   right: 0%;
 }
+
+
+.btn-off {
+  background-color: #10263b; /* Light gray for inactive */
+  color: #ffffff; /* Dark gray for text */
+}
+
+.btn-active {
+  background-color: rgb(255, 80, 0); /* Blue for active */
+  color: #ffffff; /* White for text */
+}
