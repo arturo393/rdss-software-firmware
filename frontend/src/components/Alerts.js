@@ -26,8 +26,7 @@ const Alerts = (props) => {
   const [devices_groups, setDevicesGroups] = useState([])
   const [data, setData] = useState([])
   const [displayDeviceFieldGroup, setDisplayDeviceFieldGroup] = useState([])
-  const [range_value, setRangeValue] = useState([])
-  
+  const [range_value, setRangeValue] = useState({});
   const api_url = process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT
 
   const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`;
@@ -75,12 +74,10 @@ const Alerts = (props) => {
     setData(monitorData?.map(monitor => JSON.parse(monitor)))
   }, [monitorData])
 
-  
+
   const handleChange = (e) => {
     e.preventDefault()
   }
-
-
 
   const saveDevice = async (e) => {
     e.preventDefault();
@@ -123,18 +120,22 @@ const Alerts = (props) => {
     status.innerHTML = message;
   };
 
-
-
-
   const handleRangeOnChange = async (newValue, field_id, device_id) => {
-    const value = { [field_id]: newValue }
+    const value = { ["value"]: newValue,
+  ["field_id"]:field_id,
+["device_id"]:device_id}
+    console.log("field_id", field_id);
+    console.log("device_id", device_id);
+    console.log("value",value);
     setRangeValue(value);
   }
+
   const handleRangeOnMouseUp = async (newValue, field_id, device_id) => {
     // Update fieldValue in state
     // setFieldValue(fieldId, newValue);
     console.log("newvalue", newValue);
     console.log("fieldId", field_id);
+
 
     // get device data
     const device = await axios.get(api_url + "/api/device/" + device_id);
@@ -215,12 +216,9 @@ const Alerts = (props) => {
   };
   const isNumber = (value) => !isNaN(parseFloat(value)); // Helper function to check for number
 
-
   return (
     <>
       <h5 className="text-center w-100 sigmaRed text-light">Devices Status</h5>
-
-
       <div className="container table-responsive text-center col-10">
         {/* DEVICE GROUP LOOP */}
         {devices_groups && devices_groups.map(device_group => (
@@ -241,7 +239,6 @@ const Alerts = (props) => {
                     <img alt="" className="m-2" src={device?.connected ? green.src : red.src} width={20} height={20} />
                     ({device?.id}) {device?.name} {!device?.connected && ""}
                   </span>
-
                   {/* QUERIES */}
                   <div className="input-group-text text-dark bg-light w-100 mx-0 d-flex justify-content-start flex-column">
                     {device?.field_values &&
@@ -256,46 +253,35 @@ const Alerts = (props) => {
                             <form onSubmit={saveDevice} key={fieldId} className="d-flex m-0 p-0  mx-0 w-100">
                               {/* <div key={fieldId} className="d-flex m-0 p-0  mx-1 w-100"> */}
                               <span className="input-group-text m-0 p-0"><img alt="" src={device.connected ? (!fieldValue.alert ? green.src : red.src) : gray.src} width={20} height={20} /></span>
-
-
                               {fieldValue?.name ?
                                 (<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>)
                                 : (<span className="input-group-text text-dark bg-light w-75">{fieldGroup?.name}/{field?.name}</span>)}
 
                               {isNumber(fieldValue?.value) ? (
                                 <div className="input-group-text w-25 m-0 p-0 ">
-                                  {
-                                    //<input className="form-control text-info input-group-text bg-light w-75 text-start" name="field" id={field?._id} onChange={handleChange} defaultValue={fieldValue?.value} />
-                                    // <button className="btn btn-primary w-25 border-0" type="submit">Save</button>
-                                    // <input type="hidden" name="id" id="id" value={device.id} />
-                                  }
-
-                                  <span className="input-group-text w-25 m-0 p-0">{range_value[fieldId] || parseFloat(fieldValue?.value)}</span>
-                                  <span className="range-min">{field?.conv_min || fieldValue?.conv_min || 0}</span>
-                                  <div class="slider">
+                                  <span className="input-group-text text-dark bg-light w-15 m-0 p-1">{range_value["field_id"] == fieldId ? (range_value["device_id"] == device.id? (range_value["value"]):(parseFloat(fieldValue?.value))):(parseFloat(fieldValue?.value)) || parseFloat(fieldValue?.value)}</span>
+                                  <div className="slider" style={{ display: "flex", width: "90%", justifyContent: "space-between" }}>
+                                  <span className="range-min ">{field?.conv_min || fieldValue?.conv_min || 0}</span>
                                     <input
                                       type="range"
                                       name="field"
+                                      style={{ display: "flex", width: "100%", justifyContent: "space-between" }}
                                       id={field?._id}
                                       key={fieldId}
                                       min={field?.conv_min || fieldValue?.conv_min || 0}  // Set default min to 0 if not provided
                                       max={field?.conv_max || fieldValue?.conv_max || 4095} // Set default max to 100 if not provided
-                                      value={range_value[fieldId] || parseFloat(fieldValue?.value)}
+                                      value={range_value["field_id"] == fieldId ? (range_value["device_id"] == device.id? (range_value["value"]):(parseFloat(fieldValue?.value))):(parseFloat(fieldValue?.value)) || parseFloat(fieldValue?.value)}
                                       step="0.01"
                                       onChange={(event) => {
                                         const newValue = parseFloat(event.target.value);
-                                        setRangeValue({ ...range_value, [fieldId]: newValue });
                                         handleRangeOnChange(newValue, fieldId, device.id);
-                                        // Elimina la llamada a handleRangeChange en el evento onChange
-                                        // Puedes realizar actualizaciones visuales aquí si es necesario
                                       }}
                                       onMouseUp={(event) => {
                                         const newValue = parseFloat(event.target.value);
                                         handleRangeOnMouseUp(newValue, fieldId, device.id);
-                                        // La función handleRangeChange se ejecutará solo cuando se suelte el click del mouse
                                       }}
                                     />
-                                  </div>
+                                  </div>y
                                   <span className="range-max">{field?.conv_max || fieldValue?.conv_max || 4095}</span>
                                 </div>
                               ) : (
@@ -316,20 +302,7 @@ const Alerts = (props) => {
                                   </button>
                                 </div>
                               )
-
                               }
-
-                              {/* Display appropriate text for toggle button */}
-                              {
-                                //       <div className="row">
-                                //         <div className="col-md-12 text-center">
-                                //           <div className="alert alert-info hidden" role="alert" id={device.id + "status"}>OK
-                                //           </div>
-                                //         </div>
-                                //       </div>
-                              }
-
-                              {/* </div> */}
                             </form>
                           )
                         }
