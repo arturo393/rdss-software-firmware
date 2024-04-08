@@ -255,7 +255,7 @@ const Alerts = (props) => {
                               <span className="input-group-text m-0 p-0"><img alt="" src={device.connected ? (!fieldValue.alert ? green.src : red.src) : gray.src} width={20} height={20} /></span>
                               {fieldValue?.name ?
                                 (<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>)
-                                : (<span className="input-group-text text-dark bg-light w-75">{fieldGroup?.name}/{field?.name}</span>)}
+                                : (<span className="input-group-text text-dark bg-light w-75">{field?.name}</span>)}
 
                               {isNumber(fieldValue?.value) ? (
                                 <div className="input-group-text w-25 m-0 p-0 ">
