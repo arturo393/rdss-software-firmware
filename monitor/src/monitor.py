@@ -554,6 +554,21 @@ def get_field_group(
 
     return result
 
+def get_field_visibles(sniffer_data,field_arr,field_group_arr,device) -> dict:
+    field_visibles = {}
+    if device:
+        fields_values = device.get("fields_values", {})
+        for field_group in field_group_arr:
+            if sniffer_data == field_group.get("name"):
+                for field in field_arr:
+                    if field.get("group_id") == str(field_group.get("_id")):
+                        for field_id, field_data in fields_values.items():
+                            key = "visible" 
+                            if str(field.get("_id")) == field_id and key in field_data and field_data.get(key) == True:
+                                field_visibles[field_id] = {
+                                    key: field_data.get(key),
+                                }
+    return field_visibles
 
 def get_field_names(device: dict = None) -> dict:
     field_names = {}
@@ -644,16 +659,18 @@ def evaluate_alert(field: dict, value: int, alert_thresholds: dict
 def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr,times,):
     sniffer_data = "sniffer data"
     base_field_group = "sniffer base"
-    
+    sniffer_data_visibles = get_field_visibles(sniffer_data,fieldsArr,fieldsGroupArr,device)
+    if len(sniffer_data_visibles) == 0:
+        return {},0
     frame = get_query_frame_from_fields(fieldsGroupArr, fieldsArr,device, base_field_group)
     if len(frame) == 0:
-        return {}
+        return {},0
     if times == 0:
-        return {}
+        return {},0
     # Verificar si 'sniffer_IO' está en el diccionario
     if not any(item.get('name') == base_field_group for item in fieldsGroupArr):
         logging.error(f"no {base_field_group} group created")
-        return {}
+        return {},0
  
     device_id = int(device['id'])
 
@@ -681,11 +698,13 @@ def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr,times,):
         sys.exit()
 
     logging.debug("Query reception succesfull")
-    return final_data
+    return final_data,command
 
 def get_modbus_status(serTx, serRx, device, fieldsArr, fieldsGroupArr,times):
     base_field_group = "sniffer modbus"
-    
+    sniffer_modbus_visibles = get_field_visibles(base_field_group,fieldsArr,fieldsGroupArr,device)
+    if len(sniffer_modbus_visibles) == 0:
+        return {},0
     frame = get_query_frame_from_fields(fieldsGroupArr, fieldsArr,device, base_field_group)
     if len(frame) == 0:
         return {}
@@ -779,7 +798,6 @@ def get_device_set_data(device_default_values, set_field_group):
             field_value = default_value.get('default_value',0)
             device_set_data[name] = field_value
     return device_set_data
-
     
 def get_query_frame(modbus_data_frame,device_id,command):
     try:   
@@ -796,8 +814,6 @@ def get_query_frame(modbus_data_frame,device_id,command):
     except Exception as e:
         logging.error(f"get_query_frame_from_fields:{e}")
         return bytearray()
-
-
 
 def create_modbus_data_frame(frame):
     data = bytearray(frame.get("data", "0"), "utf-8")
@@ -820,7 +836,6 @@ def transmit_and_receive(serTx, serRx, times, query, response_size):
     message += f" / Response time:{responseTime}"
     logging.debug(message)
     return hexResponse
-
 
 def arduino_map(value, in_min, in_max, out_min, out_max):
     return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
@@ -852,7 +867,6 @@ def decodeMaster(buffer):
     master.deviceTemperature = buffer[bufferIndex]
     return master
 
-
 def isCrcOk(hexResponse, size):
     dataEnd = size - 3
     crcEnd = size - 1
@@ -868,7 +882,6 @@ def isCrcOk(hexResponse, size):
     else:
         logging.debug(crcMessage + "ERROR: " + calculatedChecksum + " != " + checksumString)
         return False
-
 
 def sendMasterQuery(serTx, serRx, times):
     """
@@ -964,7 +977,6 @@ def sendMasterQuery(serTx, serRx, times):
 
     return finalData
 
-
 def sendStatusToFrontEnd(rtData):
     """
     Sends via SocketIO the real-time provisioned devices status
@@ -984,14 +996,12 @@ def sendStatusToFrontEnd(rtData):
     eventlet.monkey_patch()
     socket.emit('set_rtdata_event', eventMessage)
 
-
 def defaultJSONconverter(o):
     """
     Converter function that stringifies our datetime object.
     """
     if isinstance(o, datetime.datetime):
         return o.__str__()
-
 
 def showBanner(provisionedDevicesArr, timeNow):
     """
@@ -1000,7 +1010,6 @@ def showBanner(provisionedDevicesArr, timeNow):
     logging.debug("-------------------------------------------------------")
     logging.debug("Starting Polling - TimeStamp: %s ", timeNow)
     logging.debug("Devices Count:" + str(len(provisionedDevicesArr)) + "\n")
-
 
 def sendModbus(uartCmd, snifferAddress, data, serTx, serRx):
     """
@@ -1098,7 +1107,6 @@ def sendModbus(uartCmd, snifferAddress, data, serTx, serRx):
     logging.debug("Modbus reception succesful")
     return True
 
-
 def setSnifferData(serTx, serRx, id, data):
     """Sets device downlink attenuation
 
@@ -1172,7 +1180,6 @@ def setSnifferData(serTx, serRx, id, data):
     logging.debug("changing attenuation")
     return True
 
-
 def getRealValues(deviceData):
     """
     Obtains real values from data extracted from database
@@ -1212,7 +1219,6 @@ def getRealValues(deviceData):
             else:
                 out = out + f"{0:02x}"
     return out
-
 
 def sendTxQuery(serTx):
     """
@@ -1278,7 +1284,6 @@ def sendTxQuery(serTx):
         logging.debug("USB0 is RX")
     return str(hexResponse[3])
 
-
 def setMasterPorts():
     """
     Assigns TX and RX port to correponding masters. 
@@ -1299,7 +1304,6 @@ def setMasterPorts():
         return
     else:
         logging.debug("Unrecognized lora mode")
-
 
 def run_monitor():
     """
@@ -1329,7 +1333,7 @@ def run_monitor():
             SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
             response = dict()
             logging.debug(f"Query Status")
-            query_status = get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times)
+            query_status,command = get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times)
             logging.debug(f"Modbus Status")
             modbus_status = get_modbus_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times)
             response.update(query_status)
@@ -1344,10 +1348,11 @@ def run_monitor():
             if response:
                 connectedDevices += 1
                 device_data["connected"] = True
-                database.devices.update_one({"id": device["id"]}, {"$set": {"changed": False}})
+                if command == SNIFFER_IO_SET:
+                    database.devices.update_one({"id": device["id"]}, {"$set": {"changed": False}})
             else:
                 device_data["connected"] = False
-                database.devices.update_one({"id": device["id"]}, {"$set": {"changed": False}})
+                #database.devices.update_one({"id": device["id"]}, {"$set": {"changed": False}})
 
             updateDeviceConnectionStatus(device["id"], device_data["connected"])
             rtData.append(json.dumps(device_data, default=defaultJSONconverter))
@@ -1360,7 +1365,6 @@ def run_monitor():
     else:
         # sendStatusToFrontEnd([])
         logging.debug("No provisioned devices found in the DB")
-
 
 def get_example_variable_frame(data):
     uart_cmd = "14"  # comando para que el sniffer envie el paquete via serial
@@ -1381,7 +1385,6 @@ def get_example_variable_frame(data):
         contador = 0
     return data, uart_cmd
 
-
 def packet_sniffer_output():
     aOut1_0_10V = 1000
     aOut2_x_20mA = 500
@@ -1395,7 +1398,6 @@ def packet_sniffer_output():
     aout2 = ((aOut2_x_20mA >> 8) & 0xFF) | ((aOut2_x_20mA << 8) & 0xFF00)
     data = f"{aout1:04X}{aout2:04X}{dOut1:02X}{dOut2:02X}{serialSW:02X}"
     return data
-
 
 def listen():
     """
@@ -1413,7 +1415,6 @@ def listen():
 
         run_monitor()
         eventlet.sleep(cfg.POLLING_SLEEP)
-
 
 eventlet.spawn(listen)
 
