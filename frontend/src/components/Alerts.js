@@ -71,9 +71,12 @@ const Alerts = (props) => {
 
 
   useEffect(() => {
-    setData(monitorData?.map(monitor => JSON.parse(monitor)))
+    if (monitorData) {
+      console.log("monitorData", monitorData)
+      setData(monitorData?.map(monitor => JSON.parse(monitor)))
+    }
   }, [monitorData])
-
+ 
 
   const handleChange = (e) => {
     e.preventDefault()
