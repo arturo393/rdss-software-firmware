@@ -248,84 +248,90 @@ const Alerts = (props) => {
                         const thisDevice = devices.find(d => d.id === device.id);
                         const fieldDef = thisDevice?.fields_values && field?._id && thisDevice?.fields_values[field._id] || null;
 
-                        if (field?.set && fieldDef?.visible) {
-                          return (
-                            <form onSubmit={saveDevice} key={fieldId} className="d-flex m-0 p-0  mx-0 w-100">
-                              {/* <div key={fieldId} className="d-flex m-0 p-0  mx-1 w-100"> */}
-                              <span className="input-group-text m-0 p-0"><img alt="" src={device.connected ? (!fieldValue.alert ? green.src : red.src) : gray.src} width={20} height={20} /></span>
-                              {fieldValue?.name ?
-                                (<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>)
-                                : (<span className="input-group-text text-dark bg-light w-75">{field?.name}</span>)}
 
-                              {isNumber(fieldValue?.value) ? (
-                                <div className="input-group-text w-25 m-0 p-0 ">
-                                  <span className="input-group-text text-dark bg-light w-15 m-0 p-1">{range_value["field_id"] == fieldId ? (range_value["device_id"] == device.id? (range_value["value"]):(parseFloat(fieldValue?.value))):(parseFloat(fieldValue?.value)) || parseFloat(fieldValue?.value)}</span>
-                                  <div className="slider" style={{ display: "flex", width: "90%", justifyContent: "space-between" }}>
-                                  <span className="range-min ">{field?.conv_min || fieldValue?.conv_min || 0}</span>
-                                    <input
-                                      type="range"
-                                      name="field"
-                                      style={{ display: "flex", width: "100%", justifyContent: "space-between" }}
-                                      id={field?._id}
-                                      key={fieldId}
-                                      min={field?.conv_min || fieldValue?.conv_min || 0}  // Set default min to 0 if not provided
-                                      max={field?.conv_max || fieldValue?.conv_max || 4095} // Set default max to 100 if not provided
-                                      value={range_value["field_id"] == fieldId ? (range_value["device_id"] == device.id? (range_value["value"]):(parseFloat(fieldValue?.value))):(parseFloat(fieldValue?.value)) || parseFloat(fieldValue?.value)}
-                                      step="0.01"
-                                      onChange={(event) => {
-                                        const newValue = parseFloat(event.target.value);
-                                        handleRangeOnChange(newValue, fieldId, device.id);
-                                      }}
-                                      onMouseUp={(event) => {
-                                        const newValue = parseFloat(event.target.value);
-                                        handleRangeOnMouseUp(newValue, fieldId, device.id);
-                                      }}
-                                    />
-                                  </div>y
-                                  <span className="range-max">{field?.conv_max || fieldValue?.conv_max || 4095}</span>
-                                </div>
-                              ) : (
-                                <div className="input-group-text w-25 m-0 p-0 ">
-                                  <button
-                                    type="button"
-                                    className={`btn  ${fieldValue?.value === field?.conv_min ? "btn-off" : "btn-active"}`}
-                                    // Other attributes remain the same (data-bs-toggle, autocomplete, onClick)
-                                    onClick={() =>
-                                      handleToggleChange(
-                                        fieldValue?.value === field?.conv_min ? field?.conv_max : field?.conv_min,
-                                        fieldId,
-                                        device.id
-                                      )
-                                    }
-                                  >
-                                    {fieldValue?.value}
-                                  </button>
-                                </div>
-                              )
-                              }
-                            </form>
-                          )
+                        if (fieldDef?.visible) {
+                          if (field?.set) {
+                            return (
+                              <form onSubmit={saveDevice} key={fieldId} className="d-flex m-0 p-0  mx-0 w-100">
+                                {/* <div key={fieldId} className="d-flex m-0 p-0  mx-1 w-100"> */}
+                                <span className="input-group-text m-0 p-0"><img alt="" src={device.connected ? (!fieldValue.alert ? green.src : red.src) : gray.src} width={20} height={20} /></span>
+                                {fieldValue?.name ?
+                                  (<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>)
+                                  : (<span className="input-group-text text-dark bg-light w-75">{field?.name}</span>)}
+  
+                                {isNumber(fieldValue?.value) ? (
+                                  <div className="input-group-text w-25 m-0 p-0 ">
+                                    <span className="input-group-text text-dark bg-light w-15 m-0 p-1">{range_value["field_id"] == fieldId ? (range_value["device_id"] == device.id? (range_value["value"]):(parseFloat(fieldValue?.value))):(parseFloat(fieldValue?.value)) || parseFloat(fieldValue?.value)}</span>
+                                    <div className="slider" style={{ display: "flex", width: "90%", justifyContent: "space-between" }}>
+                                    <span className="range-min" style={{marginLeft: "5px"}}>{field?.conv_min || fieldValue?.conv_min || 0}</span>
+                                      <input
+                                        type="range"
+                                        name="field"
+                                        style={{ display: "flex", width: "100%", justifyContent: "space-between" }}
+                                        id={field?._id}
+                                        key={fieldId}
+                                        min={field?.conv_min || fieldValue?.conv_min || 0}  // Set default min to 0 if not provided
+                                        max={field?.conv_max || fieldValue?.conv_max || 4095} // Set default max to 100 if not provided
+                                        value={range_value["field_id"] == fieldId ? (range_value["device_id"] == device.id? (range_value["value"]):(parseFloat(fieldValue?.value))):(parseFloat(fieldValue?.value)) || parseFloat(fieldValue?.value)}
+                                        step="0.01"
+                                        onChange={(event) => {
+                                          const newValue = parseFloat(event.target.value);
+                                          handleRangeOnChange(newValue, fieldId, device.id);
+                                        }}
+                                        onMouseUp={(event) => {
+                                          const newValue = parseFloat(event.target.value);
+                                          handleRangeOnMouseUp(newValue, fieldId, device.id);
+                                        }}
+                                      />
+                                    </div>
+                                    <span className="range-max">{field?.conv_max || fieldValue?.conv_max || 4095}</span>
+                                  </div>
+                                ) : (
+                                  <div className="input-group-text w-25 m-0 p-0 ">
+                                    <button
+                                      type="button"
+                                      className={`btn  ${fieldValue?.value === field?.conv_min ? "btn-off" : "btn-active"}`}
+                                      // Other attributes remain the same (data-bs-toggle, autocomplete, onClick)
+                                      onClick={() =>
+                                        handleToggleChange(
+                                          fieldValue?.value === field?.conv_min ? field?.conv_max : field?.conv_min,
+                                          fieldId,
+                                          device.id
+                                        )
+                                      }
+                                    >
+                                      {fieldValue?.value}
+                                    </button>
+                                  </div>
+                                )
+                                }
+                              </form>
+                            )
+                          }
+                          else if (field?.query) {
+                            return (
+                              // <div key={fieldId} >
+                              //   <span className="text-dark"><img alt="" src={device.connected?(!fieldValue.alert?green.src:red.src):gray.src} width={20} height={20} /> {fieldGroup?.name}/{field?.name} <span className="badge bg-secondary">{fieldValue.value}</span> </span>
+                              // </div>
+                              <div key={fieldId} className="d-flex m-0 p-0  mx-1 w-100">
+                                <span className="input-group-text m-0 p-0"><img alt="" src={device.connected ? (!fieldValue.alert ? green.src : red.src) : gray.src} width={20} height={20} /></span>
+  
+                                {/* {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-75">{fieldGroup?.name}/{field?.name}</span>)} */}
+                                {fieldValue?.name ? (<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>) : (<span className="input-group-text text-dark bg-light w-75">{field?.name}</span>)}
+  
+                                <span className="input-group-text w-25">{fieldValue.value}</span>
+                              </div>
+                            );
+                          }
+                        }
+                        
+                        else {
+                          return null
                         }
 
-                        if (field?.query && fieldDef?.visible) {
-                          return (
-                            // <div key={fieldId} >
-                            //   <span className="text-dark"><img alt="" src={device.connected?(!fieldValue.alert?green.src:red.src):gray.src} width={20} height={20} /> {fieldGroup?.name}/{field?.name} <span className="badge bg-secondary">{fieldValue.value}</span> </span>
-                            // </div>
-                            <div key={fieldId} className="d-flex m-0 p-0  mx-1 w-100">
-                              <span className="input-group-text m-0 p-0"><img alt="" src={device.connected ? (!fieldValue.alert ? green.src : red.src) : gray.src} width={20} height={20} /></span>
-
-                              {/* {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-75">{fieldGroup?.name}/{field?.name}</span>)} */}
-                              {fieldValue?.name ? (<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>) : (<span className="input-group-text text-dark bg-light w-75">{field?.name}</span>)}
-
-                              <span className="input-group-text w-25">{fieldValue.value}</span>
-                            </div>
-                          );
-                        }
 
 
-
-                        return null
+                        
 
 
                       })}
