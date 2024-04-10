@@ -261,7 +261,7 @@ const Alerts = (props) => {
   
                                 {isNumber(fieldValue?.value) ? (
                                   <div className="input-group-text w-25 m-0 p-0 ">
-                                    <span className="input-group-text text-dark bg-light w-15 m-0 p-1">{range_value["field_id"] == fieldId ? (range_value["device_id"] == device.id? (range_value["value"]):(parseFloat(fieldValue?.value))):(parseFloat(fieldValue?.value)) || parseFloat(fieldValue?.value)}</span>
+                                    <span className="input-group-text text-dark bg-light w-50 m-0 p-1">{range_value["field_id"] == fieldId ? (range_value["device_id"] == device.id? (range_value["value"]):(parseFloat(fieldValue?.value))):(parseFloat(fieldValue?.value)) || parseFloat(fieldValue?.value)}</span>
                                     <div className="slider" style={{ display: "flex", width: "90%", justifyContent: "space-between" }}>
                                     <span className="range-min" style={{marginLeft: "5px"}}>{field?.conv_min || fieldValue?.conv_min || 0}</span>
                                       <input
@@ -290,7 +290,7 @@ const Alerts = (props) => {
                                   <div className="input-group-text w-25 m-0 p-0 ">
                                     <button
                                       type="button"
-                                      className={`btn  ${fieldValue?.value === field?.conv_min ? "btn-off" : "btn-active"}`}
+                                      className={`w-50 btn  ${fieldValue?.value === field?.conv_min ? "btn-off" : "btn-active"}`}
                                       // Other attributes remain the same (data-bs-toggle, autocomplete, onClick)
                                       onClick={() =>
                                         handleToggleChange(
@@ -319,7 +319,7 @@ const Alerts = (props) => {
                                 {/* {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-75">{fieldGroup?.name}/{field?.name}</span>)} */}
                                 {fieldValue?.name ? (<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>) : (<span className="input-group-text text-dark bg-light w-75">{field?.name}</span>)}
   
-                                <span className="input-group-text w-25">{fieldValue.value}</span>
+                                <span className="input-group-text w-25">{parseFloat(fieldValue.value,2)}</span>
                               </div>
                             );
                           }
@@ -327,12 +327,6 @@ const Alerts = (props) => {
                             return null
                           }
                         }
-                        
-
-
-
-                        
-
 
                       })}
                   </div>
