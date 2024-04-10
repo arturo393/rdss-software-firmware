@@ -71,10 +71,10 @@ const Alerts = (props) => {
 
 
   useEffect(() => {
-    if (monitorData) {
+    
       console.log("monitorData", monitorData)
-      setData(monitorData?.map(monitor => JSON.parse(monitor)))
-    }
+      monitorData && setData(monitorData?.map(monitor => JSON.parse(monitor)))
+    
   }, [monitorData])
  
 

@@ -88,7 +88,7 @@ const Schema = (props) => {
     console.log("===RECIBIENDO DATOS DESDE MONITOR===")
 
     let newSquares = []
-    monitorData?.map((monitor) => {
+    monitorData && monitorData?.map((monitor) => {
       const mdevice = JSON.parse(monitor)
       let fill = mdevice.connected ? "green" : "red"
 

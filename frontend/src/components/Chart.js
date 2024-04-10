@@ -80,7 +80,7 @@ function Chart(props) {
       let currentDeviceData = {}
       
 
-      monitorData?.map((monitor) => {
+      monitorData && monitorData?.map((monitor) => {
         const data = JSON.parse(monitor)
 
         if (data.id == deviceId) {

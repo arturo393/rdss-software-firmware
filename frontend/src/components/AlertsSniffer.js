@@ -23,7 +23,7 @@ const Alerts = (props) => {
   const { monitorData } = props
   useEffect(() => {
     let currentAlerts = []
-    monitorData?.map((monitor) => {
+    monitorData && monitorData?.map((monitor) => {
       const data = JSON.parse(monitor)
 
       // console.log(data)

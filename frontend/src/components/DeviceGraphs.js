@@ -70,7 +70,7 @@ const DeviceGraphs = (props) => {
   useEffect(() => {
     if (deviceId > 0) {
       let dataDevice = {}
-      monitorData?.map((monitor) => {
+      monitorData && monitorData?.map((monitor) => {
         const data = JSON.parse(monitor)
         if (data.id == deviceId) {
           dataDevice = data
