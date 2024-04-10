@@ -72,9 +72,9 @@ const Alerts = (props) => {
 
   useEffect(() => {
     
-      console.log("monitorData", monitorData)
+      // console.log("  monitorData", monitorData)
       monitorData && setData(monitorData?.map(monitor => JSON.parse(monitor)))
-    
+
   }, [monitorData])
  
 
