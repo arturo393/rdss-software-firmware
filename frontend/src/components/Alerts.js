@@ -226,7 +226,7 @@ const Alerts = (props) => {
             <span className="input-group-text text-light bg-dark w-100 rounded">{device_group?.name}</span>
             {/* DEVICE ID/NAME LOOP */}
             {data && data.filter(d => (devices.some(deviceItem => deviceItem.id === d.id && deviceItem.group_id === device_group._id))).map(device => (
-              <>
+              
                 <div className="d-flex w-100 bg-light border-0">
                   {devices.find(d => d.id === device.id)?.image ? (
                     <img src={devices.find(d => d.id === device.id)?.image} width={100} height={100} alt={device?.id} />
@@ -338,7 +338,7 @@ const Alerts = (props) => {
                   </div>
 
                 </div>
-              </>
+              
             ))}
           </div>
         ))}
