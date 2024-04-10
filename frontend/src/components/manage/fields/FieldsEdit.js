@@ -51,6 +51,7 @@ const FieldsEdit = (props) => {
   };
 
   const handleFieldChange = (fieldId, key, value) => {
+    // console.log("fieldId", fieldId, "key", key, "value", value)
     setFormData((prevFormData) => ({
       ...prevFormData,
       [fieldId]: {
@@ -163,15 +164,27 @@ const FieldsEdit = (props) => {
   const saveField = async (id) => {
     try {
       const field = fields.find((field) => field._id === id);
+      // console.log("formData[id]?.default_value",formData[id]?.default_value)
+      // console.log("field?.default_value",field?.default_value)
+      // const newValues = {
+      //   default_value: formData[id]?.default_value || field?.default_value || "",
+      //   query: formData[id]?.query || field?.query || false,
+      //   set: formData[id]?.set || field?.set || false,
+      //   plottable: formData[id]?.plottable || field?.plottable || false,
+      //   conv_min: formData[id]?.conv_min || field?.conv_min || "",
+      //   conv_max: formData[id]?.conv_max || field?.conv_max || "",
+      //   alert_min: formData[id]?.alert_min || field?.alert_min || "",
+      //   alert_max: formData[id]?.alert_max || field?.alert_max || "",
+      // };
       const newValues = {
-        default_value: formData[id]?.default_value || "",
-        query: formData[id]?.query || false,
-        set: formData[id]?.set || false,
-        plottable: formData[id]?.plottable || false,
-        conv_min: formData[id]?.conv_min || "",
-        conv_max: formData[id]?.conv_max || "",
-        alert_min: formData[id]?.alert_min || "",
-        alert_max: formData[id]?.alert_max || "",
+        default_value: formData[id]?.default_value,
+        query: formData[id]?.query,
+        set: formData[id]?.set,
+        plottable: formData[id]?.plottable,
+        conv_min: formData[id]?.conv_min,
+        conv_max: formData[id]?.conv_max,
+        alert_min: formData[id]?.alert_min,
+        alert_max: formData[id]?.alert_max,
       };
   
       const res = await axios.put(`${url}/api/fields?id=${id}&name=${field.name}`, newValues);
@@ -190,7 +203,7 @@ const FieldsEdit = (props) => {
   return (
     <>
     <h5 className="text-center w-100 sigmaRed text-light">Devices fields definitions</h5>
-    <div className="container-fluid" style={{ minHeight: "100vh" }}>
+    <div className="container-fluid" style={{ minHeight: "100vh", marginBottom: "100px"}}>
       <div className="text-center mt-2 mb-2">
         
       </div>
@@ -285,7 +298,7 @@ const FieldsEdit = (props) => {
                             data-field-id={field._id}
                             id={`conv-min`}
                             onChange={(e) => handleFieldChange(field._id, "conv_min", e.target.value)}
-                            value={formData[field._id]?.conv_min !== undefined ? formData[field._id].conv_min : field.conv_min}
+                            value={formData[field._id]?.conv_min !== undefined? formData[field._id].conv_min : field.conv_min}
                             />
                         <span className="input-group-text text-dark w-25 text-wrap">Conv. Max.</span>
                         <input
