@@ -399,10 +399,8 @@ def decode_sniffer_io_query(data):
     }
     return decoded_data
 
-
 def decode_sniffer_io_set(data):
     return "This is case 1"
-
 
 def decode_sniffer_io_modbus(data,type): 
     if type == 'float':
@@ -412,13 +410,16 @@ def decode_sniffer_io_modbus(data,type):
         # Use struct.unpack to efficiently unpack the byte array
         byte_array = bytes(data)
         data_hex = byte_array.hex()
+        logging.info(f"data_hex: {data_hex}")
         value = struct.unpack('f', byte_array)[0]
         value = round(value,2)
+        if (value > 10 or value < 0 ):
+            value = 0
         decoded_data = {"reply":value}
+
     else:
         decoded_data = {"reply":0} 
     return decoded_data
-
 
 def linear_map(decoded_data: dict, field_group: list,device: dict) -> dict:
     """Performs linear mapping on decoded data from a byte array.
@@ -517,7 +518,6 @@ def delinear_map(decoded_data: dict, field_group: list,device: dict) -> dict:
                 demapped_data[name] = decoded_data.get(name)  # Use original value if missing
     return demapped_data
 
-
 def extract_relevant_data(hex_response,response_size,data_start_index) -> list:
 
 
@@ -527,7 +527,6 @@ def extract_relevant_data(hex_response,response_size,data_start_index) -> list:
         extracted_data.append(hex_response[i+data_start_index])
 
     return extracted_data
-
 
 def get_field_group(
         fields_group_arr: list[dict],
@@ -583,7 +582,6 @@ def get_field_names(device: dict = None) -> dict:
                 }
     return field_names
 
-
 def get_device_default_values(device: dict = None) -> dict:
     default_values = {}
     if device:
@@ -597,7 +595,6 @@ def get_device_default_values(device: dict = None) -> dict:
                 }
     return default_values
 
-
 def get_conv_values(device: dict = None) -> dict:
     conv_values = {}
     if device:
@@ -610,7 +607,6 @@ def get_conv_values(device: dict = None) -> dict:
                 }
     return conv_values
 
-
 def get_alert_thresholds(device: dict = None) -> dict:
     alert_thresholds = {}
     if device:
@@ -622,7 +618,6 @@ def get_alert_thresholds(device: dict = None) -> dict:
                     "max": field_data.get("alert_max"),
                 }
     return alert_thresholds
-
 
 def evaluate_alert(field: dict, value: int, alert_thresholds: dict
 ) -> dict:
@@ -654,7 +649,6 @@ def evaluate_alert(field: dict, value: int, alert_thresholds: dict
         return {}  # Return an error dictionary for informative handling
 
     return {field_id: {"value": value, "alert": alert}}
-
 
 def get_query_status(serTx, serRx, device, fieldsArr, fieldsGroupArr,times,):
     sniffer_data = "sniffer data"
@@ -704,7 +698,7 @@ def get_modbus_status(serTx, serRx, device, fieldsArr, fieldsGroupArr,times):
     base_field_group = "sniffer modbus"
     sniffer_modbus_visibles = get_field_visibles(base_field_group,fieldsArr,fieldsGroupArr,device)
     if len(sniffer_modbus_visibles) == 0:
-        return {},0
+        return {}
     frame = get_query_frame_from_fields(fieldsGroupArr, fieldsArr,device, base_field_group)
     if len(frame) == 0:
         return {}
