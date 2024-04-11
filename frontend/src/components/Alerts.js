@@ -322,7 +322,7 @@ const Alerts = (props) => {
                                 {/* {fieldValue?.name?(<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>):(<span className="input-group-text text-dark bg-light w-75">{fieldGroup?.name}/{field?.name}</span>)} */}
                                 {fieldValue?.name ? (<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>) : (<span className="input-group-text text-dark bg-light w-75">{field?.name}</span>)}
   
-                                <span className="input-group-text w-25">{parseFloat(fieldValue.value,2)}</span>
+                                <span className="input-group-text w-25">{fieldValue.value}</span>
                               </div>
                             );
                           }

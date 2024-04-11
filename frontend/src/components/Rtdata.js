@@ -23,9 +23,8 @@ const Chart = dynamic(import("./Chart"), {
 })
 
 const Rtdata = (props) => {
-  const defaultNullValue = 0
   const { activeDeviceId, devices, fields } = props
-  // const [devices, setDevices] = useState([])
+  
   const [device, setDevice] = useState(activeDeviceId || 0)
   const [deviceData, setDeviceData] = useState({})
   const [dev_data, setDev] = useState(null);
@@ -37,20 +36,19 @@ const Rtdata = (props) => {
 
 
   useEffect(() => {
-    activeDeviceId ? setDevice(activeDeviceId) : setDevice(1)
+    activeDeviceId ? setDevice(activeDeviceId) : setDevice(0)
     hiddeSpinner()
   }, [])
 
   useEffect(() => {
     activeDeviceId && setDevice(activeDeviceId)
-    handleDateFromChange(new Date(Date.now() - 3600 * 1000 * 6))
-    handleDateToChange(new Date())
-
+    // handleDateFromChange(new Date(Date.now() - 3600 * 1000 * 6))
+    // handleDateToChange(new Date())
   }, [activeDeviceId])
 
   useEffect(() => {
     // console.log("fields.length",fields.length)
-    // console.log("device",device)
+    console.log("device",device)
     if (fields.length && device) {
       getDeviceRTData(device)
       document.getElementById("device").value = device
@@ -64,9 +62,13 @@ const Rtdata = (props) => {
 
 
   const getDeviceRTData = async (device = 0) => {
+    showSpinner()
+
     if (device > 0) {
-      showSpinner()
       console.log("Getting device data, ID=" + device)
+      console.log("DateFrom", dateFrom)
+      console.log("DateTo", dateTo)
+
       let x = []
       let rtd = {}
       let text = []
@@ -97,9 +99,8 @@ const Rtdata = (props) => {
 
 
       setRtData({ x, rtd, marker, text })
-      hiddeSpinner()
     }
-
+    hiddeSpinner()
 
   }
 
@@ -125,14 +126,26 @@ const Rtdata = (props) => {
   }
 
   const handleSearch = (e) => {
-    showSpinner()
     e.preventDefault()
     const deviceSelector = document.getElementById("device")
     if (deviceSelector.value > 0) {
-      setDevice(deviceSelector.selectedIndex)
-      const dev = devices.find((d) => Number(d.id) === Number(deviceSelector.value))
-      setDeviceName(dev.name ? dev.name + "(" + dev.type + "-" + dev.id + ")" : dev.type + "-" + dev.id)
-      setDeviceData(devices.find((d) => d.id === deviceSelector.selectedIndex))
+
+      console.log("device",deviceSelector.value)
+      if (fields.length && deviceSelector.value) {
+        setDevice(deviceSelector.value)
+        getDeviceRTData(deviceSelector.value)
+        document.getElementById("device").value = deviceSelector.value
+        const dev = devices.find((d) => Number(d.id) === Number(deviceSelector.value))
+        setDev(dev)
+        setDeviceName(dev.name ? dev.name + "(" + dev.type + "-" + dev.id + ")" : dev.type + "-" + dev.id)
+        setDeviceData(devices.find((d) => d.id === deviceSelector.selectedIndex))
+      }
+
+
+      // setDevice(deviceSelector.value)
+      // const dev = devices.find((d) => Number(d.id) === Number(deviceSelector.value))
+      // setDeviceName(dev.name ? dev.name + "(" + dev.type + "-" + dev.id + ")" : dev.type + "-" + dev.id)
+      // setDeviceData(devices.find((d) => d.id === deviceSelector.selectedIndex))
     }
   }
 
@@ -172,7 +185,7 @@ const Rtdata = (props) => {
                 Device
               </span>
               <select className="form-select" id="device" onChange={(e) => setDevice(e.target.value)} value={device}>
-                {/* <option value={0}>{deviceName}</option> */}
+                <option value={0}>=== Select Device ===</option>
                 {devices.map((d) => {
                   return (
                     <option value={d.id}>
@@ -207,7 +220,6 @@ const Rtdata = (props) => {
             <div className="text-center mt-2 mb-2">
 
             </div>
-            {console.log("dev.field_values ", dev_data)}
             {
               dev_data?.fields_values &&
               Object.entries(dev_data?.fields_values).map(([fieldId, fieldValue]) => {
@@ -216,9 +228,9 @@ const Rtdata = (props) => {
                 const fieldDef = thisDevice?.fields_values && field?._id && thisDevice?.fields_values[field._id] || null;
 
                 if (field?.plottable && fieldDef?.visible && rtData.x?.length > 0) {
-                  console.log("fieldDef", fieldDef)
-                  console.log("field", field)
-                  console.log("fieldValue", fieldValue)
+                  // console.log("fieldDef", fieldDef)
+                  // console.log("field", field)
+                  // console.log("fieldValue", fieldValue)
 
                   return (
                     <div>
