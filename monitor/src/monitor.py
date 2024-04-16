@@ -27,9 +27,9 @@ if platform.system() == "Windows":
     USBPORTAUX = "COM4"
 else:
     # Linux-specific port names
-    USBPORTTX = "/dev/ttyUSB0"
-    USBPORTRX = "/dev/ttyUSB1"
-    USBPORTAUX = "/dev/ttyUSB3"
+    USBPORTTX = "/dev/ttyS0"
+    USBPORTRX = "/dev/ttyS1"
+    USBPORTAUX = "/dev/ttyS2"
 
 # ------
 
@@ -545,7 +545,7 @@ def get_field_group(
 
         for field in fields_arr:
             if str(field_group["_id"]) == field["group_id"] and field_group["name"] == field_group_name:
-                if field[state]:
+                if state in field:
                     result.append(field)
 
     if not result:
@@ -1223,7 +1223,7 @@ def sendTxQuery(serTx):
         2 if connected master is RX, or 3 if connected master is TX
     """
     DATALEN = 1
-    RESPONSE_LEN = 7
+    RESPONSE_LEN = 14
     MASTER = 0
     ID = 0
     QUERY_CMD = '16'
@@ -1259,38 +1259,57 @@ def sendTxQuery(serTx):
         if (hexResponse == None or hexResponse == "" or hexResponse == " " or len(hexResponse) == 0):
             logging.debug("TxQuery reception failed: " + "Response empty")
             return False
-        if ((len(hexResponse) > RESPONSE_LEN) or (len(hexResponse) < RESPONSE_LEN)):
+        if ((len(hexResponse) != RESPONSE_LEN)):
             logging.debug("TxQuery reception failed: " + "Incorrect response length: " + str(
                 len(hexResponse)) + ", expected " + str(RESPONSE_LEN))
             return False
         # ------------------------
-
         serTx.flushInput()
         serTx.flushOutput()
 
     except Exception as e:
         logging.error(e)
         sys.exit()
+        
+    DATA_INDEX = 5
+    DATA_LENGTH_INDEX = 4
+    data_bytes = hexResponse[DATA_LENGTH_INDEX]
+    extracted_data = hexResponse[DATA_INDEX:DATA_INDEX+data_bytes]
+    SERVER_TYPE_INDEX = 0
+    ADC_0_INDEX = 1
+    ADC_1_INDEX = ADC_0_INDEX + 2
+    ADC_2_INDEX = ADC_1_INDEX + 1
+    server_type = extracted_data[SERVER_TYPE_INDEX]
+    adc_0 = extracted_data[1]<<8 + extracted_data[0]
+    adc_1 = extracted_data[3]<<8 + extracted_data[2]
+    adc_2 = extracted_data[4]
+    response = {
+        "server_type":server_type,
+        "adc_0":adc_0,
+        "adc_1":adc_1,
+        "adc_2":adc_2
+    }
 
-    if (str(hexResponse[3]) == "2"):
+    if (server_type == 2):
         logging.debug("USB0 is TX")
     else:
         logging.debug("USB0 is RX")
-    return str(hexResponse[3])
+    return response
 
 def setMasterPorts():
     """
     Assigns TX and RX port to correponding masters. 
     """
     openSerialPort(USBPORTTX, "tx")
-    status = sendTxQuery(serTx)
+    response = sendTxQuery(serTx)
     # TX master at correct port
-    if status == "2":
+    server_type = response.get("server_type",0)
+    if server_type == 2:
         openSerialPort(USBPORTRX, "rx")
         logging.debug("Ports opened")
         return
     # TX master at incorrect port
-    elif status == "3":
+    elif server_type == 2:
         serTx.close()
         openSerialPort(USBPORTRX, "tx")
         openSerialPort(USBPORTTX, "rx")
@@ -1400,14 +1419,11 @@ def listen():
     while True:
         if database is None:
             dbConnect()
-        if serTx is None:
-            try:
-                logging.debug("Opening ports...")
-                setMasterPorts()
-            finally:
-                openSerialPort(USBPORTAUX)
-
-        run_monitor()
+        if serTx is None or serRx is None:
+            logging.debug("Opening ports...")
+            setMasterPorts()
+        else:
+            run_monitor()
         eventlet.sleep(cfg.POLLING_SLEEP)
 
 eventlet.spawn(listen)
