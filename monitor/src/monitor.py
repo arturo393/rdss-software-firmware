@@ -76,6 +76,7 @@ serRx = None
 f_agc_convert = None
 
 
+
 def dbConnect():
     """
     Connects to DB
@@ -1310,6 +1311,70 @@ def sendTxQuery(serTx):
         logging.debug("USB0 is RX")
     return response
 
+def sendQuery(serTx,cmd):
+    """
+    Sends query to master at TX port, to determine if its RX or TX master
+    Args:
+        serTx: Tx serial port object
+    Returns:
+        2 if connected master is RX, or 3 if connected master is TX
+    """
+    DATALEN = 1
+    RESPONSE_LEN = 13
+    MASTER = 0
+    ID = 0
+    QUERY_CMD = cmd
+    SEGMENT_START = '7E'
+    SEGMENT_END = '7F'
+
+    # ---- Build segment
+    dataLenStr = f"{DATALEN:02x}{0:02x}"
+    data = "00"
+    cmd_string = f"{MASTER:02x}{ID:02x}{QUERY_CMD}{dataLenStr}{data}"
+    checksum = getChecksum(cmd_string)
+    command = SEGMENT_START + cmd_string + checksum + SEGMENT_END
+
+    logging.debug("SENT: " + command)
+    cmd_bytes = bytearray.fromhex(command)
+    hex_byte = ''
+
+    startTime = time.time()
+    try:
+        # ---- Send via serial
+        for cmd_byte in cmd_bytes:
+            hex_byte = ("{0:02x}".format(cmd_byte))
+            serTx.write(bytes.fromhex(hex_byte))
+
+        # ---- Read from serials
+        hexResponse = serTx.read(RESPONSE_LEN)
+
+        responseTime = str(time.time() - startTime)
+        logging.debug("GET: " + hexResponse.hex('-'))
+        logging.debug("Response time: " + responseTime)
+
+        # ---- Validations
+        if (hexResponse == None or hexResponse == "" or hexResponse == " " or len(hexResponse) == 0):
+            logging.debug("TxQuery reception failed: " + "Response empty")
+            return {}
+        if ((len(hexResponse) != RESPONSE_LEN)):
+            logging.debug("TxQuery reception failed: " + "Incorrect response length: " + str(
+                len(hexResponse)) + ", expected " + str(RESPONSE_LEN))
+            return {}
+        # ------------------------
+        serTx.flushInput()
+        serTx.flushOutput()
+
+    except Exception as e:
+        logging.error(e)
+        sys.exit()
+        
+    DATA_INDEX = 6
+    DATA_LENGTH_INDEX = 4
+    data_bytes = hexResponse[DATA_LENGTH_INDEX]<<8 | hexResponse[DATA_LENGTH_INDEX+1]
+    extracted_data = hexResponse[DATA_INDEX:DATA_INDEX+data_bytes]
+    freq = struct.unpack('f', extracted_data)[0]
+    return freq
+
 def setMasterPorts():
     """
     Assigns TX and RX port to correponding masters. 
@@ -1437,6 +1502,10 @@ def listen():
             logging.debug("Opening ports...")
             setMasterPorts()
         else:
+            global downlink_freq
+            global uplink_freq
+            downlink_freq = sendQuery(serTx,'20')
+            uplink_freq = sendQuery(serTx,'21')
             run_monitor()
         eventlet.sleep(cfg.POLLING_SLEEP)
 
