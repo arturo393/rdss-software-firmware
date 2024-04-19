@@ -2,6 +2,7 @@
 from dataclasses import field
 
 from pymongo import MongoClient
+from pymongo import DESCENDING
 import logging
 import config as cfg
 import serial
@@ -90,10 +91,8 @@ def dbConnect():
     except Exception as e:
         logging.exception(e)
 
-
 def convert(x, in_min, in_max, out_min, out_max):
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
-
 
 def getFieldsDefinitions():
     try:
@@ -106,7 +105,6 @@ def getFieldsDefinitions():
     except Exception as e:
         logging.exception(e)
 
-
 def getFieldsGroup():
     try:
         collection_name = database["fields_group"]
@@ -114,7 +112,6 @@ def getFieldsGroup():
         return fields_group
     except Exception as e:
         logging.exception(e)
-
 
 def getProvisionedDevices():
     """
@@ -129,7 +126,20 @@ def getProvisionedDevices():
         return devices
     except Exception as e:
         logging.exception(e)
-
+            
+def getLastRtDataDevice(id):
+    try:
+        collection_name = database["rtData"]
+        # Sort by sampleTime in descending order (newest first)
+        # and limit to 1 document
+        device = collection_name.find_one(
+            {"id": id},
+            sort=[("sampleTime",DESCENDING)],
+            projection={"field_values": 1}  # Optionally project only "fields_values"
+        )
+        return device.get("field_values")
+    except Exception as e:
+        logging.exception(e)
 
 def getConfigParams():
     """
@@ -143,8 +153,6 @@ def getConfigParams():
         logging.exception(e)
     return config
 
-
-
 def updateDeviceConnectionStatus(device, status):
     """
     Updates device status.connected attribute
@@ -152,15 +160,12 @@ def updateDeviceConnectionStatus(device, status):
     database.devices.update_one(
         {"id": device}, {"$set": {"status.connected": status}})
 
-
-
 def updateDeviceChangedFlag(device, changed):
     """
     Updates device changed attribute
     """
     database.devices.update_one(
         {"id": device}, {"$set": {"changed": changed}})
-
 
 def insertDevicesDataIntoDB(rtData):
     """
@@ -175,7 +180,6 @@ def insertDevicesDataIntoDB(rtData):
 
         except Exception as e:
             logging.exception(e)
-
 
 def openSerialPort(port="", function=""):
     """
@@ -219,7 +223,6 @@ def openSerialPort(port="", function=""):
         logging.exception("%s  %s" % (error_msg, exc_type))
         openSerialPort(USBPORTRX)
 
-
 def getChecksum(cmd):
     """
     -Description: this fuction calculate the checksum for a given comand
@@ -228,7 +231,6 @@ def getChecksum(cmd):
     """
     data = bytearray.fromhex(cmd)
     return calculate_checksum(data)
-
 
 def calculate_checksum(data:bytearray):
     """
@@ -246,7 +248,6 @@ def calculate_checksum(data:bytearray):
         checksum = crc[4:6] + crc[2:4]
     return checksum
 
-
 def get_query_frame_from_fields(fields_group_arr, fields_arr,device, target_field_group_name):
     """Retrieves field group data from the specified arrays."""
 
@@ -256,7 +257,7 @@ def get_query_frame_from_fields(fields_group_arr, fields_arr,device, target_fiel
             if field_group["name"] == target_field_group_name:
                 for field in fields_arr:
                     if str(field_group["_id"]) == field["group_id"]:
-                        frame[field["name"]] = field["default_value"]
+                        frame[field["name"]] = field.get("default_value",None)
                         device_fields_values = device["fields_values"]
                         id = str(field['_id'])
                         if id in device_fields_values:
@@ -273,7 +274,6 @@ def get_query_frame_from_fields(fields_group_arr, fields_arr,device, target_fiel
     except Exception as e:
         logging.error("Error retrieving field group data: %s", e)
         return {}
-
 
 def construct_query_status_frame(device_id, frame):
     """Constructs a sniffer query status frame."""
@@ -348,7 +348,6 @@ def construct_query_frame(device_id, frame):
         logging.error(f"construc_query_frame:{e}")
         return {}
 
-
 def response_validate(hex_response, device_id,response_size, command):
     #response_size = MESSAGE_BASE_SIZE + response_size
     # Validations
@@ -373,7 +372,6 @@ def response_validate(hex_response, device_id,response_size, command):
         return False
     
     return True
-
 
 def decode_sniffer_io_query(data):
     """Decodes received data from a byte array and returns a dictionary.
@@ -402,21 +400,32 @@ def decode_sniffer_io_query(data):
 def decode_sniffer_io_set(data):
     return "This is case 1"
 
-def decode_sniffer_io_modbus(data,type): 
+def decode_sniffer_io_modbus(data,type,multiplier): 
     if type == 'float':
         if len(data) != 4:
             raise ValueError("Byte array must be 4 bytes long for a 32-bit float.")
-
         # Use struct.unpack to efficiently unpack the byte array
         byte_array = bytes(data)
         data_hex = byte_array.hex()
-        logging.info(f"data_hex: {data_hex}")
+        logging.info(f"float data_hex: {data_hex}")
         value = struct.unpack('f', byte_array)[0]
-        value = round(value,2)
-        if (value > 10 or value < 0 ):
-            value = 0
+        value = round(value,5)
         decoded_data = {"reply":value}
-
+    elif type == 'integer':
+        if len(data) == 1:
+            data_hex = byte_array.hex()
+            logging.info(f"data_hex: {data_hex}")
+            value = int(data[0])
+        elif len(data) == 2:
+            data_hex = byte_array.hex()
+            logging.info(f"data_hex: {data_hex}")
+            value = int(data[0]<< 8 | data[1])
+        elif len(data) == 4:
+            data_hex = byte_array.hex()
+            logging.info(f"data_hex: {data_hex}")
+            value = int(data[0]<< 24 | data[1] << 16 | data[2] << 8 | data[4])
+        value = multiplier*value
+        decoded_data = {"reply":value}
     else:
         decoded_data = {"reply":0} 
     return decoded_data
@@ -504,6 +513,10 @@ def delinear_map(decoded_data: dict, field_group: list,device: dict) -> dict:
                 conv_min = int(conv_min)
                 conv_max = int(conv_max)
             raw = float(decoded_data.get(name, 0))
+            if raw < conv_min:
+                raw = conv_min
+            if raw > conv_max:
+                raw = conv_max
             demapped = arduino_map(raw, conv_min, conv_max, 0, 4095)  # Use 0 if missing
             demapped_data[name] = int(demapped)
 
@@ -582,12 +595,12 @@ def get_field_names(device: dict = None) -> dict:
                 }
     return field_names
 
-def get_device_default_values(device: dict = None) -> dict:
+def get_device_values(device: dict = None) -> dict:
     default_values = {}
     if device:
         fields_values = device.get("fields_values", {})
         for field_id, field_data in fields_values.items():
-            key = "default_value"
+            key = "value"
             if key in field_data:
                 default_values[field_id] = {
                     key: field_data.get(key),
@@ -718,7 +731,7 @@ def get_modbus_status(serTx, serRx, device, fieldsArr, fieldsGroupArr,times):
             return get_modbus_status(serTx, serRx, device, fieldsArr, fieldsGroupArr,times-1)
         
         extracted_data = extract_relevant_data(hexResponse,int(frame.get('response size',"0"), 16),int(frame.get('data start position',"0"), 16))
-        decoded_data = decode_sniffer_io_modbus(extracted_data,frame.get('type',0))
+        decoded_data = decode_sniffer_io_modbus(extracted_data,frame.get('type',0),frame.get('multiplier',1))
         logging.info(f"Decoded data: {decoded_data}")
         query_field_group = get_field_group(fieldsGroupArr, fieldsArr, base_field_group, 'query')
         final_data = map_and_evaluate_decoded_data(device, decoded_data, query_field_group)
@@ -752,9 +765,15 @@ def map_and_evaluate_decoded_data(device, decoded_data, query_field_group):
     return final_data
 
 def create_sniffer_io_set_data_frame(device, fieldsArr, fieldsGroupArr, sniffer_data):
-    device_default_values = get_device_default_values(device)
+    
+    device_rtData_values = getLastRtDataDevice(device.get('id'))
+    device_values = get_device_values(device)
+    for field_id, field_data in device_values.items():
+        if "value" in field_data:
+            device_rtData_values[field_id]["value"] = field_data["value"]
     set_field_group = get_field_group(fieldsGroupArr, fieldsArr, sniffer_data, 'set')
-    device_set_data = get_device_set_data(device_default_values, set_field_group)
+    device_set_data = get_device_set_data(device_rtData_values, set_field_group)
+    logging.warning(f"device_set_data:{device_set_data}")
     demmaped_data =  delinear_map(device_set_data,set_field_group,device)
     data_bytes = encode_sniffer_io_query(demmaped_data)
     data = data_bytes
@@ -766,30 +785,25 @@ def encode_sniffer_io_query(demmaped_data):
     dOut1 = demmaped_data.get("Digital Output 1","Off")
     dOut2 = demmaped_data.get( "Digital Output 2","Off")
     serialSW = demmaped_data.get("Serial Switch",0)
-    
-    aout1 = ((aOut1_0_10V >> 8) & 0xFF) | ((aOut1_0_10V << 8) & 0xFF00)
-    aout2 = ((aOut2_x_20mA >> 8) & 0xFF) | ((aOut2_x_20mA << 8) & 0xFF00)
-        
     data_bytes = bytearray(7)
-
         # Set each byte in the bytearray
-    data_bytes[0] = aout1 >> 8  # Most significant byte of aOut1
-    data_bytes[1] = aout1 & 0xFF  # Leasst significant byte of aOut1
-    data_bytes[2] = aout2 >> 8  # Most significant byte of aOut2
-    data_bytes[3] = aout2 & 0xFF  # Least significant byte of aOut2
+    data_bytes[0] = aOut1_0_10V >> 8  # Most significant byte of aOut1
+    data_bytes[1] = aOut1_0_10V & 0xFF  # Leasst significant byte of aOut1
+    data_bytes[2] = aOut2_x_20mA >> 8  # Most significant byte of aOut2
+    data_bytes[3] = aOut2_x_20mA & 0xFF  # Least significant byte of aOut2
     data_bytes[4] = dOut1
     data_bytes[5] = dOut2
     data_bytes[6] = serialSW
     return data_bytes
 
-def get_device_set_data(device_default_values, set_field_group):
+def get_device_set_data(device_values, set_field_group):
     device_set_data = {}
     for query_field in set_field_group:
         id = str(query_field["_id"])
-        if id in device_default_values:
+        if id in device_values:
             name = query_field["name"]
-            default_value = device_default_values.get(id,0)
-            field_value = default_value.get('default_value',0)
+            default_value = device_values.get(id,0)
+            field_value = default_value.get('value',0)
             device_set_data[name] = field_value
     return device_set_data
     
@@ -1223,10 +1237,10 @@ def sendTxQuery(serTx):
         2 if connected master is RX, or 3 if connected master is TX
     """
     DATALEN = 1
-    RESPONSE_LEN = 14
+    RESPONSE_LEN = 15
     MASTER = 0
     ID = 0
-    QUERY_CMD = '16'
+    QUERY_CMD = '11'
     SEGMENT_START = '7E'
     SEGMENT_END = '7F'
 
@@ -1248,7 +1262,7 @@ def sendTxQuery(serTx):
             hex_byte = ("{0:02x}".format(cmd_byte))
             serTx.write(bytes.fromhex(hex_byte))
 
-        # ---- Read from serial
+        # ---- Read from serials
         hexResponse = serTx.read(RESPONSE_LEN)
 
         responseTime = str(time.time() - startTime)
@@ -1258,11 +1272,11 @@ def sendTxQuery(serTx):
         # ---- Validations
         if (hexResponse == None or hexResponse == "" or hexResponse == " " or len(hexResponse) == 0):
             logging.debug("TxQuery reception failed: " + "Response empty")
-            return False
+            return {}
         if ((len(hexResponse) != RESPONSE_LEN)):
             logging.debug("TxQuery reception failed: " + "Incorrect response length: " + str(
                 len(hexResponse)) + ", expected " + str(RESPONSE_LEN))
-            return False
+            return {}
         # ------------------------
         serTx.flushInput()
         serTx.flushOutput()
@@ -1271,9 +1285,9 @@ def sendTxQuery(serTx):
         logging.error(e)
         sys.exit()
         
-    DATA_INDEX = 5
+    DATA_INDEX = 6
     DATA_LENGTH_INDEX = 4
-    data_bytes = hexResponse[DATA_LENGTH_INDEX]
+    data_bytes = hexResponse[DATA_LENGTH_INDEX]<<8 | hexResponse[DATA_LENGTH_INDEX+1]
     extracted_data = hexResponse[DATA_INDEX:DATA_INDEX+data_bytes]
     SERVER_TYPE_INDEX = 0
     ADC_0_INDEX = 1
@@ -1309,7 +1323,7 @@ def setMasterPorts():
         logging.debug("Ports opened")
         return
     # TX master at incorrect port
-    elif server_type == 2:
+    elif server_type == 3:
         serTx.close()
         openSerialPort(USBPORTRX, "tx")
         openSerialPort(USBPORTTX, "rx")
