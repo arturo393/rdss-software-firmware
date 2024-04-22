@@ -77,6 +77,7 @@ f_agc_convert = None
 
 
 
+
 def dbConnect():
     """
     Connects to DB
@@ -114,11 +115,13 @@ def getFieldsGroup():
     except Exception as e:
         logging.exception(e)
 
+
 def getProvisionedDevices():
     """
     Gets provisioned devices from DB
     Provisioned devices has status.provisioned attribute setting to True
     """
+    devices = list()
     try:
         collection_name = database["devices"]
         devices = list(collection_name.find(
