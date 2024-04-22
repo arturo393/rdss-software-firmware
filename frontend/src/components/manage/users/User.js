@@ -8,7 +8,7 @@ const User = ({ user }) => {
   const [state, setState] = useState({
     userState: user,
   })
-  console.log(state.userState)
+  // console.log(state.userState)
   const handleDelete = async () => {
     const result = await confirm("Are you sure you want to delete?")
     if (result) {
@@ -16,7 +16,7 @@ const User = ({ user }) => {
       delete state.userState
       setState(state)
 
-      console.log(state.userState)
+      // console.log(state.userState)
       axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/manage/deleteuser", idUser).then(
         (result) => {
           alert("User has been deleted")

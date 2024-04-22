@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react"
 import { Stage, Layer, Image, Group, Text, Circle } from "react-konva"
 // import dynamic from "next/dynamic"
+import axios from "axios"
 
 import { connect } from "react-redux"
 import { setActiveComponent, setActiveDeviceId } from "../redux/actions/main"
@@ -15,8 +16,10 @@ const Schema = (props) => {
   // const Text = dynamic(() => import("react-konva").then((module) => module.Text), { ssr: false })
   // const Group = dynamic(() => import("react-konva").then((module) => module.Group), { ssr: false })
 
-  const { monitorData, config, devices, setActiveComponent, setActiveDeviceId } = props
+  const { monitorData, config, setActiveComponent, setActiveDeviceId } = props
   const [provisioned, setProvisioned] = useState([])
+  const [devices, setDevices] = useState([])
+
   const [image, setImage] = useState(null)
   const [scale, setScale] = useState(1)
   const [stageX, setStageX] = useState(0)
@@ -24,6 +27,21 @@ const Schema = (props) => {
   const [squares, setSquares] = useState([])
   const [width, setWidth] = useState(500)
   const [height, setHeight] = useState(500)
+
+  const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`;
+
+
+  useEffect(()=>{
+    const loadDevices = async () => {
+      const dbDevices = await axios.get(url + "/api/devices/devices").then((res) => {
+        return res.data
+      })
+      setDevices(dbDevices)
+    }
+    loadDevices()
+    console.log("Schema inicio...")
+    
+  },[])
 
   useEffect(() => {
     if (config.image) {
@@ -70,28 +88,34 @@ const Schema = (props) => {
     console.log("===RECIBIENDO DATOS DESDE MONITOR===")
 
     let newSquares = []
-    monitorData?.map((monitor) => {
+    monitorData && monitorData?.map((monitor) => {
       const mdevice = JSON.parse(monitor)
       let fill = mdevice.connected ? "green" : "red"
-      if (mdevice.connected && Object.entries(mdevice.alerts).length != 0) {
+
+      if (mdevice.connected && Object.values(mdevice.field_values || {}).some(fieldValue => fieldValue.alert)) {
         fill = "yellow"
       }
 
       let device = devices.find((square) => square.id == mdevice.id)
-      const label = device.name ? device.name + " (" + device.type + "-" + device.id + ")" : device.type + "-" + device.id
+      const label = device?.name ? device?.name + " (" + device?.type + "-" + device?.id + ")" : device?.type + "-" + device?.id
       device = {
         ...device,
-        x: device.status.x,
-        y: device.status.y,
+        x: device?.status.x,
+        y: device?.status.y,
         fill: fill,
         name: label,
-        id: device.id,
-        key: device.status.x * device.status.y,
+        id: device?.id,
+        key: device?.status.x * device?.status.y,
+      }
+      if (device?.image) {
+        const newImage = new window.Image()
+        newImage.src = device?.image
+        device.image = newImage
       }
       newSquares.push(device)
     })
     setSquares(newSquares)
-  }, [monitorData])
+  }, [monitorData, devices])
 
   useEffect(() => {
     let prov = devices.filter((device) => device.status.provisioned === true)
@@ -111,6 +135,13 @@ const Schema = (props) => {
           name: label,
           id: device.id,
         }
+
+        if (device.image) {
+          const newImage = new window.Image()
+          newImage.src = device.image
+          square.image = newImage
+        }
+
         newSquares.push(square)
       }
     })
@@ -157,7 +188,7 @@ const Schema = (props) => {
   }
   const handleDragEnd = (e) => {
     e.evt?.preventDefault()
-    const scaleBy = 1.02
+    const scaleBy = 1.00
     const stage = e.target.getStage()
     const oldScale = stage.scaleX()
     const mousePointTo = {
@@ -239,6 +270,7 @@ const Schema = (props) => {
     const lastDist = 0
   }
   // return <>Schema </>
+  
   return (
     <div
       style={{
@@ -275,18 +307,34 @@ const Schema = (props) => {
         <Layer>
           <Image image={image} layout="fill" />
           {squares.map((square) => (
-            <Group>
-              <Text text={square.name} x={square.x + 20} y={square.y + 5} fill="#000000" stroke="#ffffff" fillAfterStrokeEnabled="true" />
+            <>
+            <Group key={square.id}>
+              <Text text={square.name} x={square.x + 20} y={square.y + 0} fill="#000000" stroke="#ffffff" fillAfterStrokeEnabled="true" />
+              {square.image && (
+                <>
+                <Image
+                  image={square.image}
+                  layout="fill"
+                  x={square.x + -10}
+                  y={square.y + 15}
+                  width={100}
+                  height={100}
+                  onError={(e) => console.error("Error loading image:", e)}
+                />
+                </>
+                
+              )}
               <Circle
                 radius={10}
                 x={square.x}
                 y={square.y}
                 fill={square.fill}
-                id={square.id.toString()}
+                id={square.id?.toString()}
                 onClick={() => selectDevice(square.id.toString())}
                 onTap={() => selectDevice(square.id.toString())}
               />
             </Group>
+            </>
           ))}
         </Layer>
       </Stage>
@@ -297,7 +345,7 @@ const mapStateToProps = (state) => {
   return {
     monitorData: state.main.monitorData,
     config: state.main.config,
-    devices: state.main.devices,
+    // devices: state.main.devices,
   }
 }
 

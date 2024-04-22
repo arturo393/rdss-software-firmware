@@ -21,7 +21,7 @@ const Diagram = (props) => {
 
   const [newDevices, setNewDevices] = useState([])
   const [squares, setSquares] = useState([])
-  const [vlad, setVlad] = useState({})
+  const [dev, setDev] = useState({})
   const [scale, setScale] = useState(1)
   const [x, setX] = useState(100)
   const [y, setY] = useState(100)
@@ -41,11 +41,21 @@ const Diagram = (props) => {
   // const Text = dynamic(() => import("react-konva").then((module) => module.Text), { ssr: false })
   // const Group = dynamic(() => import("react-konva").then((module) => module.Group), { ssr: false })
 
+  const url = `${process.env.NEXT_PUBLIC_APIPROTO}://${process.env.NEXT_PUBLIC_APIHOST}:${process.env.NEXT_PUBLIC_APIPORT}`;
+
+  const loadDevices = async () => {
+    const dbDevices = await axios.get(url + "/api/devices/devices").then((res) => {
+      return res.data
+    })
+    setDevices(dbDevices)
+  }
+
   function removeDuplicates(data, key) {
     return [...new Map(data.map((item) => [key(item), item])).values()]
   }
 
   useEffect(() => {
+    loadDevices()
     document.getElementById("status").style.display = "none"
     const aspectRatio = 16 / 9
     const width = window.innerWidth * 1
@@ -55,7 +65,6 @@ const Diagram = (props) => {
 
     if (devices.length > 0) {
       let squaresArr = []
-
       devices.map((device) => {
         let square = {}
         if (device.status.provisioned) {
@@ -69,6 +78,11 @@ const Diagram = (props) => {
             fill: fill,
             name: label,
             id: device.id,
+          }
+          if (device.image) {
+            const newImage = new window.Image()
+            newImage.src = device.image
+            square.image = newImage
           }
           squaresArr.push(square)
         }
@@ -101,17 +115,17 @@ const Diagram = (props) => {
   }
 
   const onDragEndSquare = (e) => {
-    const vladId = e.target.attrs.id
-    setVlad({ id: vladId })
+    const devId = e.target.attrs.id
+    setDev({ id: devId })
     let newSquares = squares
 
-    let index = squares.findIndex((el) => el.id == vladId)
+    let index = squares.findIndex((el) => el.id == devId)
     newSquares[index].x = e.target.x()
     newSquares[index].y = e.target.y()
     setSquares(removeDuplicates(newSquares, (square) => square.id))
 
     const device = {
-      id: parseInt(vladId),
+      id: parseInt(devId),
       x: e.target.x(),
       y: e.target.y(),
     }
@@ -126,17 +140,17 @@ const Diagram = (props) => {
     )
   }
 
-  const onChangeVlad = (e) => {
-    setVlad({ id: e.target.value })
+  const onChangeDev = (e) => {
+    setDev({ id: e.target.value })
   }
 
   const onClickAdd = (e) => {
-    const device = devices.find((d) => d.id == parseInt(vlad.id))
+    const device = devices.find((d) => d.id == parseInt(dev.id))
     const label = device?.name ? device?.name : device?.type + "-" + device?.id
 
-    if (vlad.id == 0) {
+    if (dev.id == 0) {
       alert("You must select an option.")
-    } else if (squares.some((s) => s.id == parseInt(vlad.id))) {
+    } else if (squares.some((s) => s.id == parseInt(dev.id))) {
       alert("(" + label + ") is already on the map.")
     } else {
       let newSquares = squares
@@ -146,12 +160,12 @@ const Diagram = (props) => {
         y: 100,
         fill: "red",
         name: label,
-        id: vlad.id,
+        id: dev.id,
       }
       newSquares.push(square)
       setSquares(removeDuplicates(newSquares, (square) => square.id))
 
-      const device = { id: parseInt(vlad.id) }
+      const device = { id: parseInt(dev.id) }
       axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/editDeviceProvisioned", device).then(
         (result) => {},
         (error) => {
@@ -163,17 +177,17 @@ const Diagram = (props) => {
   }
 
   const onClickDel = (e) => {
-    if (vlad.id == 0) {
+    if (dev.id == 0) {
       alert("You must select an option.")
-    } else if (!squares.some((s) => s.id == parseInt(vlad.id))) {
-      alert("Vlad - " + vlad.id + " is not on the map.")
+    } else if (!squares.some((s) => s.id == parseInt(dev.id))) {
+      alert("Device - " + dev.id + " is not on the map.")
     } else {
-      let newSquares = squares.filter((square) => square.id != vlad.id)
-      // let square = squares.find((square) => square.id == vlad.id)
+      let newSquares = squares.filter((square) => square.id != dev.id)
+      // let square = squares.find((square) => square.id == dev.id)
       // newSquares.pop(square)
       setSquares(newSquares)
 
-      const device = { id: parseInt(vlad.id) }
+      const device = { id: parseInt(dev.id) }
       axios.post(process.env.NEXT_PUBLIC_APIPROTO + "://" + process.env.NEXT_PUBLIC_APIHOST + ":" + process.env.NEXT_PUBLIC_APIPORT + "/api/devices/delDevice", device).then(
         (result) => {},
         (error) => {
@@ -219,7 +233,7 @@ const Diagram = (props) => {
   }
   const handleDragEnd = (e) => {
     e.evt?.preventDefault()
-    const scaleBy = 1.02
+    const scaleBy = 1.00
     const stage = e.target.getStage()
     const oldScale = stage.scaleX()
     const mousePointTo = {
@@ -237,7 +251,7 @@ const Diagram = (props) => {
 
   const selectDevice = (deviceId) => {
     document.getElementById("device").value = deviceId
-    setVlad({ id: deviceId })
+    setDev({ id: deviceId })
   }
 
   const handleImageChange = (e) => {
@@ -285,10 +299,12 @@ const Diagram = (props) => {
     <>
       <div class="container-fuid">
         <div class="row text-center">
+        <h5 className="text-center w-100 sigmaRed text-light">Diagram Edit</h5>
           <div class="col-2"></div>
           <div class="col-7">
             <label for="image" className="form-label">
-            <h5 className="text-center">Diagram Edit</h5>
+            
+            
             </label>
             <div class="input-group mb-3">
               <input className="form-control" type="file" id="image" name="image" onChange={handleImageChange} />
@@ -301,7 +317,7 @@ const Diagram = (props) => {
               <span className="input-group-text" id="device-label">
                 Device
               </span>
-              <select className="form-control" id="device" onChange={onChangeVlad}>
+              <select className="form-control" id="device" onChange={onChangeDev}>
                 <option value={0}>=== Select a Device ===</option>
                 {devices.map((device) => {
                   return (
@@ -348,6 +364,20 @@ const Diagram = (props) => {
                 return (
                   <Group>
                     <Text text={square.name} x={square.x + 20} y={square.y + 5} fill="#000000" stroke="#ffffff" fillAfterStrokeEnabled="true" />
+                    {square.image && (
+                      <>
+                      <Image
+                        image={square.image}
+                        layout="fill"
+                        x={square.x + -10}
+                        y={square.y + 15}
+                        width={100}
+                        height={100}
+                        onError={(e) => console.error("Error loading image:", e)}
+                      />
+                      </>
+                      
+                    )}
                     <Circle
                       x={square.x}
                       y={square.y}

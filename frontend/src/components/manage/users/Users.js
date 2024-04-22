@@ -150,25 +150,27 @@ const Users = (props) => {
   }
 
   return (
-    <div className="container-fluid ">
+    <>
+    <h5 className="text-center w-100 sigmaRed text-light">Users Admin</h5>
+    <div className="container-fluid col-10">
       <div className="text-center mt-2 mb-2">
-        <h5>Users Admin</h5>
+      
       </div>
       <div className="card h-100">
         <div className="card-body">
-          <div className="table-responsive">
-            <table className="table table-striped">
+          <div className="table-responsive text-center">
+            <table className="table table-striped w-50 mx-auto">
               <tbody>
                 {users?.map((user) => (
                   <tr>
                     <td>
                       {user?.name} ({user?.email})
                     </td>
-                    <td>
-                      <button className="btn btn-primary btn-sm" type="button" onClick={handleEdit} id={user._id}>
+                    <td className="text-right">
+                      <button className="btn btn-success btn-sm mx-2 border-0" type="button" onClick={handleEdit} id={user._id}>
                         Edit
                       </button>
-                      <button className="btn btn-danger btn-sm" type="button" onClick={handleDelete} id={user._id}>
+                      <button className="btn btn-danger btn-sm mx-2 border-0" type="button" onClick={handleDelete} id={user._id}>
                         Delete
                       </button>
                     </td>
@@ -179,14 +181,14 @@ const Users = (props) => {
           </div>
           <div className="row">
             <div className="col text-center">
-              <button className="btn btn-primary" type="button" onClick={handleAdd}>
+              <button className="btn btn-primary border-0" type="button" onClick={handleAdd}>
                 Create New User
               </button>
             </div>
           </div>
         </div>
         <form onSubmit={handleSubmit} id="userForm">
-          <div className="container-fluid">
+          <div className="container-fluid w-50">
             <div className="row">
               <div className="col-md-12">
                 <div className="form-floating input-group mb-3">
@@ -229,15 +231,15 @@ const Users = (props) => {
                 </select>
               </div>
             </div>
-            <div className="container">
+            <div className="container b-3">
               <div className="row">
                 <div className="col text-center">
-                  <button className="btn btn-secondary" type="button" onClick={closeForm}>
+                  <button className="btn btn-secondary border-0 mb-5 mt-3" type="button" onClick={closeForm}>
                     Cancel
                   </button>
                 </div>
                 <div className="col text-center">
-                  <button className="btn btn-primary" type="submit">
+                  <button className="btn btn-primary border-0 mb-5 mt-3" type="submit">
                     Save
                   </button>
                 </div>
@@ -247,6 +249,7 @@ const Users = (props) => {
         </form>
       </div>
     </div>
+    </>
   )
 }
 

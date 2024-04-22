@@ -139,6 +139,7 @@ const Alerts = (props) => {
     console.log("newvalue", newValue);
     console.log("fieldId", field_id);
 
+
     // get device data
     const device = await axios.get(api_url + "/api/device/" + device_id);
 
@@ -158,12 +159,10 @@ const Alerts = (props) => {
         ...device.data[0].fields_values,
         [fieldId]: {
           ...(device.data[0]?.fields_values[fieldId] || {}), // Provide default value if undefined
-          value: fieldValue,
+          default_value: fieldValue,
         },
       },
     };
-
-    console.log("newDeiceData",newDeviceData);
 
     const res = await axios.post(api_url + "/api/device/save", newDeviceData);
     let status = document.getElementById(device_id + "status");
@@ -201,7 +200,7 @@ const Alerts = (props) => {
         ...device.data[0].fields_values,
         [fieldId]: {
           ...(device.data[0]?.fields_values[fieldId] || {}), // Provide default value if undefined
-          value: fieldValue,
+          default_value: fieldValue,
         },
       },
     };
@@ -252,8 +251,7 @@ const Alerts = (props) => {
                         const thisDevice = devices.find(d => d.id === device.id);
                         const fieldDef = thisDevice?.fields_values && field?._id && thisDevice?.fields_values[field._id] || null;
 
-                        {console.log("fieldValue",fieldValue)}
-                        {console.log("fieldValue",field.name)}
+
                         if (fieldDef?.visible) {
                           if (field?.set) {
                             return (
@@ -263,10 +261,8 @@ const Alerts = (props) => {
                                 {fieldValue?.name ?
                                   (<span className="input-group-text text-dark bg-light w-75">{fieldValue?.name}</span>)
                                   : (<span className="input-group-text text-dark bg-light w-75">{field?.name}</span>)}
-
-                                    
+  
                                 {isNumber(fieldValue?.value) ? (
-
                                   <div className="input-group-text w-25 m-0 p-0 ">
                                     <span className="input-group-text text-dark bg-light w-50 m-0 p-1">{range_value["field_id"] == fieldId ? (range_value["device_id"] == device.id? (range_value["value"]):(parseFloat(fieldValue?.value))):(parseFloat(fieldValue?.value)) || parseFloat(fieldValue?.value)}</span>
                                     <div className="slider" style={{ display: "flex", width: "90%", justifyContent: "space-between" }}>

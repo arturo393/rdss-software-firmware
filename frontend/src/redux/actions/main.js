@@ -27,6 +27,7 @@ export const setActiveDeviceId = (id) => (dispatch) => {
   })
 }
 
+
 // export const saveConfig = (config) => {
 //   console.log("SAVE CONFIG")
 //   return async (dispatch) => {
@@ -54,9 +55,25 @@ export const setConfig = (config) => (dispatch) => {
   })
 }
 
+export const setdbDevicestype = (type) => (dispatch) => {
+  console.log("SET_CONFIGTYPE")
+  dispatch({
+    type: t.SET_CONFIGTYPE,
+    payload: type,
+  })
+}
+
+
 export const setDevices = (devices) => (dispatch) => {
   dispatch({
     type: t.SET_DEVICES,
     payload: devices,
+  })
+}
+
+export const setFields = (fields) => (dispatch) => {
+  dispatch({
+    type: t.SET_FIELDS,
+    payload: fields,
   })
 }

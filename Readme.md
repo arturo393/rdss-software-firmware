@@ -1,92 +1,50 @@
-# rdss-software
+# Software-Sniffer-Telemetria v1.0
+
+### Mejoras:
+- [Comienzo el proyecto Software Sniffer Telemetría, se crea el repositorio, se da acceso a la red y al servidor](https://www.notion.so/Comienzo-el-proyecto-Software-Sniffer-Telemetr-a-se-crea-el-repositorio-se-da-acceso-a-la-red-y-a-dfa80f98785a4b4aaa695fa1a95c2659?pvs=21)
+- [Actualizar codificación en documentación Firmware Sniffer](https://www.notion.so/Actualizar-codificaci-n-en-documentaci-n-Firmware-Sniffer-a7df4f1f02dd4d0e9c2b5a6ff036bf9d?pvs=21)
+- [Ordenar el código](https://www.notion.so/Ordenar-el-c-digo-fa0c60b3583847cf8567db215684a9b7?pvs=21)
+- [Revisión Device management](https://www.notion.so/Revisi-n-Device-management-4dad3303a6944408b49dc8d2f2ea838f?pvs=21)
+- [Mejora] Botones para salidas digitales y rangos para salidas analógicas](https://www.notion.so/Mejora-Botones-para-salidas-digitales-y-rangos-para-salidas-analogas-8f4b714d4cd943ac9ce7f797a0feae34?pvs=21)
+- [Arreglos de FrontEnd](https://www.notion.so/Arreglos-de-FrontEnd-c8fee1d4642c48ca9933e39530ad50ed?pvs=21)
+- [Mejora] Modbus y SnifferIO simultáneo](https://www.notion.so/Mejora-Modbus-y-SnifferIO-simult-neo-c83258c66b0d49c299ae81cc746f8335?pvs=21)
+- [FIX] modbus decoder](https://www.notion.so/FIX-modbus-decoder-dfe0046f9c48481f8961ff9a23cf8721?pvs=21)
+- [FIX] Set field_values en Alerts](https://www.notion.so/FIX-Set-field_values-en-Alerts-fdd7772efada4f509248ed689f880a0b?pvs=21)
+- [ADD] uplink and downlink freq on status bar](https://www.notion.so/ADD-uplink-and-downlink-freq-on-status-bar-524d47723cec4d3c9cfc90d005cb351d?pvs=21)
+- [Crear funcion en el monitor para obtener valores reales a partir de la base de datos](https://www.notion.so/Crear-funcion-en-el-monitor-para-obtener-valores-reales-a-partir-de-la-base-de-datos-4036f0b5c6cb430fbcf007b76d85e822?pvs=21)
+- [Agregar dOut1 y dOut2 al monitor y sniffer](https://www.notion.so/Agregar-dOut1-y-dOut2-al-monitor-y-sniffer-4dbfd432700f47f799ab04caab5a0fac?pvs=21)
+- [Commit de maestros tx y rx](https://www.notion.so/Commit-de-maestros-tx-y-rx-0217f50963614e7397be0b8842e8ddd0?pvs=21)
+- [Agregar filtrado por id a validaciones del monitor](https://www.notion.so/Agregar-filtrado-por-id-a-validaciones-del-monitor-8e50f63b776c427b87d5caf91453ccaa?pvs=21)
+- [Resolver problema de reseteo del maestro Rx](https://www.notion.so/Resolver-problema-de-reseteo-del-maestro-Rx-96180dc90fc54f19b0955c37b782a39e?pvs=21)
+
+### Características:
+- [Ambiente de desarrollo](https://www.notion.so/Ambiente-de-desarrollo-91d1f680208f4a02adc89a152ee6a55a?pvs=21)
+- [Decodificación del las tramas del sniffer](https://www.notion.so/Decodificaic-n-del-las-tramas-del-sniffer-99eb2c43c4fa4673af6b89bf255c44dd?pvs=21)
+- [Por hacer: comprobar que la codificación esté buena](https://www.notion.so/Por-hacer-comprobar-que-la-codificaci-n-est-buena-a22c716656f34d5bb3cbc89048787274?pvs=21)
+- [Codificación y decodificación probados en el sniffer, y cambios commited](https://www.notion.so/Codificaci-n-y-decodificaci-n-probados-en-el-sniffer-y-cambios-commited-fdf746599f8a4642aa9e97eac1f24cb5?pvs=21)
+- [Enviar comandos al sniffer (terminar setSnifferData y ajustar run_monitor)](https://www.notion.so/Enviar-comandos-al-sniffer-terminar-setSnifferData-y-ajustar-run_monitor-826b520e31bd4cd38a930e95e5631374?pvs=21)
+- [Probar codificación en mini PC](https://www.notion.so/Probar-codificaci-n-en-mini-PC-d5c94aecb94746ab831ec4aefec3eb64?pvs=21)
+- [Decodificar UART en Monitor](https://www.notion.so/Decodificar-UART-en-Monitor-123adc1f9ada49d98b77d1d3effd6dd4?pvs=21)
+- [Transmisión completa monitor-maestro-sniffer-serial](https://www.notion.so/Transmisi-n-completa-monitor-maestro-sniffer-serial-ed9b3a73e2924e3bb26a40e328a5e5a8?pvs=21)
+- [Probar límites de transmisión](https://www.notion.so/Probar-l-mites-de-transmisi-n-0df88e54b9db4d7291db2d999c8b31ce?pvs=21)
+- [Transmisión completa en sentido Serial→Monitor](https://www.notion.so/Transmisi-n-completa-en-sentido-Serial-Monitor-78602f728c2041f5ab6aaeaa65dd3161?pvs=21)
+- [Comando serial (0x14) a documentación Firmware Sniffer](https://www.notion.so/Comando-serial-0x14-a-documentaci-n-Firmware-Sniffer-90d72aad1d8942f0a07d4e03c176caf5?pvs=21)
+- [Pruebas + documentación de uplink y downlink en master DRS](https://www.notion.so/Pruebas-documentaci-n-de-uplink-y-downlink-en-master-DRS-75f3e6127b724029b28f0e63e154decf?pvs=21)
+- [Pruebas de downlink/uplink en master](https://www.notion.so/Pruebas-de-downlink-uplink-en-master-a37923c91f3e455d891f2f0069cc4509?pvs=21)
+- [Revisar recepcion serial a miniPC via moxa (485 o 232)](https://www.notion.so/Revisar-recepcion-serial-a-miniPC-via-moxa-485-o-232-5e6aef57c7934e6aa9cc3efca22df7c9?pvs=21)
+- [Armar data recibida en formato para DB](https://www.notion.so/Armar-data-recibida-en-formato-para-DB-edd6506e10294cfb87b52c70e27c13e2?pvs=21)
+- [Englobar funciones en monitor](https://www.notion.so/Englobar-funciones-en-monitor-dd076fcceafe4370afd52b712b1a5b1e?pvs=21)
+- [Revisar BD y fields en](https://www.notion.so/Revisar-BD-y-fields-en-2320b3afd9894668a20b129f1a4017ba?pvs=21)
+- [Pruebas de potencia de transmisión](https://www.notion.so/Pruebas-de-potencia-de-transmisi-n-05c1d6c223fa476983749a6e21634073?pvs=21)
+- [Envío de rtData a la base de datos](https://www.notion.so/Env-o-de-rtData-a-la-base-de-datos-7fd0b3e74b8f4a229f67d895aa6a33fd?pvs=21)
+- [Evaluación de Alertas para query status](https://www.notion.so/Evaluaci-n-de-Alertas-para-query-status-ff53eb47fc934664bdd7e437818e69c3?pvs=21)
+- [Formateo de RTData](https://www.notion.so/Formateo-de-RTData-d7d3c2193c7646118410a7772d841f8a?pvs=21)
+- [Ajuste de salida salidas digitales y análogas](https://www.notion.so/Ajuste-de-salida-salidas-digitales-y-an-logas-8dea2237cfd34c7e9a787ae043e22270?pvs=21)
+- [Asignación de imágenes a los dispositivos](https://www.notion.so/Asignaci-n-de-im-genes-a-los-dispositivos-1676d0bc4c9944f88b1f72df8f29c3b2?pvs=21)
+- [Display names para los campos](https://www.notion.so/Display-names-para-los-campos-8c811db414f240e3880d0475c721ffde?pvs=21)
+- [Monitor: Integración de preguntas modbus](https://www.notion.so/Monitor-Integraci-n-de-preguntas-modbus-72e8bfa6e56947fdb890f021854c73dd?pvs=21)
 
 
+## [Archivos](https://drive.google.com/drive/folders/19eSFY9t3YPugx9E1DRJfTMCmt-xoZ_5F)
 
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.com/sigma-telecom/rdss-software.git
-git branch -M main
-git push -uf origin main
-```
-
-## Integrate with your tools
-
-- [ ] [Set up project integrations](https://gitlab.com/sigma-telecom/rdss-software/-/settings/integrations)
-
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+## [Repositorio](https://drive.google.com/drive/folders/19eSFY9t3YPugx9E1DRJfTMCmt-xoZ_5F)

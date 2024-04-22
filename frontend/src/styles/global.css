@@ -81,12 +81,12 @@ body {
 
 @font-face {
   font-family: Avenir;
-  src: url(/opt/rdss/frontend/styles/Avenir.ttc);
+  src: url(Avenir.ttc);
 }
 
 @font-face {
   font-family: Century Gothic;
-  src: url(/opt/rdss/frontend/styles/CenturyGothic.ttf);
+  src: url(CenturyGothic.ttf);
 }
 
 
@@ -199,4 +199,15 @@ body {
   position: relative;
   top: 50%;
   right: 0%;
+}
+
+
+.btn-off {
+  background-color: #10263b; /* Light gray for inactive */
+  color: #ffffff; /* Dark gray for text */
+}
+
+.btn-active {
+  background-color: rgb(255, 80, 0); /* Blue for active */
+  color: #ffffff; /* White for text */
 }
