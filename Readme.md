@@ -1,7 +1,50 @@
-# Leakyfeeder v2.0
+# Software-Sniffer-Telemetria v1.0
 
-## Sigma Telecom
+### Mejoras:
+- [Comienzo el proyecto Software Sniffer Telemetría, se crea el repositorio, se da acceso a la red y al servidor](https://www.notion.so/Comienzo-el-proyecto-Software-Sniffer-Telemetr-a-se-crea-el-repositorio-se-da-acceso-a-la-red-y-a-dfa80f98785a4b4aaa695fa1a95c2659?pvs=21)
+- [Actualizar codificación en documentación Firmware Sniffer](https://www.notion.so/Actualizar-codificaci-n-en-documentaci-n-Firmware-Sniffer-a7df4f1f02dd4d0e9c2b5a6ff036bf9d?pvs=21)
+- [Ordenar el código](https://www.notion.so/Ordenar-el-c-digo-fa0c60b3583847cf8567db215684a9b7?pvs=21)
+- [Revisión Device management](https://www.notion.so/Revisi-n-Device-management-4dad3303a6944408b49dc8d2f2ea838f?pvs=21)
+- [Mejora] Botones para salidas digitales y rangos para salidas analógicas](https://www.notion.so/Mejora-Botones-para-salidas-digitales-y-rangos-para-salidas-analogas-8f4b714d4cd943ac9ce7f797a0feae34?pvs=21)
+- [Arreglos de FrontEnd](https://www.notion.so/Arreglos-de-FrontEnd-c8fee1d4642c48ca9933e39530ad50ed?pvs=21)
+- [Mejora] Modbus y SnifferIO simultáneo](https://www.notion.so/Mejora-Modbus-y-SnifferIO-simult-neo-c83258c66b0d49c299ae81cc746f8335?pvs=21)
+- [FIX] modbus decoder](https://www.notion.so/FIX-modbus-decoder-dfe0046f9c48481f8961ff9a23cf8721?pvs=21)
+- [FIX] Set field_values en Alerts](https://www.notion.so/FIX-Set-field_values-en-Alerts-fdd7772efada4f509248ed689f880a0b?pvs=21)
+- [ADD] uplink and downlink freq on status bar](https://www.notion.so/ADD-uplink-and-downlink-freq-on-status-bar-524d47723cec4d3c9cfc90d005cb351d?pvs=21)
+- [Crear funcion en el monitor para obtener valores reales a partir de la base de datos](https://www.notion.so/Crear-funcion-en-el-monitor-para-obtener-valores-reales-a-partir-de-la-base-de-datos-4036f0b5c6cb430fbcf007b76d85e822?pvs=21)
+- [Agregar dOut1 y dOut2 al monitor y sniffer](https://www.notion.so/Agregar-dOut1-y-dOut2-al-monitor-y-sniffer-4dbfd432700f47f799ab04caab5a0fac?pvs=21)
+- [Commit de maestros tx y rx](https://www.notion.so/Commit-de-maestros-tx-y-rx-0217f50963614e7397be0b8842e8ddd0?pvs=21)
+- [Agregar filtrado por id a validaciones del monitor](https://www.notion.so/Agregar-filtrado-por-id-a-validaciones-del-monitor-8e50f63b776c427b87d5caf91453ccaa?pvs=21)
+- [Resolver problema de reseteo del maestro Rx](https://www.notion.so/Resolver-problema-de-reseteo-del-maestro-Rx-96180dc90fc54f19b0955c37b782a39e?pvs=21)
 
-### Run Dev Env
+### Características:
+- [Ambiente de desarrollo](https://www.notion.so/Ambiente-de-desarrollo-91d1f680208f4a02adc89a152ee6a55a?pvs=21)
+- [Decodificación del las tramas del sniffer](https://www.notion.so/Decodificaic-n-del-las-tramas-del-sniffer-99eb2c43c4fa4673af6b89bf255c44dd?pvs=21)
+- [Por hacer: comprobar que la codificación esté buena](https://www.notion.so/Por-hacer-comprobar-que-la-codificaci-n-est-buena-a22c716656f34d5bb3cbc89048787274?pvs=21)
+- [Codificación y decodificación probados en el sniffer, y cambios commited](https://www.notion.so/Codificaci-n-y-decodificaci-n-probados-en-el-sniffer-y-cambios-commited-fdf746599f8a4642aa9e97eac1f24cb5?pvs=21)
+- [Enviar comandos al sniffer (terminar setSnifferData y ajustar run_monitor)](https://www.notion.so/Enviar-comandos-al-sniffer-terminar-setSnifferData-y-ajustar-run_monitor-826b520e31bd4cd38a930e95e5631374?pvs=21)
+- [Probar codificación en mini PC](https://www.notion.so/Probar-codificaci-n-en-mini-PC-d5c94aecb94746ab831ec4aefec3eb64?pvs=21)
+- [Decodificar UART en Monitor](https://www.notion.so/Decodificar-UART-en-Monitor-123adc1f9ada49d98b77d1d3effd6dd4?pvs=21)
+- [Transmisión completa monitor-maestro-sniffer-serial](https://www.notion.so/Transmisi-n-completa-monitor-maestro-sniffer-serial-ed9b3a73e2924e3bb26a40e328a5e5a8?pvs=21)
+- [Probar límites de transmisión](https://www.notion.so/Probar-l-mites-de-transmisi-n-0df88e54b9db4d7291db2d999c8b31ce?pvs=21)
+- [Transmisión completa en sentido Serial→Monitor](https://www.notion.so/Transmisi-n-completa-en-sentido-Serial-Monitor-78602f728c2041f5ab6aaeaa65dd3161?pvs=21)
+- [Comando serial (0x14) a documentación Firmware Sniffer](https://www.notion.so/Comando-serial-0x14-a-documentaci-n-Firmware-Sniffer-90d72aad1d8942f0a07d4e03c176caf5?pvs=21)
+- [Pruebas + documentación de uplink y downlink en master DRS](https://www.notion.so/Pruebas-documentaci-n-de-uplink-y-downlink-en-master-DRS-75f3e6127b724029b28f0e63e154decf?pvs=21)
+- [Pruebas de downlink/uplink en master](https://www.notion.so/Pruebas-de-downlink-uplink-en-master-a37923c91f3e455d891f2f0069cc4509?pvs=21)
+- [Revisar recepcion serial a miniPC via moxa (485 o 232)](https://www.notion.so/Revisar-recepcion-serial-a-miniPC-via-moxa-485-o-232-5e6aef57c7934e6aa9cc3efca22df7c9?pvs=21)
+- [Armar data recibida en formato para DB](https://www.notion.so/Armar-data-recibida-en-formato-para-DB-edd6506e10294cfb87b52c70e27c13e2?pvs=21)
+- [Englobar funciones en monitor](https://www.notion.so/Englobar-funciones-en-monitor-dd076fcceafe4370afd52b712b1a5b1e?pvs=21)
+- [Revisar BD y fields en](https://www.notion.so/Revisar-BD-y-fields-en-2320b3afd9894668a20b129f1a4017ba?pvs=21)
+- [Pruebas de potencia de transmisión](https://www.notion.so/Pruebas-de-potencia-de-transmisi-n-05c1d6c223fa476983749a6e21634073?pvs=21)
+- [Envío de rtData a la base de datos](https://www.notion.so/Env-o-de-rtData-a-la-base-de-datos-7fd0b3e74b8f4a229f67d895aa6a33fd?pvs=21)
+- [Evaluación de Alertas para query status](https://www.notion.so/Evaluaci-n-de-Alertas-para-query-status-ff53eb47fc934664bdd7e437818e69c3?pvs=21)
+- [Formateo de RTData](https://www.notion.so/Formateo-de-RTData-d7d3c2193c7646118410a7772d841f8a?pvs=21)
+- [Ajuste de salida salidas digitales y análogas](https://www.notion.so/Ajuste-de-salida-salidas-digitales-y-an-logas-8dea2237cfd34c7e9a787ae043e22270?pvs=21)
+- [Asignación de imágenes a los dispositivos](https://www.notion.so/Asignaci-n-de-im-genes-a-los-dispositivos-1676d0bc4c9944f88b1f72df8f29c3b2?pvs=21)
+- [Display names para los campos](https://www.notion.so/Display-names-para-los-campos-8c811db414f240e3880d0475c721ffde?pvs=21)
+- [Monitor: Integración de preguntas modbus](https://www.notion.so/Monitor-Integraci-n-de-preguntas-modbus-72e8bfa6e56947fdb890f021854c73dd?pvs=21)
 
-`docker compose up --build`
+
+## [Archivos](https://drive.google.com/drive/folders/19eSFY9t3YPugx9E1DRJfTMCmt-xoZ_5F)
+
+## [Repositorio](https://drive.google.com/drive/folders/19eSFY9t3YPugx9E1DRJfTMCmt-xoZ_5F)
