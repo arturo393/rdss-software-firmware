@@ -127,22 +127,17 @@ const Alerts = (props) => {
     const value = { ["value"]: newValue,
   ["field_id"]:field_id,
 ["device_id"]:device_id}
-    console.log("field_id", field_id);
-    console.log("device_id", device_id);
-    console.log("value",value);
+
     setRangeValue(value);
   }
 
   const handleRangeOnMouseUp = async (newValue, field_id, device_id) => {
     // Update fieldValue in state
     // setFieldValue(fieldId, newValue);
-    console.log("newvalue", newValue);
-    console.log("fieldId", field_id);
+
 
     // get device data
     const device = await axios.get(api_url + "/api/device/" + device_id);
-
-    console.log("device", device.data[0]);
     const fieldId = field_id;
     const fieldValue = newValue;
 
@@ -163,7 +158,6 @@ const Alerts = (props) => {
       },
     };
 
-    console.log("newDeiceData",newDeviceData);
 
     const res = await axios.post(api_url + "/api/device/save", newDeviceData);
     let status = document.getElementById(device_id + "status");
@@ -180,12 +174,9 @@ const Alerts = (props) => {
   const handleToggleChange = async (newValue, field_id, device_id) => {
     // Update fieldValue in state
     // setFieldValue(fieldId, newValue);
-    console.log("newvalue", newValue);
-    console.log("fieldId", field_id);
+
     // get device data
     const device = await axios.get(api_url + "/api/device/" + device_id);
-
-    console.log("device", device.data[0]);
     const fieldId = field_id;
     const fieldValue = newValue;
 
@@ -251,9 +242,6 @@ const Alerts = (props) => {
                         const fieldGroup = fields_groups.find((fg) => fg._id === field?.group_id);
                         const thisDevice = devices.find(d => d.id === device.id);
                         const fieldDef = thisDevice?.fields_values && field?._id && thisDevice?.fields_values[field._id] || null;
-
-                        {console.log("fieldValue",fieldValue)}
-                        {console.log("fieldValue",field.name)}
                         if (fieldDef?.visible) {
                           if (field?.set) {
                             return (
