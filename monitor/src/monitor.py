@@ -353,23 +353,23 @@ def response_validate(hex_response, device_id,response_size, command):
     #response_size = MESSAGE_BASE_SIZE + response_size
     # Validations
     if not hex_response.strip():
-        logging.debug("Query reception failed: Response empty")
+        logging.error("Query reception failed: Response empty")
         return False
 
     if len(hex_response) != response_size:
-        logging.debug(f"Incorrect response length: {len(hex_response)} and waited {response_size}")
+        logging.error(f"Incorrect response length: {len(hex_response)} and waited {response_size}")
         return False
 
     if hex_response[0] != START_BYTE or hex_response[-1] != END_BYTE:
-        logging.debug("Query reception failed: Incorrect start or end byte")
+        logging.error("Query reception failed: Incorrect start or end byte")
         return False
 
     if hex_response[ID_INDEX] != device_id:
-        logging.debug("Query reception failed: Incorrect ID received: {}".format(device_id))
+        logging.error("Query reception failed: Incorrect ID received: {}".format(device_id))
         return False
 
     if hex_response[COMMAND_INDEX] != command:
-        logging.debug("Query reception failed: Incorrect command received: {}".format(hex_response[COMMAND_INDEX]))
+        logging.error("Query reception failed: Incorrect command received: {}".format(hex_response[COMMAND_INDEX]))
         return False
     
     return True
@@ -1272,10 +1272,10 @@ def sendTxQuery(serTx):
 
         # ---- Validations
         if (hexResponse == None or hexResponse == "" or hexResponse == " " or len(hexResponse) == 0):
-            logging.debug("TxQuery reception failed: " + "Response empty")
+            logging.error("TxQuery reception failed: " + "Response empty")
             return {}
         if ((len(hexResponse) != RESPONSE_LEN)):
-            logging.debug("TxQuery reception failed: " + "Incorrect response length: " + str(
+            logging.error("TxQuery reception failed: " + "Incorrect response length: " + str(
                 len(hexResponse)) + ", expected " + str(RESPONSE_LEN))
             return {}
         # ------------------------
@@ -1354,10 +1354,14 @@ def sendQuery(serTx,cmd):
 
         # ---- Validations
         if (hexResponse == None or hexResponse == "" or hexResponse == " " or len(hexResponse) == 0):
-            logging.debug("TxQuery reception failed: " + "Response empty")
+            logging.error("TxQuery reception failed: " + "Response empty")
             return {}
         if ((len(hexResponse) != RESPONSE_LEN)):
-            logging.debug("TxQuery reception failed: " + "Incorrect response length: " + str(
+            logging.error("TxQuery reception failed: " + "Incorrect response length: " + str(
+                len(hexResponse)) + ", expected " + str(RESPONSE_LEN))
+            return {}
+        if ((len(hexResponse) != RESPONSE_LEN)):
+            logging.error("TxQuery reception failed: " + "Incorrect response length: " + str(
                 len(hexResponse)) + ", expected " + str(RESPONSE_LEN))
             return {}
         # ------------------------
@@ -1367,12 +1371,16 @@ def sendQuery(serTx,cmd):
     except Exception as e:
         logging.error(e)
         sys.exit()
-        
-    DATA_INDEX = 6
-    DATA_LENGTH_INDEX = 4
-    data_bytes = hexResponse[DATA_LENGTH_INDEX]<<8 | hexResponse[DATA_LENGTH_INDEX+1]
-    extracted_data = hexResponse[DATA_INDEX:DATA_INDEX+data_bytes]
-    freq = struct.unpack('f', extracted_data)[0]
+
+    try:
+        DATA_INDEX = 6
+        DATA_LENGTH_INDEX = 4
+        data_bytes = hexResponse[DATA_LENGTH_INDEX]<<8 | hexResponse[DATA_LENGTH_INDEX+1]
+        extracted_data = hexResponse[DATA_INDEX:DATA_INDEX+data_bytes]
+        freq = struct.unpack('f', extracted_data)[0]
+    except Exception as e:
+            logging.error(e)
+            return {}
     return freq
 
 def setMasterPorts():
@@ -1407,6 +1415,8 @@ def run_monitor():
     5. Save real-time status to DB
     """
     rtData = []
+    master_device_data = dict()
+
     provisionedDevicesArr = getProvisionedDevices()
     fieldsArr = getFieldsDefinitions()
     fieldsGroupArr = getFieldsGroup()
@@ -1415,13 +1425,18 @@ def run_monitor():
     times = 3
     SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     timeNow = datetime.datetime.strptime(SampleTime, '%Y-%m-%dT%H:%M:%SZ')
+    master_device_data["id"] = 0
+    master_device_data["sampleTime"] = SampleTime
+    master_device_data["uplink_freq"] = uplink_freq
+    master_device_data["downlink_freq"] = downlink_freq
+    rtData.append(json.dumps(master_device_data, default=defaultJSONconverter))
     showBanner(provisionedDevicesArr, timeNow)
     times = 3
     if len(provisionedDevicesArr) > 0:
         for device in provisionedDevicesArr:
             device_data = dict()
             logging.debug("-----------------------------------------------------")
-            logging.debug(f"Device ID:{device['id']} name:{device['name']} START")
+            logging.debug(f"Device ID:{device['id']} name:{device.get('name','no name')} START")
             SampleTime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
             response = dict()
             logging.debug(f"Query Status")
@@ -1430,7 +1445,7 @@ def run_monitor():
             modbus_status = get_modbus_status(serTx, serRx, device, fieldsArr, fieldsGroupArr, times)
             response.update(query_status)
             response.update(modbus_status)
-            logging.debug(f"Device Response: {response}")
+            logging.debug(f"\n\nDevice Response: {response}")
             device_data["id"] = device["id"]
             device_data["name"] = device["name"]
             device_data["sampleTime"] = SampleTime
@@ -1505,7 +1520,7 @@ def listen():
             global downlink_freq
             global uplink_freq
             downlink_freq = sendQuery(serTx,'20')
-            uplink_freq = sendQuery(serTx,'21')
+            uplink_freq = sendQuery(serRx,'21')
             run_monitor()
         eventlet.sleep(cfg.POLLING_SLEEP)
 
