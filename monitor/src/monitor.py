@@ -24,6 +24,7 @@ import eventlet
 
 
 logging.basicConfig(filename=cfg.LOGGING_FILE, level=logging.DEBUG)
+logging.getLogger("pymongo").setLevel(logging.INFO)
 
 class VladModule:
     def __init__(self):
@@ -646,7 +647,7 @@ def decodeVlad(buffer):
     bufferIndex = 0
     Measurements = (
         'vin',
-        'v5v'
+        'v5v',
         'current',
         'agc152m',
         'ref152m',
@@ -1075,7 +1076,6 @@ def run_monitor():
                     # TODO: actualizar registro en DB para que no vuelva a setear la atenuación a menos que el usuario vuelva a cambiarla  manualmente
                     updateDeviceChangedFlag(device, False)
                 logging.debug(deviceData["type"])
-
             else:
                 logging.debug("No response from device")
                 deviceData["connected"] = False
