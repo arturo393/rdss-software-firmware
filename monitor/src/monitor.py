@@ -646,7 +646,7 @@ def decodeVlad(buffer):
     bufferIndex = 0
     Measurements = (
         'vin',
-        'v5v',
+        'v5v'
         'current',
         'agc152m',
         'ref152m',
@@ -1076,20 +1076,6 @@ def run_monitor():
                     updateDeviceChangedFlag(device, False)
                 logging.debug(deviceData["type"])
 
-            if (deviceData["type"] == "sniffer"):
-                aout1 = 2048
-                aout2 = 1024
-                dout1 = 0
-                dout2 = 0
-
-                # Invertir los bytes de aout1
-                aout1 = ((aout1 >> 8) & 0xFF) | ((aout1 << 8) & 0xFF00)
-
-                # Invertir los bytes de aout2
-                aout2 = ((aout2 >> 8) & 0xFF) | ((aout2 << 8) & 0xFF00)
-
-                data = f"{aout1:04X}{aout2:04X}{dout1:02X}{dout2:02X}"
-                setSnifferData(ser, device, data)
             else:
                 logging.debug("No response from device")
                 deviceData["connected"] = False
