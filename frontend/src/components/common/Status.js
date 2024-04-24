@@ -26,7 +26,6 @@ const Status = (props) => {
   useEffect(() => {
     var connected = 0
     var alerted = 0
-
     monitorData?.map((monitor) => {
       const data = JSON.parse(monitor)
       data.connected ? connected++ : alerted++
