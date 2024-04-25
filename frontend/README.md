@@ -1,77 +1,29 @@
-# Example app using MongoDB
+# Software RDSS v2.x
 
-[MongoDB](https://www.mongodb.com/) is a general purpose, document-based, distributed database built for modern application developers and for the cloud era. This example will show you how to connect to and use MongoDB as your backend for your Next.js app.
+Status: Done
+People: Arturo Armando Veras Olivos
+Finalización: 1
+Tareas: Arreglar Documento de requermientos para sea general (https://www.notion.so/Arreglar-Documento-de-requermientos-para-sea-general-7e08d3bc8b4244a6b41a1bc55eef0d91?pvs=21), Documentación BackEnd (https://www.notion.so/Documentaci-n-BackEnd-4561c4adc66b40bfaaeed080a5d1b164?pvs=21), Documentación - Base de datos (https://www.notion.so/Documentaci-n-Base-de-datos-74a228434b0b408db233129ea330d3a8?pvs=21), Documentación - Descripción General (https://www.notion.so/Documentaci-n-Descripci-n-General-f9b53fe77d8645108d949d5f8ae4160b?pvs=21), Documentación - FrontEnd (https://www.notion.so/Documentaci-n-FrontEnd-0350f64d83e44570986191dbdd66333d?pvs=21), Revisión General ChatGPT (https://www.notion.so/Revisi-n-General-ChatGPT-9fd2b14427ed492ea4e03ef0fc7a2add?pvs=21), Orderna Documento (https://www.notion.so/Orderna-Documento-635e6b61664c40e7a8129c128b214084?pvs=21), Evaluar desarrollo de nuevas características VLAD con itaum (https://www.notion.so/Evaluar-desarrollo-de-nuevas-caracter-sticas-VLAD-con-itaum-08bca6cdb09b46d08a4aa6362a32adad?pvs=21), Limites de parametros de alertas (https://www.notion.so/Limites-de-parametros-de-alertas-ba795d5e3227439aad55cec5512fcba4?pvs=21), Ajuste de los voltajes de salida (https://www.notion.so/Ajuste-de-los-voltajes-de-salida-13a4fb37fa8343b0a68dd97535a67285?pvs=21), Instalación de software en servidor de prueba (https://www.notion.so/Instalaci-n-de-software-en-servidor-de-prueba-47844e4c8b814b9eafb3e19b88c27171?pvs=21), Agregrar condición de valores ceros en monitor.py (https://www.notion.so/Agregrar-condici-n-de-valores-ceros-en-monitor-py-32f6544ca6e041a4886f35e19c86f874?pvs=21), Agregar configuración de usuario sigmadev en doncumentación (https://www.notion.so/Agregar-configuraci-n-de-usuario-sigmadev-en-doncumentaci-n-92e6522b31854917b8b137686337f910?pvs=21), Docodificación de mediciones de VLADrev23  (https://www.notion.so/Docodificaci-n-de-mediciones-de-VLADrev23-19bd3f6acbb145c88a90f5b9ba0dedf5?pvs=21), Agregar Reverse/Convencional/ SmartTune  (https://www.notion.so/Agregar-Reverse-Convencional-SmartTune-b42cdb237493475f93106498c1bcc3ad?pvs=21), Agregar Consulta de modificación de atenuación de prueba. (https://www.notion.so/Agregar-Consulta-de-modificaci-n-de-atenuaci-n-de-prueba-2c31ffd2e23744f68923b4c0e49990e0?pvs=21), Se carga software en 192.168.60.75 (https://www.notion.so/Se-carga-software-en-192-168-60-75-5dd02affb6c7428993a294d3ac0f910a?pvs=21), Se aagrega la decondificación en la documentación (https://www.notion.so/Se-aagrega-la-decondificaci-n-en-la-documentaci-n-c0edd6b863704e8c9011b70ea12e448c?pvs=21), Se aagrega la descripción de  Alerts een la  doucmentación (https://www.notion.so/Se-aagrega-la-descripci-n-de-Alerts-een-la-doucmentaci-n-3567fe16e5b947d5a64df428bf701e60?pvs=21), Revisión de software para que facturen (https://www.notion.so/Revisi-n-de-software-para-que-facturen-ab554bd218734abd9ef04713fae2a6fb?pvs=21), Revisar valores de corriente según datasheet (https://www.notion.so/Revisar-valores-de-corriente-seg-n-datasheet-98180151f3ed47b5b08bea72c2fa64ea?pvs=21), Agregar nueva decodificación de consulta VLAD (https://www.notion.so/Agregar-nueva-decodificaci-n-de-consulta-VLAD-a15334c95f2f4684aab7d111f489e548?pvs=21), Revisar porque no actualiza el SmartTune en 192.168.60.236 (https://www.notion.so/Revisar-porque-no-actualiza-el-SmartTune-en-192-168-60-236-7101a2665f28413281087bde99b9ee00?pvs=21), Enviar consulta de master (https://www.notion.so/Enviar-consulta-de-master-82f2f99efbe842f0a504b769454f5d23?pvs=21), Ordernar el log del monuitor (https://www.notion.so/Ordernar-el-log-del-monuitor-187a1ca22fc443e4816dd0ef3613b057?pvs=21), Cambiar el nombre de attenuation downlink a attenuation (https://www.notion.so/Cambiar-el-nombre-de-attenuation-downlink-a-attenuation-7d9e808035c04137ac671b98be800a08?pvs=21), Revisar mapeo de  valores AGC (https://www.notion.so/Revisar-mapeo-de-valores-AGC-e1beb48a0457421696622d07ae44c888?pvs=21), Documento de Requerimientos para Itaum (https://www.notion.so/Documento-de-Requerimientos-para-Itaum-0fbd3f52b18045cdb0899152e09f4975?pvs=21), versión de prueba decode y encode de sniffer  (https://www.notion.so/versi-n-de-prueba-decode-y-encode-de-sniffer-c7919068be784ce3810b24a3257df495?pvs=21), code y decode de texto (https://www.notion.so/code-y-decode-de-texto-b1fa37f3009a4e71a0596d11899f377e?pvs=21), cotización frontend yery (https://www.notion.so/cotizaci-n-frontend-yery-ddf0d7d4f8b74e4e8d9dfcbaaaba1cff?pvs=21), Inicio. ver documento: Pruebas de Compatibilidad Diagnostico Remoto Tarjeta Azul con Software (https://www.notion.so/Inicio-ver-documento-Pruebas-de-Compatibilidad-Diagnostico-Remoto-Tarjeta-Azul-con-Software-871e7544f5fc4dff83d035a36b671509?pvs=21), Finalización. ver documento: Pruebas de Compatibilidad Diagnostico Remoto Tarjeta Azul con Software (https://www.notion.so/Finalizaci-n-ver-documento-Pruebas-de-Compatibilidad-Diagnostico-Remoto-Tarjeta-Azul-con-Software-56f464418c2749debde48d09b06cbc64?pvs=21), [Test] Demo RDSS (https://www.notion.so/Test-Demo-RDSS-e7467e9d35df469bb81980a6ae51eb27?pvs=21)
 
-If you want to learn more about MongoDB, visit the following pages:
+LTEL - downlink output power min : -20 dBm hasta + 4 dBm
 
-- [MongoDB Atlas](https://mongodb.com/atlas)
-- [MongoDB Documentation](https://docs.mongodb.com/)
+rev 32 downlink output power min -17 dBm hasta +7 dBm
 
-## Deploy your own
+Escribo para informar acerca del ajuste que hemos realizado en las mediciones del VLAD. En concreto, hemos utilizado una fuente de poder y un analizador de espectro para ajustar los valores de corriente, voltaje, potencia y AGC. A continuación, detallo los errores cuadráticos medios que hemos calculado para cada medida.
 
-Once you have access to the environment variables you'll need, deploy the example using [Vercel](https://vercel.com?utm_source=github&utm_medium=readme&utm_campaign=next-example):
+- Error de Voltaje: 0.003 [V]
+- Error de Corriente: 0.00001 [A]
+- Error de Potencia de Downlink: 0.07 [dBm]
+- Error de AGC de Downlink y Uplink: 0.7 [dB]
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/git/external?repository-url=https://github.com/vercel/next.js/tree/canary/examples/with-mongodb&project-name=with-mongodb&repository-name=with-mongodb&env=MONGODB_URI,MONGODB_DB&envDescription=Required%20to%20connect%20the%20app%20with%20MongoDB)
+Es importante destacar que este ajuste se realizó para el atenuador en una posición concreta, en la que la ganancia es de 20 [dB]. Sin embargo, nos encontramos con una limitación en la detección de la atenuación a través del switch rotatorio en la placa de diagnóstico remoto actual. Esto significa que si se cambia la atenuación, el valor de la potencia de downlink no se corresponderá con el valor real.
 
-## How to use
+Quedo a su disposición para cualquier aclaración o duda adicional que pueda surgir.
 
-Execute [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) with [npm](https://docs.npmjs.com/cli/init) or [Yarn](https://yarnpkg.com/lang/en/docs/cli/create/) to bootstrap the example:
+- 
 
-```bash
-npx create-next-app --example with-mongodb with-mongodb-app
-# or
-yarn create next-app --example with-mongodb with-mongodb-app
-```
+[https://docs.google.com/document/d/1h1PHycrrpae6Wp-V5XpYpGTlTFufmnP5c2jyUwDU6aM/edit#](https://docs.google.com/document/d/1h1PHycrrpae6Wp-V5XpYpGTlTFufmnP5c2jyUwDU6aM/edit#)
 
-## Configuration
+Configuración de Red de Laboratorio
 
-### Set up a MongoDB database
-
-Set up a MongoDB database either locally or with [MongoDB Atlas for free](https://mongodb.com/atlas).
-
-### Set up environment variables
-
-Copy the `env.local.example` file in this directory to `.env.local` (which will be ignored by Git):
-
-```bash
-cp .env.local.example .env.local
-```
-
-Set each variable on `.env.local`:
-
-- `MONGODB_URI` - Your MongoDB connection string. If you are using [MongoDB Atlas](https://mongodb.com/atlas) you can find this by clicking the "Connect" button for your cluster.
-- `MONGODB_DB` - The name of the MongoDB database you want to use.
-
-### Run Next.js in development mode
-
-```bash
-npm install
-npm run dev
-
-# or
-
-yarn install
-yarn dev
-```
-
-Your app should be up and running on [http://localhost:3000](http://localhost:3000)! If it doesn't work, post on [GitHub discussions](https://github.com/vercel/next.js/discussions).
-
-You will either see a message stating "You are connected to MongoDB" or "You are NOT connected to MongoDB". Ensure that you have provided the correct `MONGODB_URI` and `MONGODB_DB` environment variables.
-
-When you are successfully connected, you can refer to the [MongoDB Node.js Driver docs](https://mongodb.github.io/node-mongodb-native/3.4/tutorials/collections/) for further instructions on how to query your database.
-
-## Deploy on Vercel
-
-You can deploy this app to the cloud with [Vercel](https://vercel.com?utm_source=github&utm_medium=readme&utm_campaign=next-example) ([Documentation](https://nextjs.org/docs/deployment)).
-
-### Deploy Your Local Project
-
-To deploy your local project to Vercel, push it to GitHub/GitLab/Bitbucket and [import to Vercel](https://vercel.com/new?utm_source=github&utm_medium=readme&utm_campaign=next-example).
-
-**Important**: When you import your project on Vercel, make sure to click on **Environment Variables** and set them to match your `.env.local` file.
-
-#### Deploy from Our Template
-
-Alternatively, you can deploy using our template by clicking on the Deploy button below.
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/git/external?repository-url=https://github.com/vercel/next.js/tree/canary/examples/with-mongodb&project-name=with-mongodb&repository-name=with-mongodb&env=MONGODB_URI,MONGODB_DB&envDescription=Required%20to%20connect%20the%20app%20with%20MongoDB)
+![Untitled](Software%20RDSS%20v2%20x%2030054446c92343aaa14b0927fa4a5c08/Untitled.png)

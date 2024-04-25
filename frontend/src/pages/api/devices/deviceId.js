@@ -4,18 +4,22 @@ import { DateTime } from "luxon"
 export default async function (req, res, next) {
   const { db } = await connectToDatabase()
 
-  var start = DateTime.fromISO(req.body.dateFrom)
-  var end = DateTime.fromISO(req.body.dateTo)
+  const dateFrom = DateTime.fromISO(req.body.dateFrom).toFormat("yyyy-LL-dd HH:mm:ss")
+  const dateTo = DateTime.fromISO(req.body.dateTo).toFormat("yyyy-LL-dd HH:mm:ss")
 
-  var diffInDays = end.diff(start, "days").as("days")
+  var end = DateTime.fromISO(req.body.dateFrom)
+  var start = DateTime.fromISO(req.body.dateTo)
 
-  // console.log("diffInDays", diffInDays)
+  var diffInDays = start.diff(end, "days").as("days")
 
   let dynId = {
     device: "$id",
     year: "$year",
     month: "$month",
     day: "$day",
+    // hour: "$hour",
+    // minute: "$minute",
+    // second: "$second",
   }
 
   if (diffInDays > 4 && diffInDays <= 31) {
@@ -29,86 +33,143 @@ export default async function (req, res, next) {
     dynId.second = "$second"
   }
 
+  // const pipeline = [
+  //   {
+  //     $match: {
+  //       id: req.body.id,
+  //     },
+  //   },
+  //   {
+  //     $project: {
+  //       rtData: {
+  //         $filter: {
+  //           input: "$rtData",
+  //           as: "item",
+  //           cond: {
+  //             $and: [
+  //               {
+  //                 $gte: ["$$item.sampleTime", dateFrom],
+  //               },
+  //               {
+  //                 $lte: ["$$item.sampleTime", dateTo],
+  //               },
+  //             ],
+  //           },
+  //         },
+  //       },
+  //       id: 1,
+  //       status: 1,
+  //       type: 1,
+  //     },
+  //   },
+  //   {
+  //     $unwind: {
+  //       path: "$rtData",
+  //     },
+  //   },
+  //   {
+  //     $project: {
+  //       year: {
+  //         $year: {
+  //           $dateFromString: {
+  //             dateString: "$rtData.sampleTime",
+  //           },
+  //         },
+  //       },
+  //       month: {
+  //         $month: {
+  //           $dateFromString: {
+  //             dateString: "$rtData.sampleTime",
+  //           },
+  //         },
+  //       },
+  //       day: {
+  //         $dayOfMonth: {
+  //           $dateFromString: {
+  //             dateString: "$rtData.sampleTime",
+  //           },
+  //         },
+  //       },
+  //       hour: {
+  //         $hour: {
+  //           $dateFromString: {
+  //             dateString: "$rtData.sampleTime",
+  //           },
+  //         },
+  //       },
+  //       minute: {
+  //         $minute: {
+  //           $dateFromString: {
+  //             dateString: "$rtData.sampleTime",
+  //           },
+  //         },
+  //       },
+  //       second: {
+  //         $second: {
+  //           $dateFromString: {
+  //             dateString: "$rtData.sampleTime",
+  //           },
+  //         },
+  //       },
+  //       voltage: "$rtData.voltage",
+  //       current: "$rtData.current",
+  //       power: "$rtData.power",
+  //       alerts: "$rtData.alerts",
+  //       id: "$id",
+  //     },
+  //   },
+  //   {
+  //     $group: {
+  //       _id: dynId,
+  //       voltage: {
+  //         $avg: "$voltage",
+  //       },
+  //       current: {
+  //         $avg: "$current",
+  //       },
+  //       power: {
+  //         $avg: "$power",
+  //       },
+  //       alerts: {
+  //         $push: "$alerts",
+  //       },
+  //     },
+  //   },
+  //   {
+  //     $sort: {
+  //       _id: 1,
+  //     },
+  //   },
+  // ]
+
   const pipeline = [
     {
       $match: {
-        $and: [
-          { id: req.body.id },
-          { sampleTime: { $gte: new Date(start).toISOString() } },
-          { sampleTime: { $lte: new Date(end).toISOString() } },
-          { field_values: { $type: "object" } }
-        ],
+        $and: [{ "metaData.deviceId": req.body.id }, { sampleTime: { $gte: new Date(end) } }, { sampleTime: { $lte: new Date(start) } }],
       },
     },
     {
       $project: {
         id: "$id",
-        year: { $year: { $toDate: "$sampleTime" } },
-        month: { $month: { $toDate: "$sampleTime" } },
-        day: { $dayOfMonth: { $toDate: "$sampleTime" } },
-        hour: { $hour: { $toDate: "$sampleTime" } },
-        minute: { $minute: { $toDate: "$sampleTime" } },
-        seconds: { $second: { $toDate: "$sampleTime" } },
-        connected: "$connected",
-        field_values: {
-          $objectToArray: "$field_values",
-        },
-      },
-    },
-    {
-      $unwind: "$field_values",
-    },
-    {
-      $match: {
-        "field_values.v.value": {
-          $type: "number",
-        },
+        year: { $year: "$sampleTime" },
+        month: { $month: "$sampleTime" },
+        day: { $dayOfMonth: "$sampleTime" },
+        hour: { $hour: "$sampleTime" },
+        minute: { $minute: "$sampleTime" },
+        seconds: { $second: "$sampleTime" },
+        voltage: { $toDecimal: "$voltage" },
+        current: { $toDecimal: "$current" },
+        power: { $toDecimal: "$power" },
+        alerts: "$alerts",
       },
     },
     {
       $group: {
         _id: dynId,
-        connected: {
-          $last: "$connected",
-        },
-        values: {
-          $push: {
-            k: "$field_values.k",
-            value: "$field_values.v.value",
-            alert: "$field_values.v.alert",
-          },
-        },
-      },
-    },
-    {
-      $project: {
-        _id: "$_id",
-        connected: "$connected",
-        field_values: {
-          $arrayToObject: {
-            $map: {
-              input: "$values",
-              as: "value",
-              in: {
-                k: "$$value.k",
-                v: {
-                  value: {
-                    $avg: "$$value.value",
-                  },
-                  alert: {
-                    $allElementsTrue: {
-                      $map: {
-                        input: ["$$value.alert"],
-                        as: "alert",
-                        in: "$$alert",
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
+        voltage: { $avg: "$voltage" },
+        current: { $avg: "$current" },
+        power: { $avg: "$power" },
+        alerts: { $push: "$alerts" },
       },
     },
     {
@@ -118,17 +179,9 @@ export default async function (req, res, next) {
     },
   ]
 
-  console.log("pipeline", JSON.stringify(pipeline))
+  // console.log(JSON.stringify(pipeline))
 
-  const fields = await db.collection("fields").find({ plottable: true }).toArray()
-  const rtData = await db.collection("rtData").aggregate(pipeline).toArray()
+  const devices = await db.collection("rtData").aggregate(pipeline).toArray()
 
-  const filteredResponse = rtData
-    .map((data) => {
-      const filteredFieldValues = Object.fromEntries(Object.entries(data.field_values).filter(([key]) => fields.find((def) => String(def._id) === key && def.plottable)))
-      return Object.keys(filteredFieldValues).length > 0 ? { ...data, field_values: filteredFieldValues } : null
-    })
-    .filter((item) => item !== null)
-
-  res.json(filteredResponse)
+  res.json(devices)
 }

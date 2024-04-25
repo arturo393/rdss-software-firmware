@@ -9,8 +9,8 @@ export default async function (req, res, next) {
   user.email = req.body.email
   if (req.body.password) user.password = req.body.password
 
-  // console.log(user)
-  // console.log(req.body.id)
+  console.log(user)
+  console.log(req.body.id)
   //   db.collection("users").updateOne(
   //     {
   //       _id: ObjectID(req.body.id),

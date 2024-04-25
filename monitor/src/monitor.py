@@ -21,39 +21,8 @@ import struct
 
 import platform
 
-if platform.system() == "Windows":
-    # Windows-specific port names
-    USBPORTTX = "COM6"
-    USBPORTRX = "COM7"
-    USBPORTAUX = "COM4"
-else:
-    # Linux-specific port names
-    USBPORTTX = "/dev/ttyS0"
-    USBPORTRX = "/dev/ttyS1"
-    USBPORTAUX = "/dev/ttyS2"
-
-# ------
-
-logging.basicConfig(filename=cfg.LOGGING_FILE,
-                    level=logging.DEBUG,
-                    format='%(asctime)s %(levelname)s %(message)s')
-
-START_BYTE = 0x7E
-END_BYTE = 0x7F
-
-ID_INDEX = 2
-COMMAND_INDEX = 3
-
-MESSAGE_BASE_SIZE = 8
-
-SNIFFER_IO_QUERY = 0x11
-SNIFFER_IO_SET = 0xB6
-SNIFFER_MODBUS = 0x14
-
-SNIFFER = 0x0A
-VLAD  = 0x09
-
-# Define a dictionary mapping cases to functions
+logging.basicConfig(filename=cfg.LOGGING_FILE, level=logging.DEBUG)
+logging.getLogger("pymongo").setLevel(logging.INFO)
 
 
 class MasterModule:
@@ -1457,9 +1426,33 @@ def run_monitor():
 
             if response:
                 connectedDevices += 1
+<<<<<<< HEAD
                 device_data["connected"] = True
                 if command == SNIFFER_IO_SET:
                     database.devices.update_one({"id": device["id"]}, {"$set": {"changed": False}})
+=======
+                deviceData["connected"] = True
+                deviceData["rtData"] = response
+                alerts = evaluateAlerts(response)
+                deviceData["rtData"]["alerts"] = alerts
+                deviceData["alerts"] = alerts
+                updateDeviceConnectionStatus(device, True)
+                #-------------------------------------------------
+                # Leyendo atenuación y estado de cambio
+                #-------------------------------------------------
+                attenuation = 0
+                if "attenuation" in x:
+                    value = x["attenuation"]
+                    if value is not None:
+                         attenuation = int(value)
+                attenuationChanged = bool(x["changed"]) if ('changed' in x) else False
+                # TODO: Setear atenuación
+                if (attenuationChanged):
+                    setAttenuation(ser,device,attenuation)
+                    # TODO: actualizar registro en DB para que no vuelva a setear la atenuación a menos que el usuario vuelva a cambiarla  manualmente
+                    updateDeviceChangedFlag(device, False)
+                logging.debug(deviceData["type"])
+>>>>>>> development
             else:
                 device_data["connected"] = False
                 #database.devices.update_one({"id": device["id"]}, {"$set": {"changed": False}})

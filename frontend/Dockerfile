@@ -9,10 +9,8 @@ RUN npm install --force
 RUN npm install next@11.0.1 --force
 RUN npm install --save --legacy-peer-deps && npm install @material-ui/core --save --legacy-peer-deps
 RUN npm install --save-dev eslint eslint-config-next --force
-RUN npx browserslist@latest --update-db
+# RUN npx next build
 
-# RUN npm run build
-
-CMD npm run start
+CMD /usr/bin/env npx next start
 # CMD node server.js
 # CMD serve -n out

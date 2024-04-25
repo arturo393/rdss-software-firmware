@@ -95,8 +95,12 @@ const Schema = (props) => {
       if (mdevice.connected && Object.values(mdevice.field_values || {}).some(fieldValue => fieldValue.alert)) {
         fill = "yellow"
       }
-
+      
       let device = devices.find((square) => square.id == mdevice.id)
+<<<<<<< HEAD
+=======
+      if(device){
+>>>>>>> development
       const label = device?.name ? device?.name + " (" + device?.type + "-" + device?.id + ")" : device?.type + "-" + device?.id
       device = {
         ...device,
@@ -113,6 +117,7 @@ const Schema = (props) => {
         device.image = newImage
       }
       newSquares.push(device)
+    }
     })
     setSquares(newSquares)
   }, [monitorData, devices])

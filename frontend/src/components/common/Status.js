@@ -28,12 +28,7 @@ const Status = (props) => {
   useEffect(() => {
     var connected = 0
     var alerted = 0
-    var uplink_freq = 0
-    var downlink_freq  = 0
-
-    
-
-    monitorData && monitorData?.map((monitor) => {
+    monitorData?.map((monitor) => {
       const data = JSON.parse(monitor)
       data.connected ? connected++ : alerted++
       if (data.connected && Object.values(data.field_values || {}).some(fieldValue => fieldValue.alert)) {

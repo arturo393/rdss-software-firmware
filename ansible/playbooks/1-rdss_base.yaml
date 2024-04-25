@@ -9,34 +9,16 @@
   - name: Clean artifact path
     file:
       state: absent
-      path: "{{ temp_dir }}"
+      path: /tmp/rdss2
   - name: "Cloning RDSSv2 repo"
     git:
-      repo: https://{{gitlabuser | urlencode}}:{{gitlabpassword | urlencode}}@gitlab.com/sigma-telecom/sniffer-software.git
-      dest: "{{ temp_dir }}"
+      repo: https://{{gitlabuser | urlencode}}:{{gitlabpassword | urlencode}}@gitlab.com/sigma-telecom/rdss-software.git
+      dest: /tmp/rdss2
       # single_branch: yes
       version: development
       accept_hostkey: yes
   - name: "Create installation directory"
     file:
-      path: "{{ base_dir }}"
+      path: /opt/rdss
       state: directory
       mode: '0755'
-
-  - name: "Installing frontend files"
-    copy:
-      remote_src: true
-      src: "{{ temp_dir }}/custom/"
-      dest: "{{ base_dir }}/custom/"
-
-
-  - name: Add .vimrc template
-    copy:
-      src: "{{ temp_dir }}/custom/.vimrc"
-      dest: /home/sigmadev/
-      remote_src: yes
-  - name: Add .vimrc template
-    copy:
-      src: "{{ temp_dir }}/custom/.vimrc"
-      dest: /root/
-      remote_src: yes

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="b52b28be-a455-4135-98e7-d1de749dafed" name="192.168.60.75- rdss-software">
+        <fileTransfer accessType="SFTP" host="192.168.60.75" port="22" sshConfigId="135f6c9b-389e-490a-868e-4aa038d39097" sshConfig="root@192.168.60.75:22 agent" authAgent="true">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
