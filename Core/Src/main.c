@@ -21,15 +21,14 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
-#include "SX1278.h"
-#include "gpio.h"
-#include "uart.h"
-#include "spi.h"
+#include "rdss_slave.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+#define HS16_CLK 16000000
+#define BAUD_RATE 115200
+//#define IWDG_ENABLE
 
 /* USER CODE END PTD */
 
@@ -43,18 +42,30 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-ADC_HandleTypeDef hadc1;
+I2C_HandleTypeDef hi2c1;
+
+IWDG_HandleTypeDef hiwdg;
+
+SPI_HandleTypeDef hspi1;
+
+UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
-
+UART1_t *u1;
+LED_t *led;
+RDSS_t *rdss;
+SX1278_t *loRa;
+Vlad_t *vlad;
+RDSS_SLAVE_t *rdss_slave;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-//static void MX_GPIO_Init(void);
-static void MX_ADC1_Init(void);
-//static void MX_SPI1_Init(void);
-//static void MX_USART1_UART_Init(void);
+static void MX_GPIO_Init(void);
+static void MX_SPI1_Init(void);
+static void MX_USART1_UART_Init(void);
+static void MX_I2C1_Init(void);
+static void MX_IWDG_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -62,33 +73,8 @@ static void MX_ADC1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-uint8_t lora_read_reg(uint8_t address) {
-	uint8_t rec;
-	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET);  // pull the pin low
-	HAL_Delay(1);
-	HAL_SPI_Transmit(&hspi1, &address, 1, 100);  // send address
-	HAL_SPI_Receive(&hspi1, &rec, 1, 100);  // receive16 bytes data
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET);  // pull the pin high
-	return rec;
-}
+void USART1_IRQHandler(void);
 
-SX1278_hw_t SX1278_hw;
-SX1278_t SX1278;
-
-uint8_t master;
-uint8_t ret;
-
-char buffer[256];
-uint8_t response[] = { 0x7e, 0x05, 0x04, 0x11, 0x00, 0x0c, 0x89, 0x00, 0xf7,
-		0xff0, 0xac, 0xff, 0xeb, 0x00, 0x1d, 0x00, 0x020, 0xec, 0xb3, 0xde,
-		0x7f };
-uint8_t str[300];
-int message;
-int message_length;
-int word;
-
-uint8_t VLAD_ID = 0x00;
 /* USER CODE END 0 */
 
 /**
@@ -113,145 +99,66 @@ int main(void) {
 	SystemClock_Config();
 
 	/* USER CODE BEGIN SysInit */
-
+	MX_GPIO_Init();
+	MX_SPI1_Init();
+//	MX_USART1_UART_Init();
+	MX_I2C1_Init();
+#ifdef IWDG_ENABLE
+	MX_IWDG_Init();
+#endif
 	/* USER CODE END SysInit */
 
 	/* Initialize all configured peripherals */
-	MX_GPIO_Init();
-	MX_ADC1_Init();
-	MX_SPI1_Init();
-	MX_USART1_UART_Init();
+
+	rdss_slave = malloc(sizeof(RDSS_SLAVE_t*));
+	if (rdss_slave == NULL)
+		Error_Handler();
+
+	u1 = uart1Init(HS16_CLK, BAUD_RATE);
+	if (u1 == NULL)
+		Error_Handler();
+//	I2C_t i;
+//	rdss_slave->i2c =&i;
+	rdss_slave->i2c = malloc(sizeof(I2C_t*));
+	if (rdss_slave->i2c == NULL)
+		Error_Handler();
+
 	/* USER CODE BEGIN 2 */
+	i2c1MasterInit();
+	rdss_slave->i2c->reg = I2C1;
+	rdss_slave->i2c->handler = &hi2c1;
 
-	master = 0;
-	word = 0;
-	VLAD_ID = 0x04;
-	uint8_t is_rx_mode = 0x00;
-	//initialize LoRa module
-	SX1278_hw.dio0.port = BUSSY_GPIO_Port;
-	SX1278_hw.dio0.pin = BUSSY_Pin;
-	SX1278_hw.nss.port = LORA_NSS_GPIO_Port;
-	SX1278_hw.nss.pin = LORA_NSS_Pin;
-	SX1278_hw.reset.port = LORA_RST_GPIO_Port;
-	SX1278_hw.reset.pin = LORA_RST_Pin;
-	SX1278_hw.spi = &hspi1;
-	SX1278.hw = &SX1278_hw;
+	u1->isDebugModeEnabled = false;
+	vlad = vladInit(0);
+	rdss = rdssInit(vlad->id);
+	rdss_slave->id = vlad->id;
+	loRa = loRaInit(&hspi1, SLAVE_RECEIVER);
+	led = ledInit();
 
-	uart_send("Configuring LoRa module\r\n");
-	SX1278_init(&SX1278, 150000000, SX1278_POWER_17DBM, SX1278_LORA_SF_10,
-	SX1278_LORA_BW_62_5KHZ, SX1278_LORA_CR_4_6, SX1278_LORA_CRC_DIS, 10);
-	uart_send("Done configuring LoRaModule\r\n");
-
-	if (master == 1) {
-		ret = SX1278_LoRaEntryTx(&SX1278, 16, 2000);
-		HAL_GPIO_WritePin(DIO1_GPIO_Port, DIO1_Pin, GPIO_PIN_SET);
-	} else {
-		ret = SX1278_LoRaEntryRx(&SX1278, 9, 2000);
-		if (ret == 1)
-			uart_send("Rx Mode\r\n");
-		else
-			uart_send("TimeOut!\r\n");
-	}
-
-	int rssi_lora = 0;
-	int rssi = 0;
-	int version;
-
+#ifdef IWDG_ENABLE
+	HAL_IWDG_Refresh(&hiwdg);
+#endif
+	rdss->lastUpdateTicks = HAL_GetTick();
+	rdss_slave->queryTicks = HAL_GetTick();
+	rdss_slave->i2c->ticks = HAL_GetTick();
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		if (master == 1) {
-
-			uart_send("Sending package...");
-
-			SX1278_init(&SX1278, 170000000, SX1278_POWER_17DBM,
-					SX1278_LORA_SF_10,
-					SX1278_LORA_BW_62_5KHZ, SX1278_LORA_CR_4_6,
-					SX1278_LORA_CRC_DIS,10);
-
-			ret = SX1278_LoRaEntryTx(&SX1278, sizeof(response), 2000);
-			if (ret == 1) {
-				uart_send("EntryTx Ok!... \r\n");
-			} else {
-				uart_send("EntryTx failed, timeout reset!\r\n");
-			}
-
-			for (uint8_t i = 0; i < sizeof(response); i++) {
-				sprintf(str, "%02x", response[i]);
-				HAL_UART_Transmit(&huart1, str, 2, 50);
-			}
-			HAL_UART_Transmit(&huart1,"\r\n", 2, 50);
-
-
-			ret = SX1278_LoRaTxPacket(&SX1278, (uint8_t*) response,
-					sizeof(response), 1000);
-
-			if (ret >= 1) {
-				sprintf(str, "%d bytes sent... \r\n", ret);
-				uart_send(str);
-			} else {
-				uart_send("Sent Fail, timeout reset!\r\n");
-			}
-			master = 0;
-
-		} else {
-
-			if (!is_rx_mode) {
-				SX1278_init(&SX1278, 150000000, SX1278_POWER_17DBM,
-						SX1278_LORA_SF_10,
-						SX1278_LORA_BW_62_5KHZ, SX1278_LORA_CR_4_6,
-						SX1278_LORA_CRC_DIS, 10);
-				ret = SX1278_LoRaEntryRx(&SX1278, 9, 2000);
-				if (ret == 1) {
-					uart_send("Rx Mode\r\n");
-					is_rx_mode = 0x01;
-				} else
-					uart_send("TimeOut!\r\n");
-			}
-
-			if (SX1278_hw_GetDIO0(SX1278.hw)) {
-				uart_send("Slave Receiving package...");
-				ret = SX1278_LoRaRxPacket(&SX1278);
-				sprintf(str, "Received: %d bytes...", ret);
-				uart_send(str);
-				if (ret > 0) {
-					SX1278_read(&SX1278, (uint8_t*) buffer, ret);
-					sprintf(str, "Content: ", ret);
-					uart_send(str);
-					uart_send("\r\n");
-					for (uint8_t i = 0; i < ret; i++) {
-						sprintf(str, "%02x ", buffer[i]);
-						HAL_UART_Transmit(&huart1, str, 2, 50);
-
-					}
-
-					if (buffer[0] == 0x7e && buffer[2] == VLAD_ID) {
-						master = 1;
-						is_rx_mode = 0x00;
-					}
-				}
-
-				uart_send("\r\n");
-
-			}
-
-		}
-
-		//	rssi_lora = SX1278_RSSI_LoRa(&SX1278);
-		//	rssi = SX1278_RSSI(&SX1278);
-		//	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-		//	version = SX1278_SPIRead(&SX1278, REG_LR_VERSION);
-		//	sprintf(str,"LoRa Version %d...\r\n", version);
-		//	uart_send(str);
-
-		//	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-
-		/* USER CODE END WHILE */
-
-		/* USER CODE BEGIN 3 */
+		updateStatus(rdss, 3000);
+		processUart1Rx(u1, rdss, loRa, vlad);
+		configureLoRaRx(loRa, SLAVE_RECEIVER);
+		readWhenDataArrive(loRa, rdss, vlad);
+		blinkKALed(led);
+#ifdef IWDG_ENABLE
+		HAL_IWDG_Refresh(&hiwdg);
+#endif
 	}
+	/* USER CODE END WHILE */
+
+	/* USER CODE BEGIN 3 */
+
 	/* USER CODE END 3 */
 }
 
@@ -270,10 +177,12 @@ void SystemClock_Config(void) {
 	/** Initializes the RCC Oscillators according to the specified parameters
 	 * in the RCC_OscInitTypeDef structure.
 	 */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI
+			| RCC_OSCILLATORTYPE_LSI;
 	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
 	RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV1;
 	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+	RCC_OscInitStruct.LSIState = RCC_LSI_ON;
 	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
 	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
 		Error_Handler();
@@ -293,61 +202,235 @@ void SystemClock_Config(void) {
 }
 
 /**
- * @brief ADC1 Initialization Function
+ * @brief I2C1 Initialization Function
  * @param None
  * @retval None
  */
-static void MX_ADC1_Init(void) {
+static void MX_I2C1_Init(void) {
 
-	/* USER CODE BEGIN ADC1_Init 0 */
+	/* USER CODE BEGIN I2C1_Init 0 */
 
-	/* USER CODE END ADC1_Init 0 */
+	/* USER CODE END I2C1_Init 0 */
 
-	ADC_ChannelConfTypeDef sConfig = { 0 };
+	/* USER CODE BEGIN I2C1_Init 1 */
 
-	/* USER CODE BEGIN ADC1_Init 1 */
-
-	/* USER CODE END ADC1_Init 1 */
-
-	/** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
-	 */
-	hadc1.Instance = ADC1;
-	hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
-	hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-	hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-	hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
-	hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-	hadc1.Init.LowPowerAutoWait = DISABLE;
-	hadc1.Init.LowPowerAutoPowerOff = DISABLE;
-	hadc1.Init.ContinuousConvMode = DISABLE;
-	hadc1.Init.NbrOfConversion = 1;
-	hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-	hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-	hadc1.Init.DMAContinuousRequests = DISABLE;
-	hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
-	hadc1.Init.SamplingTimeCommon1 = ADC_SAMPLETIME_1CYCLE_5;
-	hadc1.Init.SamplingTimeCommon2 = ADC_SAMPLETIME_1CYCLE_5;
-	hadc1.Init.OversamplingMode = DISABLE;
-	hadc1.Init.TriggerFrequencyMode = ADC_TRIGGER_FREQ_HIGH;
-	if (HAL_ADC_Init(&hadc1) != HAL_OK) {
+	/* USER CODE END I2C1_Init 1 */
+	hi2c1.Instance = I2C1;
+	hi2c1.Init.Timing = 0x00303D5B;
+	hi2c1.Init.OwnAddress1 = 0;
+	hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+	hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+	hi2c1.Init.OwnAddress2 = 0;
+	hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+	hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+	hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+	if (HAL_I2C_Init(&hi2c1) != HAL_OK) {
 		Error_Handler();
 	}
 
-	/** Configure Regular Channel
+	/** Configure Analogue filter
 	 */
-	sConfig.Channel = ADC_CHANNEL_0;
-	sConfig.Rank = ADC_REGULAR_RANK_1;
-	sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
-	if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
+	if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE)
+			!= HAL_OK) {
 		Error_Handler();
 	}
-	/* USER CODE BEGIN ADC1_Init 2 */
 
-	/* USER CODE END ADC1_Init 2 */
+	/** Configure Digital filter
+	 */
+	if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN I2C1_Init 2 */
+
+	/* USER CODE END I2C1_Init 2 */
 
 }
 
+/**
+ * @brief IWDG Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_IWDG_Init(void) {
+
+	/* USER CODE BEGIN IWDG_Init 0 */
+
+	/* USER CODE END IWDG_Init 0 */
+
+	/* USER CODE BEGIN IWDG_Init 1 */
+
+	/* USER CODE END IWDG_Init 1 */
+	hiwdg.Instance = IWDG;
+	hiwdg.Init.Prescaler = IWDG_PRESCALER_256;
+	hiwdg.Init.Window = 4095;
+	hiwdg.Init.Reload = 1000;
+	if (HAL_IWDG_Init(&hiwdg) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN IWDG_Init 2 */
+
+	/* USER CODE END IWDG_Init 2 */
+
+}
+
+/**
+ * @brief SPI1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_SPI1_Init(void) {
+
+	/* USER CODE BEGIN SPI1_Init 0 */
+
+	/* USER CODE END SPI1_Init 0 */
+
+	/* USER CODE BEGIN SPI1_Init 1 */
+
+	/* USER CODE END SPI1_Init 1 */
+	/* SPI1 parameter configuration*/
+	hspi1.Instance = SPI1;
+	hspi1.Init.Mode = SPI_MODE_MASTER;
+	hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+	hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+	hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+	hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+	hspi1.Init.NSS = SPI_NSS_SOFT;
+	hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+	hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+	hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+	hspi1.Init.CRCPolynomial = 7;
+	hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+	hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+	if (HAL_SPI_Init(&hspi1) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN SPI1_Init 2 */
+
+	/* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
+ * @brief USART1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_USART1_UART_Init(void) {
+
+	/* USER CODE BEGIN USART1_Init 0 */
+	UART_HandleTypeDef huart1;
+	/* USER CODE END USART1_Init 0 */
+
+	/* USER CODE BEGIN USART1_Init 1 */
+
+	/* USER CODE END USART1_Init 1 */
+	huart1.Instance = USART1;
+	huart1.Init.BaudRate = 115200;
+	huart1.Init.WordLength = UART_WORDLENGTH_8B;
+	huart1.Init.StopBits = UART_STOPBITS_1;
+	huart1.Init.Parity = UART_PARITY_NONE;
+	huart1.Init.Mode = UART_MODE_TX_RX;
+	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+	huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+	huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+	if (HAL_UART_Init(&huart1) != HAL_OK) {
+		Error_Handler();
+	}
+	if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8)
+			!= HAL_OK) {
+		Error_Handler();
+	}
+	if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8)
+			!= HAL_OK) {
+		Error_Handler();
+	}
+	if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN USART1_Init 2 */
+
+	/* USER CODE END USART1_Init 2 */
+
+}
+
+/**
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_GPIO_Init(void) {
+	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+	/* USER CODE BEGIN MX_GPIO_Init_1 */
+	/* USER CODE END MX_GPIO_Init_1 */
+
+	/* GPIO Ports Clock Enable */
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+
+	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(GPIOA,
+	KA_LED_Pin | LORA_TX_OK_Pin | LORA_RX_OK_Pin | DIO1_Pin, GPIO_PIN_RESET);
+
+	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin | LORA_RST_Pin, GPIO_PIN_RESET);
+
+	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(LORA_BUSSY_GPIO_Port, LORA_BUSSY_Pin, GPIO_PIN_RESET);
+
+	/*Configure GPIO pins : KA_LED_Pin LORA_TX_OK_Pin LORA_RX_OK_Pin DIO1_Pin */
+	GPIO_InitStruct.Pin = KA_LED_Pin | LORA_TX_OK_Pin | LORA_RX_OK_Pin
+			| DIO1_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	/*Configure GPIO pins : LORA_NSS_Pin LORA_RST_Pin */
+	GPIO_InitStruct.Pin = LORA_NSS_Pin | LORA_RST_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	/*Configure GPIO pin : DIO3_Pin */
+	GPIO_InitStruct.Pin = DIO3_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(DIO3_GPIO_Port, &GPIO_InitStruct);
+
+	/*Configure GPIO pin : LORA_BUSSY_Pin */
+	GPIO_InitStruct.Pin = LORA_BUSSY_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(LORA_BUSSY_GPIO_Port, &GPIO_InitStruct);
+
+	/* USER CODE BEGIN MX_GPIO_Init_2 */
+	/* USER CODE END MX_GPIO_Init_2 */
+}
+
 /* USER CODE BEGIN 4 */
+
+void USART1_IRQHandler(void) {
+	if (u1->rxSize >= RX_BUFFLEN) {
+		memset(u1->rxData, 0, RX_BUFFLEN);
+		u1->rxSize = 0;
+		u1->isReceivedDataReady = false;
+	}
+
+	u1->rxData[u1->rxSize++] = readRxReg();
+	if (u1->rxData[u1->rxSize - 1] == LTEL_END_MARK)
+		u1->isReceivedDataReady = true;
+	if (u1->rxData[0] != LTEL_START_MARK) {
+		memset(u1->rxData, 0, RX_BUFFLEN);
+		u1->rxSize = 0;
+		u1->isReceivedDataReady = false;
+	}
+}
 
 /* USER CODE END 4 */
 

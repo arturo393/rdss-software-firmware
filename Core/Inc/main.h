@@ -57,6 +57,12 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define KA_LED_Pin GPIO_PIN_4
+#define KA_LED_GPIO_Port GPIOA
+#define LORA_TX_OK_Pin GPIO_PIN_5
+#define LORA_TX_OK_GPIO_Port GPIOA
+#define LORA_RX_OK_Pin GPIO_PIN_6
+#define LORA_RX_OK_GPIO_Port GPIOA
 #define LORA_NSS_Pin GPIO_PIN_0
 #define LORA_NSS_GPIO_Port GPIOB
 #define LORA_RST_Pin GPIO_PIN_1
@@ -67,12 +73,13 @@ void Error_Handler(void);
 #define DIO1_GPIO_Port GPIOA
 #define RS232_TX_Pin GPIO_PIN_9
 #define RS232_TX_GPIO_Port GPIOA
-#define BUSSY_Pin GPIO_PIN_6
-#define BUSSY_GPIO_Port GPIOC
+#define LORA_BUSSY_Pin GPIO_PIN_6
+#define LORA_BUSSY_GPIO_Port GPIOC
 #define RS232_RX_Pin GPIO_PIN_10
 #define RS232_RX_GPIO_Port GPIOA
 #define SCK_Pin GPIO_PIN_3
 #define SCK_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

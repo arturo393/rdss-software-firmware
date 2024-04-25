@@ -34,34 +34,34 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := VLADR
+BUILD_ARTIFACT_NAME := rdss_slave
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-VLADR.elf \
+rdss_slave.elf \
 
 MAP_FILES += \
-VLADR.map \
+rdss_slave.map \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-VLADR.list \
+rdss_slave.list \
 
 
 # All Target
 all: main-build
 
 # Main-build Target
-main-build: VLADR.elf secondary-outputs
+main-build: rdss_slave.elf secondary-outputs
 
 # Tool invocations
-VLADR.elf VLADR.map: $(OBJS) $(USER_OBJS) C:\Users\sigmadev\development\stm32\VLADR\STM32G030K6TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "VLADR.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\sigmadev\development\stm32\VLADR\STM32G030K6TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="VLADR.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+rdss_slave.elf rdss_slave.map: $(OBJS) $(USER_OBJS) C:\Users\artur\STM32CubeIDE\VLADR\STM32G030K6TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "rdss_slave.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\artur\STM32CubeIDE\VLADR\STM32G030K6TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="rdss_slave.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -70,14 +70,14 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-VLADR.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "VLADR.list"
+rdss_slave.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "rdss_slave.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) VLADR.elf VLADR.list VLADR.map default.size.stdout
+	-$(RM) default.size.stdout rdss_slave.elf rdss_slave.list rdss_slave.map
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)

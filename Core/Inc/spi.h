@@ -1,30 +1,23 @@
-/* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __spi_H
-#define __spi_H
-#ifdef __cplusplus
- extern "C" {
-#endif
-
-/* Includes ------------------------------------------------------------------*/
+/*
+ * spi.h
+ *
+ *  Created on: Apr 17, 2023
+ *      Author: artur
+ */
 #include "main.h"
+#ifndef SRC_SPI_H_
+#define SRC_SPI_H_
 
-/* USER CODE BEGIN Includes */
+// SPI1 Configuration
+#define SPI1_PORT           GPIOA
+#define SPI1_SCK_PIN        GPIO_PIN_12
+#define SPI1_MISO_PIN       GPIO_PIN_6
+#define SPI1_MOSI_PIN       GPIO_PIN_7
+#define SPI1_NSS_PIN        GPIO_PIN_4
 
-/* USER CODE END Includes */
+#define SPI1_AF             GPIO_AF0_SPI1
 
-extern SPI_HandleTypeDef hspi1;
+void spi1_init(void);
+void spi1Transmit(uint8_t *data_out, uint8_t *data_in, uint16_t size);
 
-/* USER CODE BEGIN Private defines */
-
-/* USER CODE END Private defines */
-
-void MX_SPI1_Init(void);
-
-/* USER CODE BEGIN Prototypes */
-
-/* USER CODE END Prototypes */
-
-#ifdef __cplusplus
-}
-#endif
-#endif /*__ spi_H */
+#endif /* SRC_SPI_H_ */

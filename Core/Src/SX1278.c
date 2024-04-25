@@ -7,306 +7,432 @@
  */
 
 #include "SX1278.h"
-#include <string.h>
 
-uint8_t SX1278_SPIRead(SX1278_t *module, uint8_t addr) {
-	uint8_t tmp;
-
-	SX1278_hw_SPICommand(module->hw, addr);
-	tmp = SX1278_hw_SPIReadByte(module->hw);
-	SX1278_hw_SetNSS(module->hw, 1);
-
-	return tmp;
+uint8_t readRegister(SPI_HandleTypeDef *spi, uint8_t address) {
+	uint8_t rec = 0;
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET);  // pull the pin low
+	HAL_Delay(1);
+	HAL_SPI_Transmit(spi, &address, 1, 100);  // send address
+	HAL_SPI_Receive(spi, &rec, 1, 100);  // receive 6 bytes data
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET);  // pull the pin high
+	return rec;
 }
 
-void SX1278_SPIWrite(SX1278_t *module, uint8_t addr, uint8_t cmd) {
-
-	SX1278_hw_SetNSS(module->hw, 0);
-	SX1278_hw_SPICommand(module->hw, addr | 0x80);
-	SX1278_hw_SPICommand(module->hw, cmd);
-	SX1278_hw_SetNSS(module->hw, 1);
-}
-
-void SX1278_SPIBurstRead(SX1278_t *module, uint8_t addr, uint8_t *rxBuf,
-		uint8_t length) {
-	uint8_t i;
-	if (length <= 1) {
+void writeRegister(SPI_HandleTypeDef *spi, uint8_t address, uint8_t *cmd,
+		uint8_t lenght) {
+	if (lenght > 4)
 		return;
-	} else {
-		SX1278_hw_SetNSS(module->hw, 0);
-		SX1278_hw_SPICommand(module->hw, addr);
-		for (i = 0; i < length; i++) {
-			*(rxBuf + i) = SX1278_hw_SPIReadByte(module->hw);
-		}
-		SX1278_hw_SetNSS(module->hw, 1);
-
+	uint8_t tx_data[5] = { 0 };
+	tx_data[0] = address | 0x80;
+	int j = 0;
+	for (int i = 1; i <= lenght; i++) {
+		tx_data[i] = cmd[j++];
 	}
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET);  // pull the pin low
+	HAL_SPI_Transmit(spi, tx_data, lenght + 1, 1000);
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET);  // pull the pin high
+	HAL_Delay(10);
 }
 
-void SX1278_SPIBurstRead2(SX1278_t *module) {
-	uint8_t i;
-	if (module->packetLength <= 1) {
-		return;
-	} else {
-		SX1278_hw_SetNSS(module->hw, 0);
-		SX1278_hw_SPICommand(module->hw, 0x00);
-		SX1278_hw_SPIReadnByte(module->hw, module->rxBuffer, module->packetLength);
-		SX1278_hw_SetNSS(module->hw, 1);
-	}
-}
-
-uint8_t SX1278_SPIBurstWrite(SX1278_t *module, uint8_t addr, uint8_t *txBuf,
+// Function to write to register via SPI
+void writeRegister2(SPI_HandleTypeDef *spi, uint8_t address, uint8_t *data,
 		uint8_t length) {
-	unsigned char i;
-	if (length <= 1) {
-		return length;
-	} else {
-		SX1278_hw_SetNSS(module->hw, 0);
-		SX1278_hw_SPICommand(module->hw, addr | 0x80);
-		for (i = 0; i < length; i++) {
-			SX1278_hw_SPICommand(module->hw, *(txBuf + i));
-		}
-		SX1278_hw_SetNSS(module->hw, 1);
-	}
 
-	return length;
+	if (length > 4)
+		return;
+	uint8_t tx_data[5] = { 0 };
+	uint16_t timeout = 1000;
+	tx_data[0] = address | 0x80; // set MSB high for write operation
+	for (int i = 0; i < length; i++) {
+		tx_data[i + 1] = data[i];
+	}
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET);  // pull the pin low
+	for (volatile int i = 0; i < 10; i++) {
+	} // delay for stabilization
+	for (int i = 0; i < length + 1; i++) {
+		spi->Instance->DR = tx_data[i]; // send data
+		while ((spi->Instance->SR & SPI_SR_TXE) == 0) { // wait for transmit buffer empty
+			if (--timeout == 0) { // check timeout
+				HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET); // pull the pin high
+				return; // return error
+			}
+		}
+		while ((spi->Instance->SR & SPI_SR_RXNE) == 0) { // wait for receive buffer not empty
+			if (--timeout == 0) { // check timeout
+				HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET); // pull the pin high
+				return; // return error
+			}
+		}
+		volatile uint8_t dummy_read = spi->Instance->DR; // read dummy data
+	}
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET);  // pull the pin high
 }
 
-void SX1278_config(SX1278_t *module) {
-	SX1278_sleep(module); //Change modem mode Must in Sleep mode
-	SX1278_hw_DelayMs(15);
+// Function to read register via SPI
+uint8_t readRegister2(SPI_HandleTypeDef *spi, uint8_t address) {
+	uint8_t rec;
+	uint16_t timeout = 1000;
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET);  // pull the pin low
+	for (volatile int i = 0; i < 10; i++) {
+	} // delay for stabilization
+	spi->Instance->DR = address; // send address
+	while ((spi->Instance->SR & SPI_SR_RXNE) == 0) { // wait for receive buffer not empty
+		if (--timeout == 0) { // check timeout
+			HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET); // pull the pin high
+			return 0; // return error
+		}
+	}
+	rec = spi->Instance->DR; // read data
+	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET);  // pull the pin high
+	return rec;
+}
 
-	sx1278_entry_LoRA_mode(module);
-
-	uint64_t freq = ((uint64_t) module->frequency << 19) / 32000000;
+void setRFFrequencyReg(SX1278_t *module) {
+	uint64_t freq = ((uint64_t) module->frequency << 19) / FXOSC;
 	uint8_t freq_reg[3];
 	freq_reg[0] = (uint8_t) (freq >> 16);
 	freq_reg[1] = (uint8_t) (freq >> 8);
 	freq_reg[2] = (uint8_t) (freq >> 0);
+	writeRegister(module->spi, LR_RegFrMsb, freq_reg, sizeof(freq_reg));
 
-	SX1278_SPIBurstWrite(module, LR_RegFrMsb, (uint8_t*) freq_reg, 3); //setting  frequency parameter
- //	SX1278_SPIWrite(module, RegSyncWord, 0x34); // 0x34 reserverd for LoRaWAN
-	SX1278_SPIWrite(module, RegSyncWord, 0x12); // 0x12 reserved for LoRaWAN
+}
 
-	//setting base parameter
-	SX1278_SPIWrite(module, LR_RegPaConfig, SX1278_Power[module->power]); //Setting output power parameter
-	SX1278_SPIWrite(module, LR_RegOcp, 0x0B);  //RegOcp,Close Over current protection, 0x0B default
-	SX1278_SPIWrite(module, LR_RegLna, 0x23);//RegLNA,High & LNA Enable
-	if (SX1278_SpreadFactor[module->LoRa_SF] == 6) {	//SFactor=6
-		uint8_t tmp;
-		SX1278_SPIWrite(module,
-		LR_RegModemConfig1,
-				((SX1278_LoRaBandwidth[module->LoRa_BW] << 4)
-						+ (SX1278_CodingRate[module->LoRa_CR] << 1) + 0x01)); //Implicit Enable CRC Enable(0x02) & Error Coding rate 4/5(0x01), 4/6(0x02), 4/7(0x03), 4/8(0x04)
+void setOutputPower(SX1278_t *module) {
+	writeRegister(module->spi, LR_RegPaConfig, &(module->power), 1);
+}
 
-		SX1278_SPIWrite(module,
-		LR_RegModemConfig2,
-				((SX1278_SpreadFactor[module->LoRa_SF] << 4)
-						+ (SX1278_CRC_Sum[module->LoRa_CRC_sum] << 2) + 0x03));
+void setLORAWAN(SX1278_t *module) {
+	writeRegister(module->spi, RegSyncWord, &(module->syncWord), 1);
+}
 
-		tmp = SX1278_SPIRead(module, 0x31);
-		tmp &= 0xF8;
-		tmp |= 0x05;
-		SX1278_SPIWrite(module, 0x31, tmp);
-		SX1278_SPIWrite(module, 0x37, 0x0C);
+void setOvercurrentProtect(SX1278_t *module) {
+	writeRegister(module->spi, LR_RegOcp, &(module->ocp), 1);
+}
+
+void setLNAGain(SX1278_t *module) {
+	writeRegister(module->spi, LR_RegLna, &(module->lnaGain), 1);
+}
+
+void setPreambleParameters(SX1278_t *module) {
+
+	writeRegister(module->spi, LR_RegSymbTimeoutLsb, &(module->symbTimeoutLsb),
+			1);
+	writeRegister(module->spi, LR_RegPreambleMsb, &(module->preambleLengthMsb),
+			1);
+	writeRegister(module->spi, LR_RegPreambleLsb, &(module->preambleLengthLsb),
+			1);
+}
+
+void setRegModemConfig(SX1278_t *module) {
+	uint8_t cmd = 0;
+	cmd = module->bandwidth << 4;
+	cmd += module->codingRate << 1;
+	cmd += module->headerMode;
+	writeRegister(module->spi, LR_RegModemConfig1, &cmd, 1); //Explicit Enable CRC Enable(0x02) & Error Coding rate 4/5(0x01), 4/6(0x02), 4/7(0x03), 4/8(0x04)
+
+	cmd = module->spreadFactor << 4;
+	cmd += module->LoRa_CRC_sum << 2;
+	cmd += module->symbTimeoutMsb;
+	writeRegister(module->spi, LR_RegModemConfig2, &cmd, 1);
+	writeRegister(module->spi, LR_RegModemConfig3, &(module->AgcAutoOn), 1);
+}
+
+void setDetectionParametersReg(SX1278_t *module) {
+	uint8_t tmp;
+	tmp = readRegister(module->spi, LR_RegDetectOptimize);
+	tmp &= 0xF8;
+	tmp |= 0x05;
+	writeRegister(module->spi, LR_RegDetectOptimize, &tmp, 1);
+	tmp = 0x0C;
+	writeRegister(module->spi, LR_RegDetectionThreshold, &tmp, 1);
+}
+
+void readOperatingMode(SX1278_t *module) {
+	module->operatingMode = (0x07 & readRegister(module->spi,
+	LR_RegOpMode));
+}
+
+void setLoRaLowFreqModeReg(SX1278_t *module, OPERATING_MODE_t mode) {
+	uint8_t cmd = LORA_MODE_ACTIVATION | LOW_FREQUENCY_MODE | mode;
+	writeRegister(module->spi, LR_RegOpMode, &cmd, 1);
+	module->operatingMode = mode;
+}
+
+void clearIrqFlagsReg(SX1278_t *module) {
+	uint8_t cmd = 0xFF;
+	writeRegister(module->spi, LR_RegIrqFlags, &cmd, 1);
+}
+
+void writeLoRaParametersReg(SX1278_t *module) {
+	setLoRaLowFreqModeReg(module, SLEEP);
+	HAL_Delay(15);
+	setRFFrequencyReg(module);
+	writeRegister(module->spi, RegSyncWord, &(module->syncWord), 1);
+	setOutputPower(module);
+	setOvercurrentProtect(module);
+	writeRegister(module->spi, LR_RegLna, &(module->lnaGain), 1);
+	if (module->spreadFactor == SF_6) {
+		module->headerMode = IMPLICIT;
+		module->symbTimeoutMsb = 0x03;
+		setDetectionParametersReg(module);
 	} else {
-		SX1278_SPIWrite(module,
-		LR_RegModemConfig1,
-				((SX1278_LoRaBandwidth[module->LoRa_BW] << 4)
-						+ (SX1278_CodingRate[module->LoRa_CR] << 1) + 0x00)); //Explicit Enable CRC Enable(0x02) & Error Coding rate 4/5(0x01), 4/6(0x02), 4/7(0x03), 4/8(0x04)
-
-		SX1278_SPIWrite(module,
-		LR_RegModemConfig2,
-				((SX1278_SpreadFactor[module->LoRa_SF] << 4)
-						+ (SX1278_CRC_Sum[module->LoRa_CRC_sum] << 2) + 0x00)); //SFactor &  LNA gain set by the internal AGC loop
+		module->headerMode = EXPLICIT;
+		module->symbTimeoutMsb = 0x00;
 	}
 
-	SX1278_SPIWrite(module, LR_RegModemConfig3, 0x08);
-	SX1278_SPIWrite(module, LR_RegSymbTimeoutLsb, 0x08); //RegSymbTimeoutLsb Timeout = 0x3FF(Max)
-	SX1278_SPIWrite(module, LR_RegPreambleMsb, 0x00); //RegPreambleMsb
-	SX1278_SPIWrite(module, LR_RegPreambleLsb, 65535); //RegPreambleLsb 8+4=12byte Preamble
-	SX1278_SPIWrite(module, REG_LR_DIOMAPPING2, 0x01); //RegDioMapping2 DIO5=00, DIO4=01
-	module->readBytes = 0;
-	SX1278_standby(module); //Entry standby mode
+	setRegModemConfig(module);
+	setPreambleParameters(module);
+	writeRegister(module->spi, LR_RegHopPeriod, &(module->fhssValue), 1);
+	writeRegister(module->spi, LR_RegDioMapping1, &(module->dioConfig), 1);
+	clearIrqFlagsReg(module);
+	writeRegister(module->spi, LR_RegIrqFlagsMask, &(module->flagsMode), 1);
 }
 
-void SX1278_standby(SX1278_t *module) {
-	SX1278_SPIWrite(module, LR_RegOpMode, 0x09);
-	module->status = STANDBY;
+void changeMode(SX1278_t *module, Lora_Mode_t mode) {
+
+	if (mode == SLAVE_SENDER || mode == MASTER_SENDER) {
+		module->frequency =
+				(mode == SLAVE_SENDER) ? module->upFreq : module->dlFreq;
+		module->dioConfig = DIO0_TX_DONE | DIO1_RX_TIMEOUT
+				| DIO2_FHSS_CHANGE_CHANNEL | DIO3_VALID_HEADER;
+		module->flagsMode = 0xff;
+		CLEAR_BIT(module->flagsMode, TX_DONE_MASK);
+		module->mode = mode;
+		module->status = TX_MODE;
+
+	} else if (mode == SLAVE_RECEIVER || mode == MASTER_RECEIVER) {
+		module->frequency =
+				(mode == SLAVE_RECEIVER) ? module->dlFreq : module->upFreq;
+
+		module->dioConfig = DIO0_RX_DONE | DIO1_RX_TIMEOUT
+				| DIO2_FHSS_CHANGE_CHANNEL | DIO3_VALID_HEADER;
+		module->flagsMode = 0xff;
+		CLEAR_BIT(module->flagsMode, RX_DONE_MASK);
+		CLEAR_BIT(module->flagsMode, PAYLOAD_CRC_ERROR_MASK);
+		module->mode = mode;
+		module->status = RX_MODE;
+	}
+	setLoRaLowFreqModeReg(module, STANDBY);
+	HAL_Delay(1);
+	setRFFrequencyReg(module);
+	writeRegister(module->spi, LR_RegDioMapping1, &(module->dioConfig), 1);
+	clearIrqFlagsReg(module);
+	writeRegister(module->spi, LR_RegIrqFlagsMask, &(module->flagsMode), 1);
 }
 
-void SX1278_sleep(SX1278_t *module) {
-	SX1278_SPIWrite(module, LR_RegOpMode, 0x08);
-	module->status = SLEEP;
+void initLoRaParameters(SX1278_t *module) {
+	module->power = SX1278_POWER_17DBM;
+	module->LoRa_CRC_sum = CRC_ENABLE;
+	module->ocp = OVERCURRENTPROTECT;
+	module->lnaGain = LNAGAIN;
+	module->AgcAutoOn = 12; // for L-TEL PROTOCOL
+	module->syncWord = 0x12; // for L-TEL PROTOCOL
+	module->symbTimeoutLsb = RX_TIMEOUT_LSB;
+	module->preambleLengthMsb = PREAMBLE_LENGTH_MSB;
+	module->preambleLengthLsb = PREAMBLE_LENGTH_LSB;
+	module->preambleLengthLsb = 12; // for L-TEL PROTOCOL
+	module->fhssValue = HOPS_PERIOD; // for L-TEL PROTOCOL
+	module->len = 9;
 }
 
-void sx1278_entry_LoRA_mode(SX1278_t *module) {
-	SX1278_SPIWrite(module, LR_RegOpMode, 0x88);
+void sx1278Reset() {
+	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_RESET);
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_SET);
+	HAL_Delay(100);
 }
 
-void SX1278_clearLoRaIrq(SX1278_t *module) {
-	SX1278_SPIWrite(module, LR_RegIrqFlags, 0xFF);
-}
-
-int SX1278_LoRaEntryRx(SX1278_t *module, uint8_t length, uint32_t timeout) {
-	uint8_t addr;
-
-	module->packetLength = length;
-
-	SX1278_config(module);		//Setting base parameter
-	SX1278_SPIWrite(module, REG_LR_PADAC, 0x84);	//Normal and RX
-	SX1278_SPIWrite(module, LR_RegHopPeriod, 0xFF);	//No FHSS
-	SX1278_SPIWrite(module, REG_LR_DIOMAPPING1, 0x01);//DIO=00,DIO1=00,DIO2=00, DIO3=01
-	SX1278_SPIWrite(module, LR_RegIrqFlagsMask, 0x3F);//Open RxDone interrupt & Timeout
-	SX1278_clearLoRaIrq(module);
-	SX1278_SPIWrite(module, LR_RegPayloadLength, length);//Payload Length 21byte(this register must difine when the data long of one byte in SF is 6)
-	addr = SX1278_SPIRead(module, LR_RegFifoRxBaseAddr); //Read RxBaseAddr
-	SX1278_SPIWrite(module, LR_RegFifoAddrPtr, addr); //RxBaseAddr->FiFoAddrPtr
-	SX1278_SPIWrite(module, LR_RegOpMode, 0x8d);	//Mode//Low Frequency Mode
-	//SX1278_SPIWrite(module, LR_RegOpMode,0x05);	//Continuous Rx Mode //High Frequency Mode
-	module->readBytes = 0;
-
+void waitForTxEnd(SX1278_t *loRa) {
+	int timeStart = HAL_GetTick();
+	uint8_t irqFlags = 0;
 	while (1) {
-		if ((SX1278_SPIRead(module, LR_RegModemStat) & 0x04) == 0x04) {	//Rx-on going RegModemStat
-			module->status = RX;
-			return 1;
+		irqFlags = readRegister(loRa->spi, LR_RegIrqFlags);
+		if (HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port, LORA_BUSSY_Pin)
+				|| (irqFlags & 0x08)) {
+			int timeEnd = HAL_GetTick();
+			loRa->lastTxTime = timeEnd - timeStart;
+//			readRegister(loRa->spi, LR_RegIrqFlags);
+//			clearIrqFlagsReg(loRa);
+			loRa->status = TX_DONE;
+			return;
 		}
-		if (--timeout == 0) {
-			SX1278_hw_Reset(module->hw);
-			SX1278_config(module);
-			return 0;
+		if (HAL_GetTick() - timeStart > LORA_SEND_TIMEOUT) {
+			sx1278Reset();
+			loRa->status = TX_TIMEOUT;
+			return;
 		}
-		SX1278_hw_DelayMs(1);
+		//HAL_Delay(1);
 	}
 }
 
-uint8_t SX1278_LoRaRxPacket(SX1278_t *module) {
-	unsigned char addr;
-	unsigned char packet_size;
-
-		memset(module->rxBuffer, 0x00, SX1278_MAX_PACKET);
-
-		addr = SX1278_SPIRead(module, LR_RegFifoRxCurrentaddr); //last packet addr
-		SX1278_SPIWrite(module, LR_RegFifoAddrPtr, addr); //RxBaseAddr -> FiFoAddrPtr
-
-		if (module->LoRa_SF == SX1278_LORA_SF_6) { //When SpreadFactor is six,will used Implicit Header mode(Excluding internal packet length)
-			packet_size = module->packetLength;
-		} else {
-			packet_size = SX1278_SPIRead(module, LR_RegRxNbBytes); //Number for received bytes
+uint8_t waitForRxDone2(SX1278_t *loRa) {
+	uint32_t timeout = HAL_GetTick();
+	while ((!HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port, LORA_BUSSY_Pin))) {
+		uint8_t flags = readRegister(loRa->spi, LR_RegIrqFlags);
+		if (READ_BIT(flags, PAYLOAD_CRC_ERROR_MASK)) {
+			uint8_t cmd = flags | (1 << 7);
+			writeRegister(loRa->spi, LR_RegIrqFlags, &cmd, 1);
+			flags = readRegister(loRa->spi, LR_RegIrqFlags);
 		}
-
-	//	SX1278_SPIBurstRead2(module);
-		SX1278_SPIBurstRead(module, 0x00, module->rxBuffer, packet_size);
-		module->readBytes = packet_size;
-		SX1278_clearLoRaIrq(module);
-
-	return module->readBytes;
-}
-
-int SX1278_LoRaEntryTx(SX1278_t *module, uint8_t length, uint32_t timeout) {
-	uint8_t addr;
-	uint8_t temp;
-
-	module->packetLength = length;
-
-	SX1278_config(module); //setting base parameter
-	SX1278_SPIWrite(module, REG_LR_PADAC, 0x87);	//Tx for 20dBm
-	SX1278_SPIWrite(module, LR_RegHopPeriod, 0x00); //RegHopPeriod NO FHSS
-	SX1278_SPIWrite(module, REG_LR_DIOMAPPING1, 0x41); //DIO0=01, DIO1=00,DIO2=00, DIO3=01
-	SX1278_clearLoRaIrq(module);
-	SX1278_SPIWrite(module, LR_RegIrqFlagsMask, 0xF7); //Open TxDone interrupt
-	SX1278_SPIWrite(module, LR_RegPayloadLength, length); //RegPayloadLength 21byte
-	addr = SX1278_SPIRead(module, LR_RegFifoTxBaseAddr); //RegFiFoTxBaseAddr
-	SX1278_SPIWrite(module, LR_RegFifoAddrPtr, addr); //RegFifoAddrPtr
-
-	while (1) {
-		temp = SX1278_SPIRead(module, LR_RegPayloadLength);
-		if (temp == length) {
-			module->status = TX;
-			return 1;
-		}
-
-		if (--timeout == 0) {
-			SX1278_hw_Reset(module->hw);
-			SX1278_config(module);
-			return 0;
-		}
-	}
-}
-
-int SX1278_LoRaTxPacket(SX1278_t *module, uint8_t *txBuffer, uint8_t length,
-		uint32_t timeout) {
-
-
-	SX1278_SPIBurstWrite(module, 0x00, txBuffer, length);
-	SX1278_SPIWrite(module, LR_RegOpMode, 0x8b);	//Tx Mode
-
-	while (1) {
-		if (SX1278_hw_GetDIO0(module->hw)) { //if(Get_NIRQ()) //Packet send over
-			SX1278_SPIRead(module, LR_RegIrqFlags);
-			SX1278_clearLoRaIrq(module); //Clear irq
-			SX1278_standby(module); //Entry Standby mode
-			return 1;
-		}
-
-		if (--timeout == 0) {
-			SX1278_hw_Reset(module->hw);
-			SX1278_config(module);
-			return 0;
-		}
-		SX1278_hw_DelayMs(10);
-	}
-}
-
-void SX1278_init(SX1278_t *module, uint64_t frequency, uint8_t power,
-		uint8_t LoRa_SF, uint8_t LoRa_BW, uint8_t LoRa_CR,
-		uint8_t LoRa_CRC_sum, uint8_t packetLength) {
-	SX1278_hw_init(module->hw);
-	module->frequency = frequency;
-	module->power = power;
-	module->LoRa_SF = LoRa_SF;
-	module->LoRa_BW = LoRa_BW;
-	module->LoRa_CR = LoRa_CR;
-	module->LoRa_CRC_sum = LoRa_CRC_sum;
-	module->packetLength = packetLength;
-	SX1278_config(module);
-}
-
-int SX1278_transmit(SX1278_t *module, uint8_t *txBuf, uint8_t length,
-		uint32_t timeout) {
-	if (SX1278_LoRaEntryTx(module, length, timeout)) {
-		return SX1278_LoRaTxPacket(module, txBuf, length, timeout);
+		if (HAL_GetTick() - timeout > 2000)
+			return -1;
 	}
 	return 0;
 }
 
-int SX1278_receive(SX1278_t *module, uint8_t length, uint32_t timeout) {
-	return SX1278_LoRaEntryRx(module, length, timeout);
+uint8_t waitForRxDone(SX1278_t *loRa) {
+	uint32_t timeout = HAL_GetTick();
+	while (!HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port, LORA_BUSSY_Pin)) {
+		uint8_t flags = readRegister(loRa->spi, LR_RegIrqFlags);
+		if (flags & PAYLOAD_CRC_ERROR_MASK) {
+			flags |= (1 << 7);
+			writeRegister(loRa->spi, LR_RegIrqFlags, &flags, 1);
+			flags = readRegister(loRa->spi, LR_RegIrqFlags);
+		}
+		if (HAL_GetTick() - timeout > 2000) {
+			return -1;
+		}
+	}
+	return 0;
 }
 
-uint8_t SX1278_available(SX1278_t *module) {
-	return SX1278_LoRaRxPacket(module);
+void setRxFifoAddr(SX1278_t *module) {
+	setLoRaLowFreqModeReg(module, SLEEP); //Change modem mode Must in Sleep mode
+	uint8_t cmd = module->rxSize;
+	//cmd = 9;
+	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1); //RegPayloadLength 21byte
+	uint8_t addr = readRegister(module->spi, LR_RegFifoRxBaseAddr); //RegFiFoTxBaseAddr
+	addr = 0x00;
+	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1); //RegFifoAddrPtr
+	module->rxSize = readRegister(module->spi, LR_RegPayloadLength);
 }
 
-uint8_t SX1278_read(SX1278_t *module, uint8_t *rxBuf, uint8_t length) {
-	if (length != module->readBytes)
-		length = module->readBytes;
-	memcpy(rxBuf, module->rxBuffer, length);
-	rxBuf[length] = '\0';
-	module->readBytes = 0;
-	return length;
+int crcErrorActivation(SX1278_t *module) {
+	uint8_t flags;
+	flags = readRegister(module->spi, LR_RegIrqFlags);
+	SET_BIT(flags, RX_DONE_MASK);
+	writeRegister(module->spi, LR_RegIrqFlags, &flags, 1);
+	flags = readRegister(module->spi, LR_RegIrqFlags);
+	uint8_t errorActivation = READ_BIT(flags, PAYLOAD_CRC_ERROR_MASK);
+	return errorActivation;
 }
 
-uint8_t SX1278_RSSI_LoRa(SX1278_t *module) {
-	uint32_t temp = 10;
-	temp = SX1278_SPIRead(module, LR_RegRssiValue); //Read RegRssiValue, Rssi value
-	temp = temp + 127 - 137; //127:Max RSSI, 137:RSSI offset
-	return (uint8_t) temp;
+uint8_t* getRxFifoData(SX1278_t *loRa) {
+	loRa->rxSize = readRegister(loRa->spi, LR_RegRxNbBytes); //Number for received bytes
+	if (loRa->rxSize > 0) {
+		loRa->rxData = malloc(sizeof(uint8_t) * loRa->rxSize);
+		uint8_t addr = 0x00;
+		HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET); // pull the pin low
+		HAL_Delay(1);
+		HAL_SPI_Transmit(loRa->spi, &addr, 1, 100); // send address
+		HAL_SPI_Receive(loRa->spi, loRa->rxData, loRa->rxSize, 100); // receive 6 bytes data
+		HAL_Delay(1);
+		HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET); // pull the pin high
+		loRa->status = RX_DONE;
+	}
+
+	return loRa->rxData;
 }
 
-uint8_t SX1278_RSSI(SX1278_t *module) {
-	uint8_t temp = 0xff;
-	temp = SX1278_SPIRead(module, RegRssiValue);
-	temp = 127 - (temp >> 1);	//127:Max RSSI
-	return temp;
+void setTxFifoAddr(SX1278_t *module) {
+	uint8_t cmd = module->len;
+	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1);
+	uint8_t addr = readRegister(module->spi, LR_RegFifoTxBaseAddr);
+	addr = 0x80;
+	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1);
+	module->len = readRegister(module->spi, LR_RegPayloadLength);
+}
+
+uint8_t setTxFifoData(SX1278_t *loRa) {
+	uint8_t cmd = loRa->txSize;
+	if (loRa->txSize > 0) {
+		writeRegister(loRa->spi, LR_RegPayloadLength, &(cmd), 1);
+		uint8_t addr = readRegister(loRa->spi, LR_RegFifoTxBaseAddr);
+		addr = 0x80;
+		writeRegister(loRa->spi, LR_RegFifoAddrPtr, &addr, 1);
+		loRa->txSize = readRegister(loRa->spi, LR_RegPayloadLength);
+		for (int i = 0; i < loRa->txSize; i++)
+			writeRegister(loRa->spi, 0x00, loRa->txData + i, 1);
+	}
+	return loRa->txSize;
+}
+
+void receive(SX1278_t *loRa) {
+	setRxFifoAddr(loRa);
+	setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS);
+	clearRxMemory(loRa);
+	waitForRxDone(loRa);
+	getRxFifoData(loRa);
+}
+
+void transmit(SX1278_t *loRa) {
+	setTxFifoData(loRa);
+	setLoRaLowFreqModeReg(loRa, TX);
+	waitForTxEnd(loRa);
+//	memset(loRa->buffer, 0, sizeof(loRa->buffer));
+//	loRa->len = 0;
+}
+
+void readLoRaSettings(SX1278_t *loRa) {
+
+	readPage(CAT24C02_PAGE0_START_ADDR, &(loRa->spreadFactor), 0, 1);
+	readPage(CAT24C02_PAGE0_START_ADDR, &(loRa->bandwidth), 1, 1);
+	readPage(CAT24C02_PAGE0_START_ADDR, &(loRa->codingRate), 2, 1);
+	readPage(CAT24C02_PAGE1_START_ADDR, (uint8_t*) &(loRa->upFreq), 0, 4);
+	readPage(CAT24C02_PAGE1_START_ADDR, (uint8_t*) &(loRa->dlFreq), 4, 4);
+	if (loRa->spreadFactor < SF_6 || loRa->spreadFactor > SF_12)
+		loRa->spreadFactor = SF_10;
+
+	if (loRa->bandwidth < LORABW_7_8KHZ || loRa->bandwidth > LORABW_500KHZ)
+		loRa->bandwidth = LORABW_62_5KHZ;
+
+	if (loRa->codingRate < LORA_CR_4_5 || loRa->codingRate > LORA_CR_4_8)
+		loRa->codingRate = LORA_CR_4_6;
+
+	if (loRa->upFreq < UPLINK_FREQ_MIN || loRa->upFreq > UPLINK_FREQ_MAX)
+		loRa->upFreq = UPLINK_FREQ;
+
+	if (loRa->dlFreq < DOWNLINK_FREQ_MIN || loRa->dlFreq > DOWNLINK_FREQ_MAX)
+		loRa->dlFreq = DOWNLINK_FREQ;
+}
+
+SX1278_t* loRaInit(SPI_HandleTypeDef *hspi1, Lora_Mode_t loRaMode) {
+	SX1278_t *loRa;
+	loRa = malloc(sizeof(SX1278_t));
+	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LORA_RST_GPIO_Port, LORA_RST_Pin, GPIO_PIN_SET);
+	loRa->spi = hspi1;
+	loRa->operatingMode = readRegister(loRa->spi, LR_RegOpMode);
+	loRa->mode = -1;
+	loRa->power = SX1278_POWER_17DBM;
+	loRa->LoRa_CRC_sum = CRC_ENABLE;
+	loRa->ocp = OVERCURRENTPROTECT;
+	loRa->lnaGain = LNAGAIN;
+	loRa->AgcAutoOn = 12; // for L-TEL PROTOCOL
+	loRa->syncWord = 0x12; // for L-TEL PROTOCOL
+	loRa->symbTimeoutLsb = RX_TIMEOUT_LSB;
+	loRa->preambleLengthMsb = PREAMBLE_LENGTH_MSB;
+	loRa->preambleLengthLsb = PREAMBLE_LENGTH_LSB;
+	loRa->preambleLengthLsb = 12; // for L-TEL PROTOCOL
+	loRa->fhssValue = HOPS_PERIOD; // for L-TEL PROTOCOL
+	loRa->len = 9;
+
+	loRa->rxSize = 0;
+	loRa->txSize = 0;
+	readLoRaSettings(loRa);
+	changeMode(loRa, loRaMode);
+	writeLoRaParametersReg(loRa);
+	return (loRa);
+}
+
+void configureLoRaRx(SX1278_t *loRa, Lora_Mode_t mode) {
+	if (loRa->mode != mode)
+		return;
+	if (loRa->operatingMode == RX_CONTINUOUS)
+		return;
+	changeMode(loRa, mode);
+	setRxFifoAddr(loRa);
+	setLoRaLowFreqModeReg(loRa, RX_CONTINUOUS);
 }
