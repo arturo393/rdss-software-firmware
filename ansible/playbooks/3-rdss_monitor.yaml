@@ -1,0 +1,33 @@
+# Install MiniPC Software 
+---
+- name: Install RDSS Monitor
+  hosts: all
+  become: true
+  vars_files:
+    - ../vars.yaml
+  tasks:
+  - name: "Installing Monitor files"
+    copy:
+      remote_src: true
+      src: /tmp/rdss2/monitor/src/
+      dest: /opt/rdss/monitor
+  - name: "Remove unused monitor entrypoint file"
+    file:
+      path: /opt/rdss/monitor/entrypoint.sh
+      state: absent
+  - name: Apply Config Template
+    template:
+      src: monitor_config.j2
+      dest: /opt/rdss/monitor/config.py
+  - name: "Installing monitor system service"
+    copy:
+      remote_src: true
+      src: /tmp/rdss2/monitor/monitorRDSS.service
+      dest: /etc/systemd/system
+      owner: root
+      group: root
+  - name: "Start monitor"
+    systemd:
+      name: monitorRDSS
+      state: restarted
+      enabled: yes

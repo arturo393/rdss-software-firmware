@@ -1,0 +1,24 @@
+# Install MiniPC Software 
+---
+- name: Install Monitor Python Dependencies
+  hosts: all
+  become: true
+  tasks:
+  - name: "Install pip"
+    apt:
+      update_cache: yes
+      name: python3-pip
+      state: present
+  - name: Install Monitor python packages
+    pip:
+      name:
+        - python-socketio
+        - pymongo
+        - crccheck
+        - pyserial
+        - sympy
+        - Flask
+        - flask_socketio
+        - eventlet
+        - numpy
+  

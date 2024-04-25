@@ -1,0 +1,30 @@
+# Install MiniPC Software 
+---
+- name: Install MongoDB
+  hosts: all
+  become: true
+  tasks:
+  - name: Update and upgrade apt packages
+    apt:
+      upgrade: yes
+      update_cache: yes
+      cache_valid_time: 86400 #One day
+  - name: Add mongo apt key
+    apt_key:
+      url: https://www.mongodb.org/static/pgp/server-4.4.asc
+      state: present
+  - name: Add mongo sources list
+    apt_repository:    
+      repo: deb http://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse
+      state: present
+  - name: Install mongo software
+    apt: name=mongodb-org state=latest update_cache=yes
+  - name: Start mongod service
+    service:
+     name: mongod
+     enabled: yes
+     state: started
+     daemon_reload: yes
+    with_sequence: start=0 end={{ansible_processor_cores-1}}
+
+  

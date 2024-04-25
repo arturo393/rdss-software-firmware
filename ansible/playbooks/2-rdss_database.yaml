@@ -1,0 +1,21 @@
+# Install MiniPC Software 
+---
+- name: Init RDSS database
+  hosts: all
+  become: true
+  vars_files:
+    - ../vars.yaml
+  tasks:
+  - name: Apply Config Template
+    template:
+      src: database_config.j2
+      dest: /tmp/rdss2/database/config/init-mongo.js
+  - name: "Loading database init script"
+    shell: mongo localhost:27017/rdss --eval "load('/tmp/rdss2/database/config/init-mongo.js')"
+  - name: Start mongod service
+    service:
+      name: mongod
+      enabled: yes
+      state: started
+      daemon_reload: yes
+      # with_sequence: start=0 end={{ansible_processor_cores-1}}
