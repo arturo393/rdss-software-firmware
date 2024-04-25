@@ -32,7 +32,7 @@ void writeRegister(SPI_HandleTypeDef *spi, uint8_t address, uint8_t *cmd,
 	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET);  // pull the pin low
 	HAL_SPI_Transmit(spi, tx_data, lenght + 1, 1000);
 	HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET);  // pull the pin high
-	HAL_Delay(10);
+//	HAL_Delay(10);
 }
 
 // Function to write to register via SPI
@@ -156,12 +156,6 @@ void readOperatingMode(SX1278_t *module) {
 void setLoRaLowFreqModeReg(SX1278_t *module, OPERATING_MODE_t mode) {
 	uint8_t cmd = LORA_MODE_ACTIVATION | LOW_FREQUENCY_MODE | mode;
 	writeRegister(module->spi, LR_RegOpMode, &cmd, 1);
-
-	uint8_t read_test = 255;
-
-	read_test = readRegister(module->spi, LR_RegOpMode);
-
-
 	module->operatingMode = mode;
 }
 
@@ -196,7 +190,7 @@ void writeLoRaParametersReg(SX1278_t *module) {
 }
 
 void changeMode(SX1278_t *module, Lora_Mode_t mode) {
-
+	uint32_t timeStart = HAL_GetTick();
 	if (mode == SLAVE_SENDER || mode == MASTER_SENDER) {
 		module->frequency =
 				(mode == SLAVE_SENDER) ? module->upFreq : module->dlFreq;
@@ -214,13 +208,13 @@ void changeMode(SX1278_t *module, Lora_Mode_t mode) {
 		module->dioConfig = DIO0_RX_DONE | DIO1_RX_TIMEOUT
 				| DIO2_FHSS_CHANGE_CHANNEL | DIO3_VALID_HEADER;
 		module->flagsMode = 0xff;
-		CLEAR_BIT(module->flagsMode, RX_DONE_MASK);
-		CLEAR_BIT(module->flagsMode, PAYLOAD_CRC_ERROR_MASK);
+		module->flagsMode &= ~(RX_DONE_MASK) & ~(PAYLOAD_CRC_ERROR_MASK);
 		module->mode = mode;
 		module->status = RX_MODE;
 	}
+
 	setLoRaLowFreqModeReg(module, STANDBY);
-	HAL_Delay(15);
+	//HAL_Delay(1);
 	setRFFrequencyReg(module);
 	writeRegister(module->spi, LR_RegDioMapping1, &(module->dioConfig), 1);
 	clearIrqFlagsReg(module);
@@ -251,13 +245,15 @@ void sx1278Reset() {
 
 void waitForTxEnd(SX1278_t *loRa) {
 	int timeStart = HAL_GetTick();
+
+
 	while (1) {
 		if (HAL_GPIO_ReadPin(LORA_BUSSY_GPIO_Port, LORA_BUSSY_Pin)) {
-			int timeEnd = HAL_GetTick();
-			loRa->lastTxTime = timeEnd - timeStart;
+
 			readRegister(loRa->spi, LR_RegIrqFlags);
 			clearIrqFlagsReg(loRa);
 			loRa->status = TX_DONE;
+			loRa->lastTxTime = HAL_GetTick() - timeStart;
 			return;
 		}
 		if (HAL_GetTick() - timeStart > LORA_SEND_TIMEOUT) {
@@ -311,21 +307,18 @@ int crcErrorActivation(SX1278_t *module) {
 	return errorActivation;
 }
 
-uint8_t* getRxFifoData(SX1278_t *loRa) {
+void getRxFifoData(SX1278_t *loRa) {
+	uint8_t timeout = 100;
+	uint8_t addr = 0x00;
 	loRa->rxSize = readRegister(loRa->spi, LR_RegRxNbBytes); //Number for received bytes
 	if (loRa->rxSize > 0) {
-		loRa->rxData = malloc(sizeof(uint8_t) * loRa->rxSize);
-		uint8_t addr = 0x00;
 		HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_RESET); // pull the pin low
-		HAL_Delay(1);
-		HAL_SPI_Transmit(loRa->spi, &addr, 1, 100); // send address
-		HAL_SPI_Receive(loRa->spi, loRa->rxData, loRa->rxSize, 100); // receive 6 bytes data
-		HAL_Delay(1);
+		HAL_SPI_Transmit(loRa->spi, &addr, 1, timeout); // send address
+		HAL_SPI_Receive(loRa->spi, loRa->rxData, 256, timeout); // receive 6 bytes data
 		HAL_GPIO_WritePin(GPIOB, LORA_NSS_Pin, GPIO_PIN_SET); // pull the pin high
 		loRa->status = RX_DONE;
 	}
 
-	return loRa->rxData;
 }
 
 uint8_t setTxFifoAddr(SX1278_t *loRa) {
@@ -342,10 +335,8 @@ uint8_t setTxFifoAddr(SX1278_t *loRa) {
 void setRxFifoAddr(SX1278_t *module) {
 	setLoRaLowFreqModeReg(module, SLEEP); //Change modem mode Must in Sleep mode
 	uint8_t cmd = module->rxSize;
-	//cmd = 9;
 	writeRegister(module->spi, LR_RegPayloadLength, &(cmd), 1); //RegPayloadLength 21byte
-	uint8_t addr = readRegister(module->spi, LR_RegFifoRxBaseAddr); //RegFiFoTxBaseAddr
-	addr = 0x00;
+	uint8_t addr = 0x00;
 	writeRegister(module->spi, LR_RegFifoAddrPtr, &addr, 1); //RegFifoAddrPtr
 	module->rxSize = readRegister(module->spi, LR_RegPayloadLength);
 }
@@ -391,7 +382,6 @@ void transmit(SX1278_t *loRa) {
 	setTxFifoData(loRa);
 	setLoRaLowFreqModeReg(loRa, TX);
 	waitForTxEnd(loRa);
-
 }
 
 void validateSettings(SX1278_t *loRa) {

@@ -964,9 +964,8 @@ void processUart1Rx(UART1_t *u1, RDSS_t *rdss, Server_t *server, SX1278_t *loRa)
 	if (u1->isReceivedDataReady == false)
 		return;
 	u1->isReceivedDataReady = false;
-	HAL_Delay(1);
+	//HAL_Delay(1);
 	if (validate(u1->rxData, u1->rxSize) != DATA_OK) {
-		// Clear UART buffer and length
 		memset(u1->rxData, 0, sizeof(u1->rxData));
 		u1->rxSize = 0;
 		return;
@@ -1046,6 +1045,7 @@ void masterProcessRdss(RDSS_t *rdss) {
 	case SET_PARAMETERS:
 	case SET_PARAMETER_FREQBASE:
 	case QUERY_PARAMETER_PdBm:
+	case QUERY_UART1:
 		for (uint8_t i = 0; i < rdss->buffSize; i++)
 			writeTxReg(rdss->buff[i]);
 		break;
@@ -1066,29 +1066,28 @@ void masterProcessLoRaRx(SX1278_t *loRa, RDSS_t *rdss, Vlad_t *vlad) {
 	LORA_BUSSY_Pin) == GPIO_PIN_RESET)
 		return; // if (crcErrorActivation(loRa) != 1)
 
-	loRa->rxData = getRxFifoData(loRa);
+	getRxFifoData(loRa);
 	clearIrqFlagsReg(loRa); // Retrieve data from the receive FIFO
-	if (loRa->rxData < 0) {
-		free(loRa->rxData);
+	if (loRa->rxData < 0)
 		return;
-	}
-	if (validate(loRa->rxData, loRa->rxSize) != DATA_OK) {
-		free(loRa->rxData);
+
+	if (validate(loRa->rxData, loRa->rxSize) != DATA_OK)
 		return;
-	}
+
 
 	updateRdss(rdss, loRa->rxData, loRa->rxSize);
 
 	if (rdss->idReceived != rdss->idQuery) {
 		rdss->status = WRONG_MODULE_ID;
-		free(loRa->rxData);
 		return;
 	}
 	HAL_GPIO_WritePin(LORA_RX_OK_GPIO_Port, LORA_RX_OK_Pin, GPIO_PIN_SET);
 	masterProcessRdss(rdss);
 	rdssReinit(rdss);
-	free(loRa->rxData);
 	loRa->rxSize = 0;
+	setLoRaLowFreqModeReg(loRa, SLEEP);
+	uint8_t addr = 0;
+	writeRegister(loRa->spi, LR_RegFifoAddrPtr, &addr, 1);
 	HAL_GPIO_WritePin(LORA_RX_OK_GPIO_Port, LORA_RX_OK_Pin, GPIO_PIN_RESET);
 }
 

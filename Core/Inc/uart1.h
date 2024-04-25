@@ -13,7 +13,7 @@
 #include "stdlib.h"
 #include "string.h"
 
-#define UART2_RX_BUFFLEN 30
+#define UART2_RX_BUFFLEN 300
 #define TX_BUFFLEN  35
 #define SECONDS(x) x*1000
 
