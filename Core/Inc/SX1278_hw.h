@@ -9,6 +9,8 @@
 #define __SX1278_HW_HEADER
 
 #include <stdint.h>
+#include <string.h>
+#include "main.h"
 
 typedef struct {
 	int pin;
@@ -19,7 +21,6 @@ typedef struct {
 	SX1278_hw_dio_t reset;
 	SX1278_hw_dio_t dio0;
 	SX1278_hw_dio_t nss;
-	void *spi;
 } SX1278_hw_t;
 
 /**
@@ -58,7 +59,7 @@ void SX1278_hw_Reset(SX1278_hw_t *hw);
  * \param[in]   hw 		Pointer to hardware structure
  * \param[in]   cmd		Command
  */
-void SX1278_hw_SPICommand(SX1278_hw_t *hw, uint8_t cmd);
+void SX1278_hw_SPICommand(SX1278_hw_t *hw, uint8_t cmd,SPI_HandleTypeDef *spi);
 
 /**
  * \brief Reads data via SPI
@@ -69,7 +70,7 @@ void SX1278_hw_SPICommand(SX1278_hw_t *hw, uint8_t cmd);
  *
  * \return				Read value
  */
-uint8_t SX1278_hw_SPIReadByte(SX1278_hw_t *hw);
+uint8_t SX1278_hw_SPIReadByte(SX1278_hw_t *hw, SPI_HandleTypeDef *spi);
 
 /**
  * \brief ms delay
