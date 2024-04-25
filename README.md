@@ -1,50 +1,29 @@
-# Software-Sniffer-Telemetria v1.0
+# Software RDSS v2.x
 
-### Mejoras:
-- [Comienzo el proyecto Software Sniffer Telemetría, se crea el repositorio, se da acceso a la red y al servidor](https://www.notion.so/Comienzo-el-proyecto-Software-Sniffer-Telemetr-a-se-crea-el-repositorio-se-da-acceso-a-la-red-y-a-dfa80f98785a4b4aaa695fa1a95c2659?pvs=21)
-- [Actualizar codificación en documentación Firmware Sniffer](https://www.notion.so/Actualizar-codificaci-n-en-documentaci-n-Firmware-Sniffer-a7df4f1f02dd4d0e9c2b5a6ff036bf9d?pvs=21)
-- [Ordenar el código](https://www.notion.so/Ordenar-el-c-digo-fa0c60b3583847cf8567db215684a9b7?pvs=21)
-- [Revisión Device management](https://www.notion.so/Revisi-n-Device-management-4dad3303a6944408b49dc8d2f2ea838f?pvs=21)
-- [Mejora] Botones para salidas digitales y rangos para salidas analógicas](https://www.notion.so/Mejora-Botones-para-salidas-digitales-y-rangos-para-salidas-analogas-8f4b714d4cd943ac9ce7f797a0feae34?pvs=21)
-- [Arreglos de FrontEnd](https://www.notion.so/Arreglos-de-FrontEnd-c8fee1d4642c48ca9933e39530ad50ed?pvs=21)
-- [Mejora] Modbus y SnifferIO simultáneo](https://www.notion.so/Mejora-Modbus-y-SnifferIO-simult-neo-c83258c66b0d49c299ae81cc746f8335?pvs=21)
-- [FIX] modbus decoder](https://www.notion.so/FIX-modbus-decoder-dfe0046f9c48481f8961ff9a23cf8721?pvs=21)
-- [FIX] Set field_values en Alerts](https://www.notion.so/FIX-Set-field_values-en-Alerts-fdd7772efada4f509248ed689f880a0b?pvs=21)
-- [ADD] uplink and downlink freq on status bar](https://www.notion.so/ADD-uplink-and-downlink-freq-on-status-bar-524d47723cec4d3c9cfc90d005cb351d?pvs=21)
-- [Crear funcion en el monitor para obtener valores reales a partir de la base de datos](https://www.notion.so/Crear-funcion-en-el-monitor-para-obtener-valores-reales-a-partir-de-la-base-de-datos-4036f0b5c6cb430fbcf007b76d85e822?pvs=21)
-- [Agregar dOut1 y dOut2 al monitor y sniffer](https://www.notion.so/Agregar-dOut1-y-dOut2-al-monitor-y-sniffer-4dbfd432700f47f799ab04caab5a0fac?pvs=21)
-- [Commit de maestros tx y rx](https://www.notion.so/Commit-de-maestros-tx-y-rx-0217f50963614e7397be0b8842e8ddd0?pvs=21)
-- [Agregar filtrado por id a validaciones del monitor](https://www.notion.so/Agregar-filtrado-por-id-a-validaciones-del-monitor-8e50f63b776c427b87d5caf91453ccaa?pvs=21)
-- [Resolver problema de reseteo del maestro Rx](https://www.notion.so/Resolver-problema-de-reseteo-del-maestro-Rx-96180dc90fc54f19b0955c37b782a39e?pvs=21)
+Status: Done
+People: Arturo Armando Veras Olivos
+Finalización: 1
+Tareas: Arreglar Documento de requermientos para sea general (https://www.notion.so/Arreglar-Documento-de-requermientos-para-sea-general-7e08d3bc8b4244a6b41a1bc55eef0d91?pvs=21), Documentación BackEnd (https://www.notion.so/Documentaci-n-BackEnd-4561c4adc66b40bfaaeed080a5d1b164?pvs=21), Documentación - Base de datos (https://www.notion.so/Documentaci-n-Base-de-datos-74a228434b0b408db233129ea330d3a8?pvs=21), Documentación - Descripción General (https://www.notion.so/Documentaci-n-Descripci-n-General-f9b53fe77d8645108d949d5f8ae4160b?pvs=21), Documentación - FrontEnd (https://www.notion.so/Documentaci-n-FrontEnd-0350f64d83e44570986191dbdd66333d?pvs=21), Revisión General ChatGPT (https://www.notion.so/Revisi-n-General-ChatGPT-9fd2b14427ed492ea4e03ef0fc7a2add?pvs=21), Orderna Documento (https://www.notion.so/Orderna-Documento-635e6b61664c40e7a8129c128b214084?pvs=21), Evaluar desarrollo de nuevas características VLAD con itaum (https://www.notion.so/Evaluar-desarrollo-de-nuevas-caracter-sticas-VLAD-con-itaum-08bca6cdb09b46d08a4aa6362a32adad?pvs=21), Limites de parametros de alertas (https://www.notion.so/Limites-de-parametros-de-alertas-ba795d5e3227439aad55cec5512fcba4?pvs=21), Ajuste de los voltajes de salida (https://www.notion.so/Ajuste-de-los-voltajes-de-salida-13a4fb37fa8343b0a68dd97535a67285?pvs=21), Instalación de software en servidor de prueba (https://www.notion.so/Instalaci-n-de-software-en-servidor-de-prueba-47844e4c8b814b9eafb3e19b88c27171?pvs=21), Agregrar condición de valores ceros en monitor.py (https://www.notion.so/Agregrar-condici-n-de-valores-ceros-en-monitor-py-32f6544ca6e041a4886f35e19c86f874?pvs=21), Agregar configuración de usuario sigmadev en doncumentación (https://www.notion.so/Agregar-configuraci-n-de-usuario-sigmadev-en-doncumentaci-n-92e6522b31854917b8b137686337f910?pvs=21), Docodificación de mediciones de VLADrev23  (https://www.notion.so/Docodificaci-n-de-mediciones-de-VLADrev23-19bd3f6acbb145c88a90f5b9ba0dedf5?pvs=21), Agregar Reverse/Convencional/ SmartTune  (https://www.notion.so/Agregar-Reverse-Convencional-SmartTune-b42cdb237493475f93106498c1bcc3ad?pvs=21), Agregar Consulta de modificación de atenuación de prueba. (https://www.notion.so/Agregar-Consulta-de-modificaci-n-de-atenuaci-n-de-prueba-2c31ffd2e23744f68923b4c0e49990e0?pvs=21), Se carga software en 192.168.60.75 (https://www.notion.so/Se-carga-software-en-192-168-60-75-5dd02affb6c7428993a294d3ac0f910a?pvs=21), Se aagrega la decondificación en la documentación (https://www.notion.so/Se-aagrega-la-decondificaci-n-en-la-documentaci-n-c0edd6b863704e8c9011b70ea12e448c?pvs=21), Se aagrega la descripción de  Alerts een la  doucmentación (https://www.notion.so/Se-aagrega-la-descripci-n-de-Alerts-een-la-doucmentaci-n-3567fe16e5b947d5a64df428bf701e60?pvs=21), Revisión de software para que facturen (https://www.notion.so/Revisi-n-de-software-para-que-facturen-ab554bd218734abd9ef04713fae2a6fb?pvs=21), Revisar valores de corriente según datasheet (https://www.notion.so/Revisar-valores-de-corriente-seg-n-datasheet-98180151f3ed47b5b08bea72c2fa64ea?pvs=21), Agregar nueva decodificación de consulta VLAD (https://www.notion.so/Agregar-nueva-decodificaci-n-de-consulta-VLAD-a15334c95f2f4684aab7d111f489e548?pvs=21), Revisar porque no actualiza el SmartTune en 192.168.60.236 (https://www.notion.so/Revisar-porque-no-actualiza-el-SmartTune-en-192-168-60-236-7101a2665f28413281087bde99b9ee00?pvs=21), Enviar consulta de master (https://www.notion.so/Enviar-consulta-de-master-82f2f99efbe842f0a504b769454f5d23?pvs=21), Ordernar el log del monuitor (https://www.notion.so/Ordernar-el-log-del-monuitor-187a1ca22fc443e4816dd0ef3613b057?pvs=21), Cambiar el nombre de attenuation downlink a attenuation (https://www.notion.so/Cambiar-el-nombre-de-attenuation-downlink-a-attenuation-7d9e808035c04137ac671b98be800a08?pvs=21), Revisar mapeo de  valores AGC (https://www.notion.so/Revisar-mapeo-de-valores-AGC-e1beb48a0457421696622d07ae44c888?pvs=21), Documento de Requerimientos para Itaum (https://www.notion.so/Documento-de-Requerimientos-para-Itaum-0fbd3f52b18045cdb0899152e09f4975?pvs=21), versión de prueba decode y encode de sniffer  (https://www.notion.so/versi-n-de-prueba-decode-y-encode-de-sniffer-c7919068be784ce3810b24a3257df495?pvs=21), code y decode de texto (https://www.notion.so/code-y-decode-de-texto-b1fa37f3009a4e71a0596d11899f377e?pvs=21), cotización frontend yery (https://www.notion.so/cotizaci-n-frontend-yery-ddf0d7d4f8b74e4e8d9dfcbaaaba1cff?pvs=21), Inicio. ver documento: Pruebas de Compatibilidad Diagnostico Remoto Tarjeta Azul con Software (https://www.notion.so/Inicio-ver-documento-Pruebas-de-Compatibilidad-Diagnostico-Remoto-Tarjeta-Azul-con-Software-871e7544f5fc4dff83d035a36b671509?pvs=21), Finalización. ver documento: Pruebas de Compatibilidad Diagnostico Remoto Tarjeta Azul con Software (https://www.notion.so/Finalizaci-n-ver-documento-Pruebas-de-Compatibilidad-Diagnostico-Remoto-Tarjeta-Azul-con-Software-56f464418c2749debde48d09b06cbc64?pvs=21), [Test] Demo RDSS (https://www.notion.so/Test-Demo-RDSS-e7467e9d35df469bb81980a6ae51eb27?pvs=21)
 
-### Características:
-- [Ambiente de desarrollo](https://www.notion.so/Ambiente-de-desarrollo-91d1f680208f4a02adc89a152ee6a55a?pvs=21)
-- [Decodificación del las tramas del sniffer](https://www.notion.so/Decodificaic-n-del-las-tramas-del-sniffer-99eb2c43c4fa4673af6b89bf255c44dd?pvs=21)
-- [Por hacer: comprobar que la codificación esté buena](https://www.notion.so/Por-hacer-comprobar-que-la-codificaci-n-est-buena-a22c716656f34d5bb3cbc89048787274?pvs=21)
-- [Codificación y decodificación probados en el sniffer, y cambios commited](https://www.notion.so/Codificaci-n-y-decodificaci-n-probados-en-el-sniffer-y-cambios-commited-fdf746599f8a4642aa9e97eac1f24cb5?pvs=21)
-- [Enviar comandos al sniffer (terminar setSnifferData y ajustar run_monitor)](https://www.notion.so/Enviar-comandos-al-sniffer-terminar-setSnifferData-y-ajustar-run_monitor-826b520e31bd4cd38a930e95e5631374?pvs=21)
-- [Probar codificación en mini PC](https://www.notion.so/Probar-codificaci-n-en-mini-PC-d5c94aecb94746ab831ec4aefec3eb64?pvs=21)
-- [Decodificar UART en Monitor](https://www.notion.so/Decodificar-UART-en-Monitor-123adc1f9ada49d98b77d1d3effd6dd4?pvs=21)
-- [Transmisión completa monitor-maestro-sniffer-serial](https://www.notion.so/Transmisi-n-completa-monitor-maestro-sniffer-serial-ed9b3a73e2924e3bb26a40e328a5e5a8?pvs=21)
-- [Probar límites de transmisión](https://www.notion.so/Probar-l-mites-de-transmisi-n-0df88e54b9db4d7291db2d999c8b31ce?pvs=21)
-- [Transmisión completa en sentido Serial→Monitor](https://www.notion.so/Transmisi-n-completa-en-sentido-Serial-Monitor-78602f728c2041f5ab6aaeaa65dd3161?pvs=21)
-- [Comando serial (0x14) a documentación Firmware Sniffer](https://www.notion.so/Comando-serial-0x14-a-documentaci-n-Firmware-Sniffer-90d72aad1d8942f0a07d4e03c176caf5?pvs=21)
-- [Pruebas + documentación de uplink y downlink en master DRS](https://www.notion.so/Pruebas-documentaci-n-de-uplink-y-downlink-en-master-DRS-75f3e6127b724029b28f0e63e154decf?pvs=21)
-- [Pruebas de downlink/uplink en master](https://www.notion.so/Pruebas-de-downlink-uplink-en-master-a37923c91f3e455d891f2f0069cc4509?pvs=21)
-- [Revisar recepcion serial a miniPC via moxa (485 o 232)](https://www.notion.so/Revisar-recepcion-serial-a-miniPC-via-moxa-485-o-232-5e6aef57c7934e6aa9cc3efca22df7c9?pvs=21)
-- [Armar data recibida en formato para DB](https://www.notion.so/Armar-data-recibida-en-formato-para-DB-edd6506e10294cfb87b52c70e27c13e2?pvs=21)
-- [Englobar funciones en monitor](https://www.notion.so/Englobar-funciones-en-monitor-dd076fcceafe4370afd52b712b1a5b1e?pvs=21)
-- [Revisar BD y fields en](https://www.notion.so/Revisar-BD-y-fields-en-2320b3afd9894668a20b129f1a4017ba?pvs=21)
-- [Pruebas de potencia de transmisión](https://www.notion.so/Pruebas-de-potencia-de-transmisi-n-05c1d6c223fa476983749a6e21634073?pvs=21)
-- [Envío de rtData a la base de datos](https://www.notion.so/Env-o-de-rtData-a-la-base-de-datos-7fd0b3e74b8f4a229f67d895aa6a33fd?pvs=21)
-- [Evaluación de Alertas para query status](https://www.notion.so/Evaluaci-n-de-Alertas-para-query-status-ff53eb47fc934664bdd7e437818e69c3?pvs=21)
-- [Formateo de RTData](https://www.notion.so/Formateo-de-RTData-d7d3c2193c7646118410a7772d841f8a?pvs=21)
-- [Ajuste de salida salidas digitales y análogas](https://www.notion.so/Ajuste-de-salida-salidas-digitales-y-an-logas-8dea2237cfd34c7e9a787ae043e22270?pvs=21)
-- [Asignación de imágenes a los dispositivos](https://www.notion.so/Asignaci-n-de-im-genes-a-los-dispositivos-1676d0bc4c9944f88b1f72df8f29c3b2?pvs=21)
-- [Display names para los campos](https://www.notion.so/Display-names-para-los-campos-8c811db414f240e3880d0475c721ffde?pvs=21)
-- [Monitor: Integración de preguntas modbus](https://www.notion.so/Monitor-Integraci-n-de-preguntas-modbus-72e8bfa6e56947fdb890f021854c73dd?pvs=21)
+LTEL - downlink output power min : -20 dBm hasta + 4 dBm
 
+rev 32 downlink output power min -17 dBm hasta +7 dBm
 
-## [Archivos](https://drive.google.com/drive/folders/19eSFY9t3YPugx9E1DRJfTMCmt-xoZ_5F)
+Escribo para informar acerca del ajuste que hemos realizado en las mediciones del VLAD. En concreto, hemos utilizado una fuente de poder y un analizador de espectro para ajustar los valores de corriente, voltaje, potencia y AGC. A continuación, detallo los errores cuadráticos medios que hemos calculado para cada medida.
 
-## [Repositorio](https://drive.google.com/drive/folders/19eSFY9t3YPugx9E1DRJfTMCmt-xoZ_5F)
+- Error de Voltaje: 0.003 [V]
+- Error de Corriente: 0.00001 [A]
+- Error de Potencia de Downlink: 0.07 [dBm]
+- Error de AGC de Downlink y Uplink: 0.7 [dB]
+
+Es importante destacar que este ajuste se realizó para el atenuador en una posición concreta, en la que la ganancia es de 20 [dB]. Sin embargo, nos encontramos con una limitación en la detección de la atenuación a través del switch rotatorio en la placa de diagnóstico remoto actual. Esto significa que si se cambia la atenuación, el valor de la potencia de downlink no se corresponderá con el valor real.
+
+Quedo a su disposición para cualquier aclaración o duda adicional que pueda surgir.
+
+- 
+
+[https://docs.google.com/document/d/1h1PHycrrpae6Wp-V5XpYpGTlTFufmnP5c2jyUwDU6aM/edit#](https://docs.google.com/document/d/1h1PHycrrpae6Wp-V5XpYpGTlTFufmnP5c2jyUwDU6aM/edit#)
+
+Configuración de Red de Laboratorio
+
+![Untitled](Software%20RDSS%20v2%20x%2030054446c92343aaa14b0927fa4a5c08/Untitled.png)
