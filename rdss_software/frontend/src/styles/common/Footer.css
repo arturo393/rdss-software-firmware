@@ -1,0 +1,24 @@
+.custom-footer {
+  background-color: #636463;
+  /* position: fixed; */
+  /* position: relative; */
+  /* bottom: 0;
+  left: 0;
+  width: 100%;*/
+  height: 7rem;
+  color: white;
+  text-align: center;
+}
+
+.custom-footer a {
+  color: white;
+}
+
+.justify-footer {
+  text-align: center;
+  display: table;
+  overflow: hidden;
+  margin: 0 auto;
+  color: white;
+  padding: 0;
+}
