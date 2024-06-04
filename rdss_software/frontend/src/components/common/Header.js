@@ -62,6 +62,9 @@ const Header = (props) => {
                 <a className="dropdown-item" onClick={() => setActiveComponent("devicesEdit")}>
                   Device Management
                 </a>
+                <a className="dropdown-item" onClick={() => setActiveComponent("ipManage")}>
+                  Change Ip Address
+                </a>
               </>
             </NavDropdown>
           )} <a className="nav-link btn sigmaDarkBg" onClick={() => logout()}>
