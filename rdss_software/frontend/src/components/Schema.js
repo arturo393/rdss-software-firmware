@@ -97,10 +97,7 @@ const Schema = (props) => {
       }
       
       let device = devices.find((square) => square.id == mdevice.id)
-<<<<<<< HEAD
-=======
       if(device){
->>>>>>> development
       const label = device?.name ? device?.name + " (" + device?.type + "-" + device?.id + ")" : device?.type + "-" + device?.id
       device = {
         ...device,
