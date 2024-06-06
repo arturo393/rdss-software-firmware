@@ -50,14 +50,8 @@ const Header = (props) => {
                 <a className="dropdown-item" onClick={() => setActiveComponent("diagramedit")}>
                   Diagram Edit
                 </a>
-                {/* <a className="dropdown-item" onClick={() => setActiveComponent("networkParameters")}>
+                <a className="dropdown-item" onClick={() => setActiveComponent("networkParameters")}>
                   Alerts Limits
-                </a> */}
-                <a className="dropdown-item" onClick={() => setActiveComponent("fieldsEdit")}>
-                  Device Fields Definitions
-                </a>
-                <a className="dropdown-item" onClick={() => setActiveComponent("groupsEdit")}>
-                  Devices Groups Management
                 </a>
                 <a className="dropdown-item" onClick={() => setActiveComponent("devicesEdit")}>
                   Device Management

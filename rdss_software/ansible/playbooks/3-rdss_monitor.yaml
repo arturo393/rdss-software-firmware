@@ -9,7 +9,7 @@
   - name: "Installing Monitor files"
     copy:
       remote_src: true
-      src: /tmp/rdss2/monitor/src/
+      src: /tmp/rdss2/rdss_software/monitor/src/
       dest: /opt/rdss/monitor
   - name: "Remove unused monitor entrypoint file"
     file:
@@ -22,7 +22,7 @@
   - name: "Installing monitor system service"
     copy:
       remote_src: true
-      src: /tmp/rdss2/monitor/monitorRDSS.service
+      src: /tmp/rdss2/rdss_software/monitor/monitorRDSS.service
       dest: /etc/systemd/system
       owner: root
       group: root

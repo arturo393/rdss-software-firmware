@@ -25,7 +25,7 @@ const Login = (props) => {
           <div className="card-body ">
             <Row>
               <Col md={4}>
-                <img src="/images/login_sigma.png" alt="" width="140%" className="rounded" />
+                <img src="/images/login_sigma.png" alt="" width="140%" />
               </Col>
               <Col md={2}></Col>
               <Col md={5}>
@@ -45,8 +45,8 @@ const Login = (props) => {
                   {/* <Form.Group controlId="formBasicCheckbox">
                   <Form.Check type="checkbox" label="Check me out" />
                 </Form.Group> */}
-                  <div className="row mt-5 text-center">
-                    <Button variant="primary" type="submit" className="border-0 w-75  mx-auto">
+                  <div className="row mt-5">
+                    <Button variant="primary" type="submit">
                       Login
                     </Button>
                   </div>

@@ -22,18 +22,17 @@ function Chart(props) {
   const [autoArrange, setAutoArrange] = useState(true)
 
   useEffect(() => {
-
-    if (deviceId && Object.entries(rtData).length) {
+    console.log("setting up Plot Data")
+    if (deviceId && Object.entries(rtData).length !== 0) {
       const data = { x: rtData.x, y: rtData.rtd[filter], marker: rtData.marker, text: rtData.text }
-      
       setRevision(rtData.x.length + deviceId + Math.floor(Math.random() * 100 + 1))
       setPlotData(data)
     }
   }, [])
 
   useEffect(() => {
-    if (Object.entries(rtData).length) {
-      // console.log("rtData changed",rtData)
+    if (Object.entries(rtData).length !== 0) {
+      console.log("rtData changed")
       const data = { x: rtData.x, y: rtData.rtd[filter], marker: rtData.marker, text: rtData.text }
       setRevision(rtData.x.length + deviceId + Math.floor(Math.random() * 100 + 1))
       setPlotData(data)
@@ -45,86 +44,91 @@ function Chart(props) {
   }, [deviceId])
 
   useEffect(() => {
-    // console.log("plotData changed")
+    console.log("plotData changed")
     renderPlot()
   }, [revision])
 
-  const getPointText = (status = {}) => {
+  const getPointText = (alerts = {}) => {
+    const connectionAlert = alerts?.connection ? true : false
+    const voltageAlert = alerts?.voltage ? true : false
+    const currentAlert = alerts?.current ? true : false
+    const powerAlert = alerts?.power ? true : false
+    const guplAlert = alerts?.gupl ? true : false
+    const gdwlAlert = alerts?.gdwl ? true : false
 
     let alerted = false
 
     let t = "<b>Device: " + deviceId + "</b><br><br>\n"
-
-    if (!status.connected) {
-      t += " * Disconnected<br>\n"
+    if (connectionAlert) {
+      t += " * Disconnect<br>\n"
+      alerted = true
     }
-    t += (status?.alert)?"Value Out of Limits":"<br>\n"
+    if (voltageAlert) {
+      t += " * Voltage Out of Limits<br>\n"
+      alerted = true
+    }
+    if (currentAlert) {
+      t += " * Current Out of Limits<br>\n"
+      alerted = true
+    }
+    if (powerAlert) {
+      t += " * Downlink Power Out of Limits<br>\n"
+      alerted = true
+    }
+    if (guplAlert) {
+      t += " * AGC Downlink Out of Limits<br>\n"
+      alerted = true
+    }
+    if (gdwlAlert) {
+      t += " * AGC Uplink Out of Limits\n"
+      alerted = true
+    }
 
-    alerted = status?.alert || !status.connected
-
-    // console.log("Connected", status.connected)
-    // console.log("Alert", status?.alert)
-    // console.log("Alerted", alerted)
-    // console.log("T", t)
-
-    return { text: t, alerted: alerted }
+    return { text: t, status: alerted }
   }
 
   // //Acá va la lógica de conversión de datos que vienen desde monitorData
   useEffect(() => {
-    console.log("Getting data from monitor...",deviceId)
-    
+    console.log("Getting data from monitor...")
 
     if (deviceId) {
       //Gets device data from monitorData
-      let currentDeviceData = {}
-      
-
-      monitorData && monitorData?.map((monitor) => {
+      let currentDeviceData = { rtData: {} }
+      monitorData?.map((monitor) => {
         const data = JSON.parse(monitor)
 
         if (data.id == deviceId) {
           currentDeviceData = data
         }
-        if (Object.entries(plotData).length !== 0) {
-          let data = plotData
-          // console.log("plotData", plotData)
-          // console.log("currentDeviceData",currentDeviceData)
-          const currData = currentDeviceData?.field_values?.[filter]
-          // console.log("currData",currData)
-          // console.log("currData",currData)
-          const alertStatus = getPointText({connected: currData?.connected, alert: currData?.field_values?.[filter]?.alert})
-          // console.log("ALERT STATUS", alertStatus)
-  
-          // data?.y?.push((typeof currentDeviceData?.field_values?.[filter]?.value) === 'string'? parseFloat(currentDeviceData?.field_values?.[filter]?.value):currentDeviceData?.field_values?.[filter]?.value || data.y[data.y.length - 1])
-          const currentIndex = data?.y?.length 
-
-          let tmpTS = ""
-          let TS = {}
-          if (currentDeviceData.sampleTime !== undefined) tmpTS = JSON.stringify(currentDeviceData.sampleTime).replace("$date", "date").replace("T", " ").replace("Z", "")
-          if (tmpTS) TS = JSON.parse(tmpTS)
- 
-
-          data.x.push(TS)
-          data.y.push(parseFloat(currentDeviceData?.field_values?.[filter]?.value))
-          data.text.push(alertStatus.text)
-          data.marker.color.push(alertStatus.alerted ? "red" : color)
-          
-         
-          setRevision(currentIndex + deviceId + Math.floor(Math.random() * 100 + 1))
-          setPlotData(data)
-        } else {
-          console.log("sin plotData")
-        }
       })
 
-      
+      if (Object.entries(plotData).length !== 0) {
+        let data = plotData
 
+        const alertStatus = getPointText(currentDeviceData.rtData.alerts)
 
-      
+        //Fixes power tolerane
+        // if (filter == "power" && currentDeviceData.rtData[filter] < -5) currentDeviceData.rtData[filter] = -5
+
+        data.y.push(currentDeviceData.rtData[filter] || data.y[data.y.length - 1])
+        const currentIndex = data.y.length - 1
+
+        let tmpTS = ""
+        let TS = {}
+        if (currentDeviceData.rtData.sampleTime !== undefined) tmpTS = JSON.stringify(currentDeviceData.rtData.sampleTime).replace("$date", "date").replace("T", " ").replace("Z", "")
+        if (tmpTS) TS = JSON.parse(tmpTS)
+        data.x[currentIndex] = TS
+        // data.x[currentIndex] = currentDeviceData.rtData.sampleTime
+
+        if (!data.text[currentIndex]) {
+          data.text[currentIndex] = alertStatus.text
+          data.marker.color[currentIndex] = alertStatus.status ? "red" : color
+        }
+        setRevision(currentIndex + deviceId + Math.floor(Math.random() * 100 + 1))
+        setPlotData(data)
+      }
     }
   }, [monitorData])
-
 
   const renderPlot = () => {
     if (Object.entries(plotData).length !== 0 && autoArrange) {
@@ -191,7 +195,6 @@ function Chart(props) {
       layout={plot.layout}
       debug={true}
       config={plot.config}
-      className="w-75"
     />
   )
 }

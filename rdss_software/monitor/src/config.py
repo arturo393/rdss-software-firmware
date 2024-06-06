@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 BASE_PATH = "/opt/rdss/monitor/"
 FORMAT = 'utf-8'
-POLLING_SLEEP = 2
+POLLING_SLEEP = 0.2
 LOGGING_FILE = "monitor.log"
 AGC_DATA = BASE_PATH+"agcdata.csv"
 POWER_DATA = BASE_PATH+"power.csv"
@@ -21,7 +21,7 @@ log = {
 }
 
 db = {
-    "host": "database",
+    "host": "localhost",
     "user": "admin",
     "passwd": "Admin123",
     "dbname": "rdss",
@@ -35,6 +35,6 @@ serial = {
     "parity": "N",
     "stopbits": 1,
     "bytesize": 8,
-    "timeout": 3,
+    "timeout": 3  ,
     "write_timeout": 10
 }

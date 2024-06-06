@@ -9,7 +9,7 @@
   - name: "Installing frontend files"
     copy:
       remote_src: true
-      src: /tmp/rdss2/frontend/src/
+      src: /tmp/rdss2/rdss_software/frontend/src/
       dest: /opt/rdss/frontend
   - name: "Installing dependencies"
     shell: npm install --save --legacy-peer-deps && npm install @material-ui/core --save --legacy-peer-deps
@@ -18,7 +18,7 @@
   - name: "Patching hammerJS"
     copy:
       remote_src: true
-      src: /tmp/rdss2/frontend/src/lib/hammer.js
+      src: /tmp/rdss2/rdss_software/frontend/src/lib/hammer.js
       dest: /opt/rdss/frontend/node_modules/hammerjs/hammer.js
       owner: root
       group: root
@@ -33,7 +33,7 @@
   - name: "Installing frontend system service"
     copy:
       remote_src: true
-      src: /tmp/rdss2/frontend/frontendRDSS.service
+      src: /tmp/rdss2/rdss_software/frontend/frontendRDSS.service
       dest: /etc/systemd/system
       owner: root
       group: root
