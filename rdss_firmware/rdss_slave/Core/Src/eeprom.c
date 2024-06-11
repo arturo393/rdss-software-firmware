@@ -29,7 +29,7 @@ uint8_t savePage(uint8_t page, uint8_t *data, uint8_t offset, uint8_t size) {
 	uint8_t buff[16 + 1];
 	uint8_t read[16];
 	uint8_t i = 0;
-	uint8_t res = 0;
+	HAL_StatusTypeDef res = 0;
 	res = readPage(page, read, offset, size);
 	bool notEqual = false;
 
