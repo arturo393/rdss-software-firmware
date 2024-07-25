@@ -1,2 +1,172 @@
 **/Debug/**
 **/.settings/**
+
+# Sistema Operativo
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Archivos del sistema Windows
+*.cab
+*.msi
+*.msm
+*.msp
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Directorios de metadata del Mac
+*/.DocumentRevisions-V100
+*/.fseventsd
+*/.Spotlight-V100
+*/.TemporaryItems
+*/.Trashes
+*/.VolumeIcon.icns
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+*~
+
+# Archivos swap de Vim
+*.swp
+*.swo
+
+# Archivos temporales de Emacs
+*~
+
+# Archivos de logs
+*.log
+
+# Archivos temporales y backup
+*.tmp
+*.bak
+*.old
+*.orig
+*.save
+
+# Archivos de lock
+*.lock
+*.pid
+
+# IDEs y Editores
+# Visual Studio
+.vscode/
+*.code-workspace
+.vscode/*
+
+# Visual Studio Code
+.vscode/
+.code-workspace
+
+# JetBrains (IntelliJ, PyCharm, WebStorm, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Eclipse
+.metadata/
+bin/
+tmp/
+*.bak
+*.swp
+*.patch
+*.diff
+
+# NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+nbactions.xml
+nb-configuration.xml
+
+# Xcode
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+build/
+*.moved-aside
+DerivedData/
+*.xcuserstate
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.python-version
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+target/
+build/
+
+# C#
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.sln.docstates
+*.userprefs
+*.csproj.user
+
+# PHP
+vendor/
+composer.lock
+
+# Ruby
+*.gem
+*.rbc
+.bundle/
+.config/
+coverage/
+InstalledFiles
+pkg/
+spec/reports/
+test/tmp/
+test/version_tmp/
+tmp/
+
+# Go
+bin/
+obj/
+vendor/
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# Ignorar directorios específicos
+Debug/**
+.settings/**
+
+# Otras configuraciones típicas
+*.env
+.env.*
